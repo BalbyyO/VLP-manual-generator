@@ -23,7 +23,11 @@
     redoStack: [],
     hasPendingSave: false,
     lastFocusedEl: null,
-    lastSelection: { start: 0, end: 0 }
+    lastSelection: { start: 0, end: 0 },
+    currentUser: null,
+    publicConfig: null,
+    authNeedsSetup: false,
+    authLocked: true
   };
 
   let autosaveBrowserTimer = null;
@@ -84,6 +88,10 @@
     });
   }
 
+  function getUserAutosaveKey() {
+    return 'autosave_' + (state.currentUser && state.currentUser.id ? state.currentUser.id : 'anon');
+  }
+
   async function idbSet(id, payload) {
     try {
       const db = await openIdb();
@@ -95,7 +103,7 @@
       });
     } catch (e) {
       try {
-        localStorage.setItem('vlp_autosave_fallback', JSON.stringify(payload));
+        localStorage.setItem('vlp_autosave_fallback_' + id, JSON.stringify(payload));
       } catch (_ignore) {}
       return false;
     }
@@ -112,7 +120,7 @@
       });
     } catch (e) {
       try {
-        const raw = localStorage.getItem('vlp_autosave_fallback');
+        const raw = localStorage.getItem('vlp_autosave_fallback_' + id);
         return raw ? { id: id, state: JSON.parse(raw) } : null;
       } catch (_ignore) {
         return null;
@@ -133,6 +141,7 @@
   }
 
   async function saveToServerNow(payload) {
+    if (state.authLocked) return false;
     try {
       const res = await fetch('/api/sessions/autosave', {
         method: 'POST',
@@ -151,28 +160,30 @@
   }
 
   function scheduleAutosave() {
+    if (state.authLocked || !state.manual) return;
     state.hasPendingSave = true;
     setSaveStatus('saving', 'Saving...');
     clearTimeout(autosaveBrowserTimer);
     clearTimeout(autosaveServerTimer);
 
+    const slotKey = getUserAutosaveKey();
     autosaveBrowserTimer = setTimeout(async function () {
       const payload = buildSerializableState();
-      await idbSet('autosave', payload);
+      await idbSet(slotKey, payload);
     }, 250);
 
     autosaveServerTimer = setTimeout(async function () {
       const payload = buildSerializableState();
-      await idbSet('autosave', payload);
+      await idbSet(slotKey, payload);
       await saveToServerNow(payload);
     }, 1100);
   }
 
   function flushAutosaveBeacon() {
-    if (!state.manual) return;
+    if (state.authLocked || !state.manual) return;
     const payload = buildSerializableState();
     try {
-      localStorage.setItem('vlp_autosave_meta', JSON.stringify({ updatedAt: payload.updatedAt, name: state.manual.name }));
+      localStorage.setItem('vlp_autosave_meta_' + getUserAutosaveKey(), JSON.stringify({ updatedAt: payload.updatedAt, name: state.manual.name }));
     } catch (_ignore) {}
     if (navigator.sendBeacon) {
       const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
@@ -2294,9 +2305,132 @@
     }
   }
 
+  async function exportDocument() {
+    if (!state.manual) return;
+    const formatEl = $('exportFormatSelect');
+    const scopeEl = $('exportScopeSelect');
+    const format = formatEl ? formatEl.value : 'pdf';
+    const scope = scopeEl ? scopeEl.value : 'full';
+
+    if (format === 'print') {
+      const htmlStr = VLP.generateStandaloneManualHtml(state.manual, {
+        scope: scope,
+        activeNodeId: state.activeNodeId,
+        imageMap: state.imageMap,
+        samplePrefix: state.sampleSource ? '/samples/' + state.sampleSource + '/images' : '',
+        colorTheme: state.manual.colorTheme || 'crimson-slate'
+      });
+      const printWin = window.open('', '_blank');
+      if (!printWin) {
+        showToast('Please allow popups for Print / Save as PDF, or choose .pdf download directly', true);
+        return;
+      }
+      printWin.document.open();
+      printWin.document.write(htmlStr);
+      printWin.document.close();
+      setTimeout(function () {
+        try { printWin.print(); } catch (_ignore) {}
+      }, 250);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/export-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          manual: state.manual,
+          format: format,
+          scope: scope,
+          activeNodeId: state.activeNodeId,
+          imagesMeta: state.imageMap,
+          sampleSource: state.sampleSource
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(function () { return {}; });
+        throw new Error(err.error || 'Document export failed');
+      }
+      const blob = await res.blob();
+      const safeName = (state.manual.name || 'vlp-manual').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileName = safeName + (scope === 'current' ? '-page' : '') + '.' + format;
+      downloadBlob(blob, fileName);
+      showToast('Exported student file: ' + fileName);
+    } catch (err) {
+      showToast('Export failed: ' + err.message, true);
+    }
+  }
+
   // =========================================================================
-  // Session Snapshots & Portable JSON Backup
+  // Session Snapshots, Shared Team Manuals & Portable JSON Backup
   // =========================================================================
+  function renderSnapshotRow(listEl, s, options) {
+    const opts = options || {};
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.justifyContent = 'space-between';
+    row.style.gap = '8px';
+    row.style.padding = '8px 0';
+    row.style.borderBottom = '1px solid var(--app-border)';
+
+    const info = document.createElement('div');
+    const byLine = opts.isShared && s.authorName ? (' &bull; by ' + VLP.escapeHtml(s.authorName)) : '';
+    info.innerHTML =
+      '<div><strong>' + VLP.escapeHtml(s.name) + '</strong></div>' +
+      '<div class="muted-hint">' + VLP.escapeHtml(s.manualName || 'manual') + ' &bull; ' + s.nodeCount + ' nodes' + byLine + ' &bull; ' + VLP.escapeHtml((s.updatedAt || '').replace('T', ' ').slice(0, 19)) + '</div>';
+
+    const btns = document.createElement('div');
+    btns.style.display = 'flex';
+    btns.style.gap = '6px';
+    btns.style.flexWrap = 'wrap';
+
+    const endpoint = opts.isShared ? '/api/sessions-shared/' : '/api/sessions/';
+    const loadBtn = makeTinyBtn('Restore', async function () {
+      const r = await fetch(endpoint + encodeURIComponent(s.id));
+      const d = await r.json();
+      if (r.ok && d.ok && d.session && d.session.state) {
+        pushUndo();
+        restoreSerializedState(d.session.state);
+        closeModal('sessionsModal');
+        scheduleAutosave();
+        showToast('Restored snapshot: ' + s.name);
+      }
+    });
+    btns.appendChild(loadBtn);
+
+    if (!opts.isShared) {
+      const shareBtn = makeTinyBtn('Share', async function () {
+        const r = await fetch('/api/sessions/' + encodeURIComponent(s.id));
+        const d = await r.json();
+        if (r.ok && d.ok && d.session && d.session.state) {
+          await fetch('/api/sessions-shared', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: s.name, state: d.session.state })
+          });
+          refreshSharedSnapshotsList();
+          showToast('Shared snapshot to Team Manuals');
+        }
+      });
+      btns.appendChild(shareBtn);
+    }
+
+    const canDelete = !opts.isShared || (state.currentUser && (state.currentUser.role === 'admin' || state.currentUser.id === s.ownerId));
+    if (canDelete) {
+      const delBtn = makeTinyBtn('Delete', async function () {
+        await fetch(endpoint + encodeURIComponent(s.id), { method: 'DELETE' });
+        if (opts.isShared) refreshSharedSnapshotsList();
+        else refreshSnapshotsList();
+      });
+      btns.appendChild(delBtn);
+    }
+
+    row.appendChild(info);
+    row.appendChild(btns);
+    listEl.appendChild(row);
+  }
+
   async function refreshSnapshotsList() {
     const listEl = $('snapshotsList');
     listEl.innerHTML = 'Loading saved snapshots...';
@@ -2306,53 +2440,33 @@
       if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load sessions');
       const sessions = data.sessions || [];
       if (sessions.length === 0) {
-        listEl.innerHTML = '<span class="muted-hint">No named snapshots yet. Your active session is still automatically saved on every change.</span>';
+        listEl.innerHTML = '<span class="muted-hint">No named snapshots yet. Your active session is automatically saved privately on every change.</span>';
         return;
       }
       listEl.innerHTML = '';
-      sessions.forEach(function (s) {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.justifyContent = 'space-between';
-        row.style.gap = '8px';
-        row.style.padding = '8px 0';
-        row.style.borderBottom = '1px solid var(--app-border)';
-
-        const info = document.createElement('div');
-        info.innerHTML =
-          '<div><strong>' + VLP.escapeHtml(s.name) + '</strong></div>' +
-          '<div class="muted-hint">' + VLP.escapeHtml(s.manualName || 'manual') + ' &bull; ' + s.nodeCount + ' nodes &bull; ' + VLP.escapeHtml(s.updatedAt.replace('T', ' ').slice(0, 19)) + '</div>';
-
-        const btns = document.createElement('div');
-        btns.style.display = 'flex';
-        btns.style.gap = '6px';
-
-        const loadBtn = makeTinyBtn('Restore', async function () {
-          const r = await fetch('/api/sessions/' + encodeURIComponent(s.id));
-          const d = await r.json();
-          if (r.ok && d.ok && d.session && d.session.state) {
-            pushUndo();
-            restoreSerializedState(d.session.state);
-            closeModal('sessionsModal');
-            scheduleAutosave();
-            showToast('Restored snapshot: ' + s.name);
-          }
-        });
-
-        const delBtn = makeTinyBtn('Delete', async function () {
-          await fetch('/api/sessions/' + encodeURIComponent(s.id), { method: 'DELETE' });
-          refreshSnapshotsList();
-        });
-
-        btns.appendChild(loadBtn);
-        btns.appendChild(delBtn);
-        row.appendChild(info);
-        row.appendChild(btns);
-        listEl.appendChild(row);
-      });
+      sessions.forEach(function (s) { renderSnapshotRow(listEl, s, { isShared: false }); });
     } catch (err) {
       listEl.innerHTML = '<span class="muted-hint">Server snapshots unavailable in offline browser mode.</span>';
+    }
+  }
+
+  async function refreshSharedSnapshotsList() {
+    const listEl = $('sharedSnapshotsList');
+    if (!listEl) return;
+    listEl.innerHTML = 'Loading shared team manuals...';
+    try {
+      const res = await fetch('/api/sessions-shared');
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed');
+      const sessions = data.sessions || [];
+      if (sessions.length === 0) {
+        listEl.innerHTML = '<span class="muted-hint">No shared team manuals yet. Click "Share Current Manual" to publish a starter or snapshot for other instructors.</span>';
+        return;
+      }
+      listEl.innerHTML = '';
+      sessions.forEach(function (s) { renderSnapshotRow(listEl, s, { isShared: true }); });
+    } catch (err) {
+      listEl.innerHTML = '<span class="muted-hint">Shared team manuals unavailable.</span>';
     }
   }
 
@@ -2445,6 +2559,7 @@
       $('sessionsModal').classList.add('open');
       $('snapshotNameInput').value = (state.manual && state.manual.name ? state.manual.name : 'Manual') + ' Snapshot';
       refreshSnapshotsList();
+      refreshSharedSnapshotsList();
     });
     $('importPackageInput').addEventListener('change', function (e) {
       const file = e.target.files[0];
@@ -2453,6 +2568,8 @@
     });
     $('btnExportXml').addEventListener('click', exportContentXml);
     $('btnExportZip').addEventListener('click', exportVlpZip);
+    $('btnExportDocument').addEventListener('click', exportDocument);
+    $('btnUserAccount').addEventListener('click', function () { openAccountAdminModal('account'); });
 
     // Tree controls
     $('btnNewManual').addEventListener('click', function () {
@@ -2915,8 +3032,30 @@
       });
     });
 
-    // Sessions Modal actions
+    // Sessions Modal actions (Private & Shared Team Manuals)
     $('btnRefreshSnapshots').addEventListener('click', refreshSnapshotsList);
+    if ($('btnRefreshShared')) {
+      $('btnRefreshShared').addEventListener('click', refreshSharedSnapshotsList);
+    }
+    if ($('btnShareCurrent')) {
+      $('btnShareCurrent').addEventListener('click', async function () {
+        const name = $('snapshotNameInput').value.trim() || (state.manual && state.manual.name) || 'Shared Manual';
+        const payload = buildSerializableState();
+        try {
+          const res = await fetch('/api/sessions-shared', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, state: payload })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Share failed');
+          refreshSharedSnapshotsList();
+          showToast('Shared manual to Team Manuals: ' + name);
+        } catch (err) {
+          showToast('Share failed: ' + err.message, true);
+        }
+      });
+    }
     $('btnSaveSnapshot').addEventListener('click', async function () {
       const name = $('snapshotNameInput').value.trim() || 'Manual Snapshot';
       const payload = buildSerializableState();
@@ -2961,6 +3100,9 @@
       }
     });
 
+    // Auth Gate & Open WebUI Account/Admin Events
+    bindAuthAndAdminEvents();
+
     // Accidental closure protection
     window.addEventListener('beforeunload', function (e) {
       flushAutosaveBeacon();
@@ -2978,17 +3120,1091 @@
   }
 
   // =========================================================================
-  // Initialization
+  // Multi-User Authentication Gate & Open WebUI-Style Account / Admin Panel
   // =========================================================================
-  async function init() {
-    bindEvents();
+  let currentAuthMode = 'login'; // 'setup' | 'login' | 'signup' | 'pending'
+  let currentOwuiTab = 'account';
+  let currentAdminSaveHandler = null;
+
+  function setAuthError(msg) {
+    const el = $('authGateError');
+    if (!el) return;
+    if (!msg) {
+      el.classList.add('hidden');
+      el.textContent = '';
+    } else {
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+  }
+
+  function updateTopbarUserUi(user) {
+    const btn = $('btnUserAccount');
+    if (!btn) return;
+    if (!user) {
+      btn.classList.add('hidden');
+      $('owuiAdminNavSection').classList.add('hidden');
+      return;
+    }
+    btn.classList.remove('hidden');
+    const initials = (user.name || user.username || 'U').trim().charAt(0).toUpperCase();
+    $('userAvatarDot').textContent = initials;
+    $('userDisplayLabel').textContent = user.name || user.username;
+    const chip = $('userRoleChip');
+    chip.textContent = user.role;
+    chip.className = 'role-chip' + (user.role === 'admin' ? ' role-admin' : (user.role === 'pending' ? ' role-pending' : ''));
+
+    $('owuiFooterAvatar').textContent = initials;
+    $('owuiFooterName').textContent = user.name || user.username;
+    $('owuiFooterRole').textContent = user.role;
+    $('owuiAdminNavSection').classList.toggle('hidden', user.role !== 'admin');
+  }
+
+  function configureAuthGateView(mode, publicConfig) {
+    currentAuthMode = mode;
+    setAuthError('');
+    const cfg = publicConfig || state.publicConfig || {};
+    const pendingBox = $('authPendingView');
+    const form = $('authGateForm');
+    const toggleWrap = $('authModeToggleWrap');
+
+    pendingBox.classList.add('hidden');
+    form.classList.remove('hidden');
+    $('authMfaField').classList.add('hidden');
+    $('authTotpInput').value = '';
+
+    const hasExternalSso = Boolean(cfg.oauthEnabled || cfg.ldapEnabled);
+    $('authSsoNotice').classList.toggle('hidden', !hasExternalSso);
+    if (hasExternalSso) {
+      const labels = [];
+      if (cfg.oauthEnabled) labels.push('OAuth/OIDC (' + (cfg.oauthProviderName || 'SSO') + ')');
+      if (cfg.ldapEnabled) labels.push('LDAP');
+      $('authSsoLabel').textContent = 'External auth configured by admin: ' + labels.join(' & ') + ' (local offline fallback active).';
+    }
+
+    if (mode === 'pending') {
+      form.classList.add('hidden');
+      toggleWrap.classList.add('hidden');
+      pendingBox.classList.remove('hidden');
+      $('authGateTitle').textContent = cfg.pendingOverlayTitle || 'Account Pending Approval';
+      $('authGateSubtitle').textContent = 'Multi-user access requires administrator activation.';
+      $('pendingOverlayHeading').textContent = cfg.pendingOverlayTitle || 'Waiting for Administrator Approval';
+      $('pendingOverlayBody').textContent = cfg.pendingOverlayContent || 'Your local account has been registered. An administrator must upgrade your role from Pending before you can create or access manuals.';
+      $('pendingAdminContact').textContent = (cfg.showAdminDetails && cfg.adminContactEmail)
+        ? ('Administrator contact: ' + cfg.adminContactEmail)
+        : '';
+      return;
+    }
+
+    if (mode === 'setup') {
+      $('authGateTitle').textContent = 'Create Administrator Account';
+      $('authGateSubtitle').textContent = 'First-time setup: this first account becomes the system Administrator and owns the Admin Panel.';
+      $('authSignupFields').classList.remove('hidden');
+      $('authLoginFields').classList.add('hidden');
+      $('btnAuthSubmit').textContent = 'Create Admin Account';
+      toggleWrap.classList.add('hidden');
+      return;
+    }
+
+    if (mode === 'signup') {
+      $('authGateTitle').textContent = 'Create Local Account';
+      $('authGateSubtitle').textContent = cfg.defaultUserRole === 'pending'
+        ? 'New accounts start as Pending until approved by an administrator.'
+        : 'Create your private instructor/student manual workspace account.';
+      $('authSignupFields').classList.remove('hidden');
+      $('authLoginFields').classList.add('hidden');
+      $('btnAuthSubmit').textContent = 'Create Account';
+      toggleWrap.classList.remove('hidden');
+      $('authModePrompt').textContent = 'Already have an account?';
+      $('btnToggleAuthMode').textContent = 'Sign In';
+      return;
+    }
+
+    // Default 'login' mode
+    $('authGateTitle').textContent = 'Sign In to VLP Manual Generator';
+    $('authGateSubtitle').textContent = 'Your drafts, screenshots, and exports are privately isolated to your account.';
+    $('authSignupFields').classList.add('hidden');
+    $('authLoginFields').classList.remove('hidden');
+    $('btnAuthSubmit').textContent = 'Sign In';
+
+    const canSignUp = cfg.enableSignUp !== false && cfg.enableLoginForm !== false;
+    toggleWrap.classList.toggle('hidden', !canSignUp);
+    $('authModePrompt').textContent = 'Need an account?';
+    $('btnToggleAuthMode').textContent = 'Sign Up';
+  }
+
+  function makeOwuiSwitchRow(title, desc, checked, disabled) {
+    const row = document.createElement('div');
+    row.className = 'owui-row';
+
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'owui-row-label';
+    const tEl = document.createElement('div');
+    tEl.className = 'owui-row-title';
+    tEl.textContent = title;
+    labelDiv.appendChild(tEl);
+    if (desc) {
+      const dEl = document.createElement('div');
+      dEl.className = 'owui-row-desc';
+      dEl.textContent = desc;
+      labelDiv.appendChild(dEl);
+    }
+
+    const sw = document.createElement('label');
+    sw.className = 'owui-switch';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = Boolean(checked);
+    input.disabled = Boolean(disabled);
+    const slider = document.createElement('span');
+    slider.className = 'owui-slider';
+    sw.appendChild(input);
+    sw.appendChild(slider);
+
+    row.appendChild(labelDiv);
+    row.appendChild(sw);
+    return { row: row, input: input };
+  }
+
+  function makeOwuiSelectRow(title, desc, value, choices, disabled) {
+    const row = document.createElement('div');
+    row.className = 'owui-row';
+
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'owui-row-label';
+    const tEl = document.createElement('div');
+    tEl.className = 'owui-row-title';
+    tEl.textContent = title;
+    labelDiv.appendChild(tEl);
+    if (desc) {
+      const dEl = document.createElement('div');
+      dEl.className = 'owui-row-desc';
+      dEl.textContent = desc;
+      labelDiv.appendChild(dEl);
+    }
+
+    const sel = document.createElement('select');
+    sel.className = 'owui-select owui-select-compact';
+    sel.disabled = Boolean(disabled);
+    choices.forEach(function (ch) {
+      const opt = document.createElement('option');
+      opt.value = ch.value;
+      opt.textContent = ch.label;
+      if (String(ch.value) === String(value || '')) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    row.appendChild(labelDiv);
+    row.appendChild(sel);
+    return { row: row, select: sel };
+  }
+
+  function makeOwuiInputField(title, desc, value, opts) {
+    const o = opts || {};
+    const wrap = document.createElement('div');
+    wrap.className = 'owui-field-block';
+
+    const tEl = document.createElement('div');
+    tEl.className = 'owui-row-title';
+    tEl.style.marginBottom = '4px';
+    tEl.textContent = title;
+    wrap.appendChild(tEl);
+
+    const input = document.createElement('input');
+    input.className = 'owui-input';
+    input.type = o.isPassword ? 'password' : 'text';
+    input.value = value != null ? String(value) : '';
+    input.placeholder = o.placeholder || '';
+    input.disabled = Boolean(o.disabled);
+
+    if (o.isPassword) {
+      const pwWrap = document.createElement('div');
+      pwWrap.className = 'owui-pw-wrap';
+      const eye = document.createElement('button');
+      eye.type = 'button';
+      eye.className = 'owui-pw-eye';
+      eye.innerHTML = '&#128065;';
+      eye.addEventListener('click', function () {
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+      pwWrap.appendChild(input);
+      pwWrap.appendChild(eye);
+      wrap.appendChild(pwWrap);
+    } else {
+      wrap.appendChild(input);
+    }
+
+    if (desc) {
+      const dEl = document.createElement('div');
+      dEl.className = 'owui-row-desc';
+      dEl.textContent = desc;
+      wrap.appendChild(dEl);
+    }
+    return { block: wrap, input: input };
+  }
+
+  function openAccountAdminModal(tab) {
+    currentOwuiTab = tab || 'account';
+    $('accountAdminModal').classList.add('open');
+    renderOwuiTab(currentOwuiTab);
+  }
+
+  async function renderOwuiTab(tabId) {
+    currentOwuiTab = tabId;
+    currentAdminSaveHandler = null;
+    $('owuiContentFooter').classList.add('hidden');
+
+    document.querySelectorAll('[data-owui-tab]').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.owuiTab === tabId);
+    });
+
+    const titleMap = {
+      account: 'Account',
+      data: 'Data Controls',
+      about: 'About',
+      'admin-users': 'Users',
+      'admin-groups': 'Groups',
+      'admin-auth': 'Authentication',
+      'admin-audit': 'Security Audit'
+    };
+    $('owuiActiveTitle').textContent = titleMap[tabId] || 'Settings';
+
+    const body = $('owuiContentBody');
+    body.innerHTML = '';
+
+    if (tabId === 'account') {
+      await renderOwuiAccountTab(body);
+    } else if (tabId === 'data') {
+      renderOwuiDataTab(body);
+    } else if (tabId === 'about') {
+      renderOwuiAboutTab(body);
+    } else if (tabId === 'admin-users') {
+      await renderOwuiAdminUsersTab(body);
+    } else if (tabId === 'admin-groups') {
+      await renderOwuiAdminGroupsTab(body);
+    } else if (tabId === 'admin-auth') {
+      await renderOwuiAdminAuthTab(body);
+    } else if (tabId === 'admin-audit') {
+      await renderOwuiAuditTab(body);
+    }
+  }
+
+  async function renderOwuiAccountTab(body) {
+    const user = state.currentUser;
+    if (!user) return;
+
+    const secProfile = document.createElement('div');
+    secProfile.className = 'owui-section-title';
+    secProfile.textContent = 'Profile Information';
+    body.appendChild(secProfile);
+
+    const fName = makeOwuiInputField('Full Name', '', user.name);
+    const fEmail = makeOwuiInputField('Email Address', 'Encrypted at rest on server with AES-256-GCM.', user.email);
+    body.appendChild(fName.block);
+    body.appendChild(fEmail.block);
+
+    const btnSaveProf = document.createElement('button');
+    btnSaveProf.type = 'button';
+    btnSaveProf.className = 'btn btn-sm btn-primary';
+    btnSaveProf.textContent = 'Update Profile';
+    btnSaveProf.addEventListener('click', async function () {
+      try {
+        const res = await fetch('/api/auth/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: fName.input.value.trim(), email: fEmail.input.value.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+        state.currentUser = data.user;
+        updateTopbarUserUi(data.user);
+        showToast('Profile updated');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+    body.appendChild(btnSaveProf);
+
+    // Password change
+    const secPw = document.createElement('div');
+    secPw.className = 'owui-section-title';
+    secPw.textContent = 'Change Password';
+    body.appendChild(secPw);
+
+    const fCurPw = makeOwuiInputField('Current Password', '', '', { isPassword: true });
+    const fNewPw = makeOwuiInputField('New Password', 'Minimum 8 characters (salted scrypt hash).', '', { isPassword: true });
+    body.appendChild(fCurPw.block);
+    body.appendChild(fNewPw.block);
+
+    const btnPw = document.createElement('button');
+    btnPw.type = 'button';
+    btnPw.className = 'btn btn-sm btn-blue';
+    btnPw.textContent = 'Update Password';
+    btnPw.addEventListener('click', async function () {
+      try {
+        const res = await fetch('/api/auth/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword: fCurPw.input.value, newPassword: fNewPw.input.value })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Password update failed');
+        fCurPw.input.value = '';
+        fNewPw.input.value = '';
+        showToast('Password changed and session rotated');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+    body.appendChild(btnPw);
+
+    // Two-Factor Authentication (Offline TOTP)
+    const secMfa = document.createElement('div');
+    secMfa.className = 'owui-section-title';
+    secMfa.textContent = 'Multi-Factor Authentication (Offline TOTP)';
+    body.appendChild(secMfa);
+
+    const mfaHost = document.createElement('div');
+    if (user.mfaEnabled) {
+      mfaHost.innerHTML = '<div class="muted-hint" style="margin-bottom:8px;">TOTP Authenticator is <strong>enabled</strong> on your account.</div>';
+      const btnDis = document.createElement('button');
+      btnDis.type = 'button';
+      btnDis.className = 'btn btn-sm btn-red';
+      btnDis.textContent = 'Disable Authenticator';
+      btnDis.addEventListener('click', async function () {
+        const res = await fetch('/api/auth/mfa/disable', { method: 'POST' });
+        const d = await res.json();
+        if (res.ok && d.ok) {
+          state.currentUser = d.user;
+          showToast('TOTP disabled');
+          renderOwuiTab('account');
+        }
+      });
+      mfaHost.appendChild(btnDis);
+    } else {
+      const btnSetup = document.createElement('button');
+      btnSetup.type = 'button';
+      btnSetup.className = 'btn btn-sm';
+      btnSetup.textContent = 'Set Up Authenticator Secret';
+      btnSetup.addEventListener('click', async function () {
+        const res = await fetch('/api/auth/mfa/setup', { method: 'POST' });
+        const d = await res.json();
+        if (!res.ok || !d.ok) return;
+        mfaHost.innerHTML = '';
+        const box = document.createElement('div');
+        box.style.background = '#1f1f23';
+        box.style.padding = '10px 12px';
+        box.style.borderRadius = '8px';
+        box.innerHTML =
+          '<div class="owui-row-title">Authenticator Setup Key</div>' +
+          '<div class="owui-row-desc" style="margin-bottom:6px;">Add this Base32 key to any standard TOTP app: <code style="color:#38bdf8;">' + VLP.escapeHtml(d.secret) + '</code></div>';
+        const codeInput = document.createElement('input');
+        codeInput.className = 'owui-input textarea-mono';
+        codeInput.placeholder = 'Enter 6-digit verification code';
+        codeInput.style.marginBottom = '8px';
+        const verifyBtn = document.createElement('button');
+        verifyBtn.type = 'button';
+        verifyBtn.className = 'btn btn-sm btn-primary';
+        verifyBtn.textContent = 'Verify & Enable MFA';
+        verifyBtn.addEventListener('click', async function () {
+          const er = await fetch('/api/auth/mfa/enable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: codeInput.value.trim() })
+          });
+          const ed = await er.json();
+          if (!er.ok || !ed.ok) { showToast(ed.error || 'Verification failed', true); return; }
+          state.currentUser = ed.user;
+          showToast('Two-Factor Authentication enabled!');
+          renderOwuiTab('account');
+        });
+        box.appendChild(codeInput);
+        box.appendChild(verifyBtn);
+        mfaHost.appendChild(box);
+      });
+      mfaHost.appendChild(btnSetup);
+    }
+    body.appendChild(mfaHost);
+
+    // Personal API Key section
+    if ((state.publicConfig && state.publicConfig.enableApiKeys) || user.role === 'admin') {
+      const secKey = document.createElement('div');
+      secKey.className = 'owui-section-title';
+      secKey.textContent = 'API Keys';
+      body.appendChild(secKey);
+
+      const keyRow = document.createElement('div');
+      keyRow.style.display = 'flex';
+      keyRow.style.gap = '8px';
+      keyRow.style.alignItems = 'center';
+      keyRow.style.flexWrap = 'wrap';
+
+      const keyOut = document.createElement('input');
+      keyOut.className = 'owui-input textarea-mono';
+      keyOut.readOnly = true;
+      keyOut.style.maxWidth = '380px';
+      keyOut.placeholder = user.hasApiKey ? 'API key is configured (HMAC-SHA256 hashed)' : 'No API key generated yet';
+
+      const genBtn = document.createElement('button');
+      genBtn.type = 'button';
+      genBtn.className = 'btn btn-sm btn-blue';
+      genBtn.textContent = user.hasApiKey ? 'Rotate API Key' : 'Generate API Key';
+      genBtn.addEventListener('click', async function () {
+        const res = await fetch('/api/auth/api-key', { method: 'POST' });
+        const d = await res.json();
+        if (res.ok && d.ok) {
+          keyOut.value = d.apiKey;
+          state.currentUser.hasApiKey = true;
+          showToast('New API key created (copy it now)');
+        }
+      });
+
+      const revBtn = document.createElement('button');
+      revBtn.type = 'button';
+      revBtn.className = 'btn btn-sm btn-red';
+      revBtn.textContent = 'Revoke';
+      revBtn.addEventListener('click', async function () {
+        await fetch('/api/auth/api-key', { method: 'DELETE' });
+        state.currentUser.hasApiKey = false;
+        keyOut.value = '';
+        keyOut.placeholder = 'No API key generated yet';
+        showToast('API key revoked');
+      });
+
+      keyRow.appendChild(keyOut);
+      keyRow.appendChild(genBtn);
+      keyRow.appendChild(revBtn);
+      body.appendChild(keyRow);
+    }
+  }
+
+  function renderOwuiDataTab(body) {
+    const sec = document.createElement('div');
+    sec.className = 'owui-section-title';
+    sec.textContent = 'Workspace Backups & Student Document Exports';
+    body.appendChild(sec);
+
+    const desc = document.createElement('p');
+    desc.className = 'owui-row-desc';
+    desc.textContent = 'Your autosave and named snapshots are isolated to your account directory under /data/users/.';
+    body.appendChild(desc);
+
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = '8px';
+    row.style.flexWrap = 'wrap';
+    row.style.marginTop = '12px';
+
+    const bSess = document.createElement('button');
+    bSess.type = 'button';
+    bSess.className = 'btn btn-sm btn-blue';
+    bSess.textContent = 'Manage Private & Shared Snapshots';
+    bSess.addEventListener('click', function () {
+      closeModal('accountAdminModal');
+      $('btnOpenSessions').click();
+    });
+
+    const bPdf = document.createElement('button');
+    bPdf.type = 'button';
+    bPdf.className = 'btn btn-sm btn-primary';
+    bPdf.textContent = 'Export Student PDF (Full Manual)';
+    bPdf.addEventListener('click', function () {
+      $('exportScopeSelect').value = 'full';
+      $('exportFormatSelect').value = 'pdf';
+      exportDocument();
+    });
+
+    const bZip = document.createElement('button');
+    bZip.type = 'button';
+    bZip.className = 'btn btn-sm';
+    bZip.textContent = 'Export VLP ZIP Archive';
+    bZip.addEventListener('click', exportVlpZip);
+
+    row.appendChild(bSess);
+    row.appendChild(bPdf);
+    row.appendChild(bZip);
+    body.appendChild(row);
+  }
+
+  function renderOwuiAboutTab(body) {
+    body.innerHTML =
+      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.0-beta)</div>' +
+      '<p class="owui-row-desc" style="font-size:12.5px; line-height:1.55;">100% air-gapped, deterministic authoring studio supporting VLP HTML5/XML packages, Student Exports (.pdf, .html, .mdx, .rtf), and multi-user local accounts.</p>' +
+      '<div class="owui-section-title">PII &amp; Credential Security Architecture</div>' +
+      '<ul style="font-size:12.5px; color:#d4d4d8; line-height:1.65; padding-left:18px;">' +
+      '<li><strong>Password Storage:</strong> Salted <code>scrypt</code> (32-byte random salt, N=16384, r=8, p=1) verified with constant-time <code>timingSafeEqual</code>.</li>' +
+      '<li><strong>PII Encryption at Rest:</strong> Names, emails, usernames, OAuth secrets, and LDAP bind credentials encrypted on disk via <strong>AES-256-GCM</strong> with per-record random IV &amp; authentication tag.</li>' +
+      '<li><strong>Blind Lookup Indexes:</strong> Email &amp; username uniqueness checked using keyed <strong>HMAC-SHA256</strong> blind indexes without exposing plaintext PII.</li>' +
+      '<li><strong>Session Security:</strong> HMAC-SHA256 signed <code>HttpOnly; SameSite=Strict</code> session cookies with password/role-change session version revocation and login brute-force throttling.</li>' +
+      '</ul>';
+  }
+
+  async function renderOwuiAdminUsersTab(body) {
+    const [uRes, gRes] = await Promise.all([fetch('/api/admin/users'), fetch('/api/admin/groups')]);
+    const uJson = await uRes.json();
+    const gJson = await gRes.json();
+    const users = uJson.users || [];
+    const groups = gJson.groups || [];
+
+    const secNew = document.createElement('div');
+    secNew.className = 'owui-section-title';
+    secNew.textContent = 'Create Local User Account';
+    body.appendChild(secNew);
+
+    const grid = document.createElement('div');
+    grid.className = 'owui-grid-2';
+    const inName = makeOwuiInputField('Full Name', '', '', { placeholder: 'Student or Instructor Name' });
+    const inEmail = makeOwuiInputField('Email', '', '', { placeholder: 'user@lab.local' });
+    const inUsername = makeOwuiInputField('Username', '', '', { placeholder: 'jdoe' });
+    const inPw = makeOwuiInputField('Initial Password', '', '', { isPassword: true, placeholder: 'Min 8 characters' });
+    const inRole = makeOwuiSelectRow('Role', '', 'user', [
+      { value: 'user', label: 'user' },
+      { value: 'admin', label: 'admin' },
+      { value: 'pending', label: 'pending' }
+    ]);
+    const groupOpts = [{ value: '', label: 'None' }].concat(groups.map(function (g) { return { value: g.id, label: g.name }; }));
+    const inGrp = makeOwuiSelectRow('Group', '', '', groupOpts);
+
+    grid.appendChild(inName.block);
+    grid.appendChild(inEmail.block);
+    grid.appendChild(inUsername.block);
+    grid.appendChild(inPw.block);
+    grid.appendChild(inRole.row);
+    grid.appendChild(inGrp.row);
+    body.appendChild(grid);
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn btn-sm btn-primary';
+    addBtn.textContent = '+ Create Account';
+    addBtn.addEventListener('click', async function () {
+      try {
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: inName.input.value.trim(),
+            email: inEmail.input.value.trim(),
+            username: inUsername.input.value.trim(),
+            password: inPw.input.value,
+            role: inRole.select.value,
+            groupId: inGrp.select.value
+          })
+        });
+        const d = await res.json();
+        if (!res.ok || !d.ok) throw new Error(d.error || 'Failed to create user');
+        showToast('Created account: ' + d.user.username);
+        renderOwuiTab('admin-users');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+    body.appendChild(addBtn);
+
+    const secList = document.createElement('div');
+    secList.className = 'owui-section-title';
+    secList.textContent = 'Registered Accounts (' + users.length + ')';
+    body.appendChild(secList);
+
+    const table = document.createElement('table');
+    table.className = 'owui-table';
+    table.innerHTML = '<thead><tr><th>Name</th><th>Email / Username</th><th>Role</th><th>Group</th><th>Actions</th></tr></thead><tbody></tbody>';
+    const tbody = table.querySelector('tbody');
+
+    users.forEach(function (u) {
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      tdName.textContent = u.name + (u.mfaEnabled ? ' [MFA]' : '');
+      const tdEmail = document.createElement('td');
+      tdEmail.innerHTML = '<div>' + VLP.escapeHtml(u.email) + '</div><div class="owui-row-desc">@' + VLP.escapeHtml(u.username) + '</div>';
+
+      const tdRole = document.createElement('td');
+      const rSel = document.createElement('select');
+      rSel.className = 'owui-select owui-select-compact';
+      ['pending', 'user', 'admin'].forEach(function (rVal) {
+        const o = document.createElement('option');
+        o.value = rVal;
+        o.textContent = rVal;
+        if (u.role === rVal) o.selected = true;
+        rSel.appendChild(o);
+      });
+      rSel.addEventListener('change', async function () {
+        const res = await fetch('/api/admin/users/' + encodeURIComponent(u.id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: rSel.value })
+        });
+        const d = await res.json();
+        if (!res.ok || !d.ok) { showToast(d.error || 'Failed', true); renderOwuiTab('admin-users'); return; }
+        showToast('Updated role for ' + u.username);
+      });
+      tdRole.appendChild(rSel);
+
+      const tdGrp = document.createElement('td');
+      const gSel = document.createElement('select');
+      gSel.className = 'owui-select owui-select-compact';
+      groupOpts.forEach(function (go) {
+        const o = document.createElement('option');
+        o.value = go.value;
+        o.textContent = go.label;
+        if (u.groupId === go.value) o.selected = true;
+        gSel.appendChild(o);
+      });
+      gSel.addEventListener('change', async function () {
+        await fetch('/api/admin/users/' + encodeURIComponent(u.id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupId: gSel.value })
+        });
+        showToast('Updated group assignment');
+      });
+      tdGrp.appendChild(gSel);
+
+      const tdAct = document.createElement('td');
+      tdAct.style.display = 'flex';
+      tdAct.style.gap = '6px';
+      const pwBtn = makeTinyBtn('Reset PW', async function () {
+        const np = window.prompt('Enter new password (min 8 chars) for ' + u.username + ':');
+        if (!np) return;
+        const res = await fetch('/api/admin/users/' + encodeURIComponent(u.id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword: np })
+        });
+        const d = await res.json();
+        if (!res.ok || !d.ok) showToast(d.error || 'Reset failed', true);
+        else showToast('Password reset for ' + u.username);
+      });
+      tdAct.appendChild(pwBtn);
+
+      if (u.id !== state.currentUser.id) {
+        const delBtn = makeTinyBtn('Delete', async function () {
+          const res = await fetch('/api/admin/users/' + encodeURIComponent(u.id), { method: 'DELETE' });
+          const d = await res.json();
+          if (!res.ok || !d.ok) { showToast(d.error || 'Delete failed', true); return; }
+          showToast('Deleted user ' + u.username);
+          renderOwuiTab('admin-users');
+        });
+        tdAct.appendChild(delBtn);
+      }
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdEmail);
+      tr.appendChild(tdRole);
+      tr.appendChild(tdGrp);
+      tr.appendChild(tdAct);
+      tbody.appendChild(tr);
+    });
+
+    body.appendChild(table);
+  }
+
+  async function renderOwuiAdminGroupsTab(body) {
+    const gRes = await fetch('/api/admin/groups');
+    const gJson = await gRes.json();
+    const groups = gJson.groups || [];
+
+    const sec = document.createElement('div');
+    sec.className = 'owui-section-title';
+    sec.textContent = 'Create Permission Group';
+    body.appendChild(sec);
+
+    const gName = makeOwuiInputField('Group Name', '', '', { placeholder: 'Instructors / Lab Cohort A' });
+    const gDesc = makeOwuiInputField('Description', '', '', { placeholder: 'Optional description' });
+    body.appendChild(gName.block);
+    body.appendChild(gDesc.block);
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn btn-sm btn-primary';
+    addBtn.textContent = '+ Create Group';
+    addBtn.addEventListener('click', async function () {
+      const res = await fetch('/api/admin/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: gName.input.value.trim(), description: gDesc.input.value.trim() })
+      });
+      const d = await res.json();
+      if (!res.ok || !d.ok) { showToast(d.error || 'Failed', true); return; }
+      showToast('Created group: ' + d.group.name);
+      renderOwuiTab('admin-groups');
+    });
+    body.appendChild(addBtn);
+
+    const secList = document.createElement('div');
+    secList.className = 'owui-section-title';
+    secList.textContent = 'Groups (' + groups.length + ')';
+    body.appendChild(secList);
+
+    if (!groups.length) {
+      const hint = document.createElement('div');
+      hint.className = 'owui-row-desc';
+      hint.textContent = 'No custom groups defined yet.';
+      body.appendChild(hint);
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'owui-table';
+    table.innerHTML = '<thead><tr><th>Name</th><th>Description</th><th>Action</th></tr></thead><tbody></tbody>';
+    const tbody = table.querySelector('tbody');
+    groups.forEach(function (g) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td><strong>' + VLP.escapeHtml(g.name) + '</strong></td><td class="owui-row-desc">' + VLP.escapeHtml(g.description || '-') + '</td>';
+      const td = document.createElement('td');
+      td.appendChild(makeTinyBtn('Delete', async function () {
+        await fetch('/api/admin/groups/' + encodeURIComponent(g.id), { method: 'DELETE' });
+        renderOwuiTab('admin-groups');
+      }));
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    });
+    body.appendChild(table);
+  }
+
+  async function renderOwuiAdminAuthTab(body) {
+    const [cfgRes, grpRes] = await Promise.all([fetch('/api/admin/auth-config'), fetch('/api/admin/groups')]);
+    const cfgJson = await cfgRes.json();
+    const grpJson = await grpRes.json();
+    const cfg = cfgJson.config || {};
+    const groups = grpJson.groups || [];
+    const groupOpts = [{ value: '', label: 'None' }].concat(groups.map(function (g) { return { value: g.id, label: g.name }; }));
+
+    // User Access
+    const s1 = document.createElement('div');
+    s1.className = 'owui-section-title';
+    s1.textContent = 'User Access';
+    body.appendChild(s1);
+
+    const cDefaultRole = makeOwuiSelectRow('Default User Role', 'Role assigned to new users when they create an account.', cfg.defaultUserRole || 'pending', [
+      { value: 'pending', label: 'pending' },
+      { value: 'user', label: 'user' },
+      { value: 'admin', label: 'admin' }
+    ]);
+    const cDefaultGrp = makeOwuiSelectRow('Default Group', 'Group assigned to new users by default.', cfg.defaultGroupId || '', groupOpts);
+    const cLoginForm = makeOwuiSwitchRow('Login Form', 'Show email and password sign-in on the login page. Set up SSO or LDAP before disabling. Disabling also blocks local sign-ups; password API access is unchanged.', cfg.enableLoginForm !== false);
+    const cSignUp = makeOwuiSwitchRow('New Sign Ups', 'Allow new users to create accounts.', cfg.enableSignUp !== false);
+    const cApiKeys = makeOwuiSwitchRow('API Keys', 'Allow users to create API keys for programmatic access.', Boolean(cfg.enableApiKeys));
+    const cJwtExp = makeOwuiInputField('JWT Expiration', "Valid time units: 's', 'm', 'h', 'd', 'w' or '-1' for no expiration.", cfg.jwtExpiration || '4w');
+
+    body.appendChild(cDefaultRole.row);
+    body.appendChild(cDefaultGrp.row);
+    body.appendChild(cLoginForm.row);
+    body.appendChild(cSignUp.row);
+    body.appendChild(cApiKeys.row);
+    body.appendChild(cJwtExp.block);
+
+    // Multi-Factor Authentication
+    const s2 = document.createElement('div');
+    s2.className = 'owui-section-title';
+    s2.textContent = 'Multi-Factor Authentication';
+    body.appendChild(s2);
+
+    const cReqMfa = makeOwuiSwitchRow('Require an authenticator for all users', 'Changes sign out all devices. Users enroll on their next sign-in.', Boolean(cfg.requireMfa));
+    body.appendChild(cReqMfa.row);
+
+    // Pending Accounts
+    const s3 = document.createElement('div');
+    s3.className = 'owui-section-title';
+    s3.textContent = 'Pending Accounts';
+    body.appendChild(s3);
+
+    const cAdminDetails = makeOwuiSwitchRow('Admin Details', 'Show admin contact details while an account waits for approval.', cfg.showAdminDetails !== false);
+    const cAdminEmail = makeOwuiInputField('Admin Contact Email', 'Email shown in the pending account overlay. Leave empty to use first admin user.', cfg.adminContactEmail || '', { placeholder: 'Leave empty to use first admin user' });
+    const cOverlayTitle = makeOwuiInputField('Pending User Overlay Title', 'Custom title shown while an account waits for approval.', cfg.pendingOverlayTitle || '', { placeholder: 'Enter a title for the pending user info overlay. Leave empty for default.' });
+    const cOverlayContent = makeOwuiInputField('Pending User Overlay Content', 'Custom message shown while an account waits for approval.', cfg.pendingOverlayContent || '', { placeholder: 'Enter content for the pending user info overlay. Leave empty for default.' });
+
+    body.appendChild(cAdminDetails.row);
+    body.appendChild(cAdminEmail.block);
+    body.appendChild(cOverlayTitle.block);
+    body.appendChild(cOverlayContent.block);
+
+    // LDAP
+    const s4 = document.createElement('div');
+    s4.className = 'owui-section-title';
+    s4.textContent = 'LDAP';
+    body.appendChild(s4);
+
+    const cLdap = makeOwuiSwitchRow('LDAP', 'Allow users to authenticate with an LDAP directory.', Boolean(cfg.ldapEnabled));
+    body.appendChild(cLdap.row);
+
+    const ldapGrid = document.createElement('div');
+    ldapGrid.className = 'owui-grid-2' + (cfg.ldapEnabled ? '' : ' hidden');
+    const cLdapUrl = makeOwuiInputField('LDAP Server URL', '', cfg.ldapServerUrl || '', { placeholder: 'ldaps://ldap.example.local:636' });
+    const cLdapBindDn = makeOwuiInputField('Bind DN', '', cfg.ldapBindDn || '', { placeholder: 'cn=readonly,dc=lab,dc=local' });
+    const cLdapBindPw = makeOwuiInputField('Bind Password', cfg.hasLdapBindPassword ? 'Encrypted secret saved (leave blank to keep).' : '', '', { isPassword: true, placeholder: 'Enter Bind Password' });
+    const cLdapBase = makeOwuiInputField('Search Base', '', cfg.ldapSearchBase || '', { placeholder: 'ou=users,dc=lab,dc=local' });
+    ldapGrid.appendChild(cLdapUrl.block);
+    ldapGrid.appendChild(cLdapBindDn.block);
+    ldapGrid.appendChild(cLdapBindPw.block);
+    ldapGrid.appendChild(cLdapBase.block);
+    body.appendChild(ldapGrid);
+    cLdap.input.addEventListener('change', function () {
+      ldapGrid.classList.toggle('hidden', !cLdap.input.checked);
+    });
+
+    // OAuth / OIDC
+    const s5 = document.createElement('div');
+    s5.className = 'owui-section-title';
+    s5.textContent = 'OAuth / OIDC';
+    body.appendChild(s5);
+
+    const oauthLocked = !cfg.enableOauthPersistentConfig;
+    const warnBanner = document.createElement('div');
+    warnBanner.className = 'owui-banner-warn' + (oauthLocked ? '' : ' hidden');
+    warnBanner.innerHTML = '<span>These settings are read from environment variables and cannot be edited here while <strong>ENABLE_OAUTH_PERSISTENT_CONFIG</strong> is disabled.</span>';
+    const btnUnlockOauth = document.createElement('button');
+    btnUnlockOauth.type = 'button';
+    btnUnlockOauth.className = 'btn btn-xs';
+    btnUnlockOauth.textContent = 'Enable Persistent Config';
+    warnBanner.appendChild(btnUnlockOauth);
+    body.appendChild(warnBanner);
+
+    const cOauthToggle = makeOwuiSwitchRow('OAuth / OIDC', 'Allow users to authenticate with an OAuth / OIDC provider. Save changes to apply connection settings.', Boolean(cfg.oauthEnabled), oauthLocked);
+    body.appendChild(cOauthToggle.row);
+
+    const oauthGrid = document.createElement('div');
+    oauthGrid.className = 'owui-grid-2';
+    const cOauthName = makeOwuiInputField('Provider Name', 'Display name shown for the OAuth provider.', cfg.oauthProviderName || 'SSO', { disabled: oauthLocked });
+    const cOauthUrl = makeOwuiInputField('Provider URL', 'OpenID discovery URL for this provider.', cfg.oauthProviderUrl || '', { disabled: oauthLocked, placeholder: 'idp.example.com/.well-known/openid-configuration' });
+    const cOauthClientId = makeOwuiInputField('Client ID', 'OAuth client identifier from the provider.', cfg.oauthClientId || '', { disabled: oauthLocked, placeholder: 'Enter Client ID' });
+    const cOauthSecret = makeOwuiInputField('Client Secret', cfg.hasOauthClientSecret ? 'Encrypted secret stored (AES-256-GCM).' : 'OAuth client secret from the provider.', '', { isPassword: true, disabled: oauthLocked, placeholder: cfg.hasOauthClientSecret ? '(Saved encrypted — leave blank to keep)' : 'Enter Client Secret' });
+    const cOauthRedir = makeOwuiInputField('Redirect URI', 'Callback URL registered with the provider.', cfg.oauthRedirectUri || '', { disabled: oauthLocked, placeholder: 'Enter Redirect URI' });
+    const cOauthScopes = makeOwuiInputField('Scopes', 'OAuth scopes requested during sign-in.', cfg.oauthScopes || 'openid email profile', { disabled: oauthLocked });
+    const cOauthEmailClaim = makeOwuiInputField('Email Claim', 'Claim used as the user email address.', cfg.oauthEmailClaim || 'email', { disabled: oauthLocked });
+    const cOauthNameClaim = makeOwuiInputField('Username Claim', 'Claim used as the display name.', cfg.oauthUsernameClaim || 'name', { disabled: oauthLocked });
+    const cOauthPicClaim = makeOwuiInputField('Picture Claim', 'Claim used as the profile picture URL.', cfg.oauthPictureClaim || 'picture', { disabled: oauthLocked });
+    const cOauthSubClaim = makeOwuiInputField('Sub Claim', 'Claim used as the stable user identifier.', cfg.oauthSubClaim || 'sub', { disabled: oauthLocked });
+
+    [cOauthName, cOauthUrl, cOauthClientId, cOauthSecret, cOauthRedir, cOauthScopes, cOauthEmailClaim, cOauthNameClaim, cOauthPicClaim, cOauthSubClaim].forEach(function (f) {
+      oauthGrid.appendChild(f.block);
+    });
+    body.appendChild(oauthGrid);
+
+    const cOauthSignup = makeOwuiSwitchRow('OAuth Signup', 'Allow users to create accounts through OAuth.', Boolean(cfg.oauthSignup), oauthLocked);
+    const cOauthMerge = makeOwuiSwitchRow('Merge Accounts by Email', 'Link OAuth sign-ins to existing accounts with the same email.', Boolean(cfg.oauthMergeByEmail), oauthLocked);
+    const cOauthAuto = makeOwuiSwitchRow('Auto Redirect', 'Send users directly to the OAuth provider from the sign-in page.', Boolean(cfg.oauthAutoRedirect), oauthLocked);
+    const cOauthDomains = makeOwuiInputField('Allowed Domains', 'Email domains allowed to sign in with OAuth.', cfg.oauthAllowedDomains || '*', { disabled: oauthLocked });
+    const cOauthRoleMap = makeOwuiSwitchRow('Role Mapping', 'Map OAuth claims to user roles.', Boolean(cfg.oauthRoleMapping), oauthLocked);
+    const cOauthGrpMap = makeOwuiSwitchRow('Group Mapping', 'Map OAuth claims to user groups.', Boolean(cfg.oauthGroupMapping), oauthLocked);
+    const cOauthUpdEmail = makeOwuiSwitchRow('Update Email', 'Refresh the account email from OAuth on sign-in.', Boolean(cfg.oauthUpdateEmail), oauthLocked);
+    const cOauthUpdName = makeOwuiSwitchRow('Update Name', 'Refresh the account name from OAuth on sign-in.', Boolean(cfg.oauthUpdateName), oauthLocked);
+    const cOauthUpdPic = makeOwuiSwitchRow('Update Picture', 'Refresh the account picture from OAuth on sign-in.', Boolean(cfg.oauthUpdatePicture), oauthLocked);
+
+    body.appendChild(cOauthSignup.row);
+    body.appendChild(cOauthMerge.row);
+    body.appendChild(cOauthAuto.row);
+    body.appendChild(cOauthDomains.block);
+    body.appendChild(cOauthRoleMap.row);
+    body.appendChild(cOauthGrpMap.row);
+    body.appendChild(cOauthUpdEmail.row);
+    body.appendChild(cOauthUpdName.row);
+    body.appendChild(cOauthUpdPic.row);
+
+    let persistentEnabledFlag = Boolean(cfg.enableOauthPersistentConfig);
+    btnUnlockOauth.addEventListener('click', function () {
+      persistentEnabledFlag = true;
+      warnBanner.classList.add('hidden');
+      [cOauthToggle.input, cOauthName.input, cOauthUrl.input, cOauthClientId.input, cOauthSecret.input, cOauthRedir.input, cOauthScopes.input, cOauthEmailClaim.input, cOauthNameClaim.input, cOauthPicClaim.input, cOauthSubClaim.input, cOauthSignup.input, cOauthMerge.input, cOauthAuto.input, cOauthDomains.input, cOauthRoleMap.input, cOauthGrpMap.input, cOauthUpdEmail.input, cOauthUpdName.input, cOauthUpdPic.input].forEach(function (el) {
+        el.disabled = false;
+      });
+      showToast('Persistent OAuth configuration unlocked (click Save to persist)');
+    });
+
+    $('owuiContentFooter').classList.remove('hidden');
+    currentAdminSaveHandler = async function () {
+      const payload = {
+        defaultUserRole: cDefaultRole.select.value,
+        defaultGroupId: cDefaultGrp.select.value,
+        enableLoginForm: cLoginForm.input.checked,
+        enableSignUp: cSignUp.input.checked,
+        enableApiKeys: cApiKeys.input.checked,
+        jwtExpiration: cJwtExp.input.value.trim() || '4w',
+        requireMfa: cReqMfa.input.checked,
+        showAdminDetails: cAdminDetails.input.checked,
+        adminContactEmail: cAdminEmail.input.value.trim(),
+        pendingOverlayTitle: cOverlayTitle.input.value,
+        pendingOverlayContent: cOverlayContent.input.value,
+        ldapEnabled: cLdap.input.checked,
+        ldapServerUrl: cLdapUrl.input.value.trim(),
+        ldapBindDn: cLdapBindDn.input.value.trim(),
+        ldapBindPassword: cLdapBindPw.input.value,
+        ldapSearchBase: cLdapBase.input.value.trim(),
+        enableOauthPersistentConfig: persistentEnabledFlag,
+        oauthEnabled: cOauthToggle.input.checked,
+        oauthProviderName: cOauthName.input.value.trim(),
+        oauthProviderUrl: cOauthUrl.input.value.trim(),
+        oauthClientId: cOauthClientId.input.value.trim(),
+        oauthClientSecret: cOauthSecret.input.value,
+        oauthRedirectUri: cOauthRedir.input.value.trim(),
+        oauthScopes: cOauthScopes.input.value.trim(),
+        oauthEmailClaim: cOauthEmailClaim.input.value.trim(),
+        oauthUsernameClaim: cOauthNameClaim.input.value.trim(),
+        oauthPictureClaim: cOauthPicClaim.input.value.trim(),
+        oauthSubClaim: cOauthSubClaim.input.value.trim(),
+        oauthSignup: cOauthSignup.input.checked,
+        oauthMergeByEmail: cOauthMerge.input.checked,
+        oauthAutoRedirect: cOauthAuto.input.checked,
+        oauthAllowedDomains: cOauthDomains.input.value.trim(),
+        oauthRoleMapping: cOauthRoleMap.input.checked,
+        oauthGroupMapping: cOauthGrpMap.input.checked,
+        oauthUpdateEmail: cOauthUpdEmail.input.checked,
+        oauthUpdateName: cOauthUpdName.input.checked,
+        oauthUpdatePicture: cOauthUpdPic.input.checked
+      };
+      const res = await fetch('/api/admin/auth-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        showToast(data.error || 'Failed to save Authentication settings', true);
+        return;
+      }
+      showToast('Authentication settings saved securely');
+      const stRes = await fetch('/api/auth/status');
+      const stJson = await stRes.json();
+      if (stJson && stJson.publicConfig) state.publicConfig = stJson.publicConfig;
+    };
+  }
+
+  async function renderOwuiAuditTab(body) {
+    const res = await fetch('/api/admin/audit');
+    const json = await res.json();
+    const events = json.events || [];
+    const hint = document.createElement('p');
+    hint.className = 'owui-row-desc';
+    hint.textContent = 'Sanitized security events (user IDs & actions only — zero plaintext PII or credentials logged).';
+    body.appendChild(hint);
+
+    const table = document.createElement('table');
+    table.className = 'owui-table';
+    table.innerHTML = '<thead><tr><th>Timestamp</th><th>Event</th><th>Actor ID</th><th>Detail</th></tr></thead><tbody></tbody>';
+    const tbody = table.querySelector('tbody');
+    events.slice(0, 50).forEach(function (ev) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="owui-row-desc">' + VLP.escapeHtml((ev.timestamp || '').replace('T', ' ').slice(0, 19)) + '</td>' +
+        '<td><strong>' + VLP.escapeHtml(ev.event) + '</strong></td>' +
+        '<td class="owui-row-desc">' + VLP.escapeHtml(String(ev.actorId || '').slice(0, 14)) + '</td>' +
+        '<td class="owui-row-desc">' + VLP.escapeHtml(ev.detail || '') + '</td>';
+      tbody.appendChild(tr);
+    });
+    body.appendChild(table);
+  }
+
+  function bindAuthAndAdminEvents() {
+    $('btnToggleAuthPw').addEventListener('click', function () {
+      const pw = $('authPasswordInput');
+      pw.type = pw.type === 'password' ? 'text' : 'password';
+    });
+
+    $('btnToggleAuthMode').addEventListener('click', function () {
+      configureAuthGateView(currentAuthMode === 'signup' ? 'login' : 'signup', state.publicConfig);
+    });
+
+    $('btnPendingRefresh').addEventListener('click', async function () {
+      await checkAuthAndLoadWorkspace();
+    });
+
+    $('btnPendingSignOut').addEventListener('click', async function () {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      state.currentUser = null;
+      state.authLocked = true;
+      updateTopbarUserUi(null);
+      await checkAuthAndLoadWorkspace();
+    });
+
+    $('authGateForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      setAuthError('');
+      const isSignup = currentAuthMode === 'setup' || currentAuthMode === 'signup';
+      try {
+        if (isSignup) {
+          const res = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: $('authNameInput').value.trim(),
+              email: $('authEmailInput').value.trim(),
+              username: $('authUsernameInput').value.trim(),
+              password: $('authPasswordInput').value
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || 'Account creation failed');
+          $('authPasswordInput').value = '';
+          await checkAuthAndLoadWorkspace();
+          showToast(currentAuthMode === 'setup' ? 'Administrator account created!' : 'Account created!');
+        } else {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              identifier: $('authIdentifierInput').value.trim(),
+              password: $('authPasswordInput').value,
+              totpCode: $('authTotpInput').value.trim()
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            if (data.mfaRequired) $('authMfaField').classList.remove('hidden');
+            throw new Error(data.error || 'Sign-in failed');
+          }
+          $('authPasswordInput').value = '';
+          await checkAuthAndLoadWorkspace();
+          showToast('Signed in');
+        }
+      } catch (err) {
+        setAuthError(err.message);
+      }
+    });
+
+    $('owuiNavSearch').addEventListener('input', function () {
+      const q = $('owuiNavSearch').value.trim().toLowerCase();
+      document.querySelectorAll('[data-owui-tab]').forEach(function (btn) {
+        btn.classList.toggle('hidden', Boolean(q && !btn.textContent.toLowerCase().includes(q)));
+      });
+    });
+
+    document.querySelectorAll('[data-owui-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        renderOwuiTab(btn.dataset.owuiTab);
+      });
+    });
+
+    $('btnSignOut').addEventListener('click', async function () {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      closeModal('accountAdminModal');
+      state.currentUser = null;
+      state.authLocked = true;
+      state.manual = null;
+      updateTopbarUserUi(null);
+      await checkAuthAndLoadWorkspace();
+      showToast('Signed out');
+    });
+
+    $('btnOwuiSaveFooter').addEventListener('click', function () {
+      if (typeof currentAdminSaveHandler === 'function') {
+        currentAdminSaveHandler();
+      }
+    });
+  }
+
+  async function loadUserWorkspace() {
+    state.authLocked = false;
+    state.undoStack = [];
+    state.redoStack = [];
+    updateUndoRedoButtons();
     await preloadBundledSvgAssets();
 
     let browserSaved = null;
     let serverSaved = null;
+    const slotKey = getUserAutosaveKey();
 
     try {
-      const idbRec = await idbGet('autosave');
+      const idbRec = await idbGet(slotKey);
       if (idbRec && idbRec.state && idbRec.state.manual) {
         browserSaved = idbRec.state;
       }
@@ -3029,6 +4245,55 @@
     if (!shouldHideGuideOnStartup()) {
       openTemplatesModal('guide');
     }
+  }
+
+  async function checkAuthAndLoadWorkspace() {
+    try {
+      const res = await fetch('/api/auth/status');
+      const status = await res.json();
+      state.publicConfig = status.publicConfig || {};
+      state.authNeedsSetup = Boolean(status.needsSetup);
+      state.currentUser = status.user || null;
+      updateTopbarUserUi(state.currentUser);
+
+      if (status.needsSetup) {
+        state.authLocked = true;
+        $('authGateOverlay').classList.add('open');
+        configureAuthGateView('setup', state.publicConfig);
+        return;
+      }
+      if (!status.authenticated || !status.user) {
+        state.authLocked = true;
+        $('authGateOverlay').classList.add('open');
+        configureAuthGateView('login', state.publicConfig);
+        return;
+      }
+      if (status.user.role === 'pending') {
+        state.authLocked = true;
+        $('authGateOverlay').classList.add('open');
+        configureAuthGateView('pending', state.publicConfig);
+        return;
+      }
+
+      $('authGateOverlay').classList.remove('open');
+      await loadUserWorkspace();
+      if (state.publicConfig && state.publicConfig.requireMfa && !status.user.mfaEnabled) {
+        openAccountAdminModal('account');
+        showToast('Administrator requires enabling an Authenticator (TOTP) under Multi-Factor Authentication', true);
+      }
+    } catch (_err) {
+      // Offline fallback without API server: allow local client-only workspace
+      $('authGateOverlay').classList.remove('open');
+      await loadUserWorkspace();
+    }
+  }
+
+  // =========================================================================
+  // Initialization
+  // =========================================================================
+  async function init() {
+    bindEvents();
+    await checkAuthAndLoadWorkspace();
   }
 
   init();

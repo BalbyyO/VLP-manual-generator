@@ -11,7 +11,7 @@
     <div class="topbar-left">
       <div class="brand-mark" aria-hidden="true">VLP</div>
       <span class="brand-title">VLP Manual HTML Formatter</span>
-      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • v0.2.1-beta</span>
+      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • v0.3.0-beta</span>
       <span id="saveStatusBadge" class="badge status-ok" title="Dual Auto-Save (Browser IndexedDB + Server Disk)">
         <span class="status-dot"></span>
         <span id="saveStatusText">Ready</span>
@@ -35,6 +35,25 @@
       </label>
       <button id="btnExportXml" class="btn btn-sm" title="Download VLP content.xml">Export XML</button>
       <button id="btnExportZip" class="btn btn-sm btn-primary" title="Download full VLP package (.zip with content.xml + images/)">Export VLP ZIP</button>
+      <div class="export-dropdown-group" title="Export student-ready documents (.pdf, .html, .mdx, .rtf)">
+        <select id="exportScopeSelect" class="export-select" aria-label="Export Scope">
+          <option value="full">Full Manual</option>
+          <option value="current">Current Page</option>
+        </select>
+        <select id="exportFormatSelect" class="export-select" aria-label="Export File Type">
+          <option value="pdf">.pdf (Student PDF)</option>
+          <option value="html">.html (Standalone Web)</option>
+          <option value="mdx">.mdx (MDX Markdown)</option>
+          <option value="rtf">.rtf (Rich Text / Word)</option>
+          <option value="print">Print / Save PDF...</option>
+        </select>
+        <button id="btnExportDocument" class="btn btn-xs btn-blue">Export File</button>
+      </div>
+      <button id="btnUserAccount" class="user-pill-btn hidden" title="Account &amp; Admin Settings">
+        <span id="userAvatarDot" class="user-avatar-dot">A</span>
+        <span id="userDisplayLabel">Account</span>
+        <span id="userRoleChip" class="role-chip">User</span>
+      </button>
     </div>
   </header>
 
@@ -489,12 +508,150 @@
 
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Saved Server Snapshots</span>
+            <span class="card-title">Your Private Snapshots</span>
             <button type="button" id="btnRefreshSnapshots" class="btn btn-xs">Refresh</button>
           </div>
           <div id="snapshotsList" class="muted-hint">Loading...</div>
         </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Shared Team Manuals (All Active Users)</span>
+            <div style="display:flex; gap:6px;">
+              <button type="button" id="btnShareCurrent" class="btn btn-xs btn-blue">Share Current Manual</button>
+              <button type="button" id="btnRefreshShared" class="btn btn-xs">Refresh</button>
+            </div>
+          </div>
+          <div id="sharedSnapshotsList" class="muted-hint">Loading...</div>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Auth Gate / First-Run Admin Bootstrap / Pending Account Overlay -->
+  <div id="authGateOverlay" class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
+    <div class="auth-card">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <div class="brand-mark" aria-hidden="true">VLP</div>
+        <div>
+          <h2 id="authGateTitle" style="margin:0;">Sign In to VLP Manual Generator</h2>
+          <div class="muted-hint">Air-Gapped Local Workspace • v0.3.0-beta</div>
+        </div>
+      </div>
+      <p id="authGateSubtitle" class="auth-sub"></p>
+      <div id="authGateError" class="auth-error hidden"></div>
+
+      <!-- Pending Account Overlay -->
+      <div id="authPendingView" class="hidden">
+        <div style="background:#232327; border:1px solid #3f3f46; border-radius:10px; padding:14px; margin-bottom:14px;">
+          <strong id="pendingOverlayHeading" style="display:block; margin-bottom:6px;">Account Pending Approval</strong>
+          <p id="pendingOverlayBody" style="margin:0; font-size:12.5px; color:#d4d4d8; line-height:1.5;">
+            Your account has been created and is waiting for administrator approval.
+          </p>
+          <p id="pendingAdminContact" class="muted-hint" style="margin:10px 0 0;"></p>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button type="button" id="btnPendingRefresh" class="btn btn-sm btn-blue">Check Status</button>
+          <button type="button" id="btnPendingSignOut" class="btn btn-sm">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Login / Signup / Bootstrap Form -->
+      <form id="authGateForm">
+        <div id="authSignupFields" class="hidden">
+          <div class="auth-field">
+            <label for="authNameInput">Full Name</label>
+            <input id="authNameInput" class="owui-input" type="text" placeholder="Jane Instructor" autocomplete="name" />
+          </div>
+          <div class="auth-field">
+            <label for="authEmailInput">Email Address</label>
+            <input id="authEmailInput" class="owui-input" type="email" placeholder="instructor@lab.local" autocomplete="email" />
+          </div>
+          <div class="auth-field">
+            <label for="authUsernameInput">Username</label>
+            <input id="authUsernameInput" class="owui-input" type="text" placeholder="jinstructor" autocomplete="username" />
+          </div>
+        </div>
+
+        <div id="authLoginFields">
+          <div class="auth-field">
+            <label for="authIdentifierInput">Email or Username</label>
+            <input id="authIdentifierInput" class="owui-input" type="text" placeholder="admin or admin@lab.local" autocomplete="username" />
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="authPasswordInput">Password</label>
+          <div class="owui-pw-wrap">
+            <input id="authPasswordInput" class="owui-input" type="password" placeholder="Minimum 8 characters" autocomplete="current-password" />
+            <button type="button" id="btnToggleAuthPw" class="owui-pw-eye" aria-label="Show password">&#128065;</button>
+          </div>
+        </div>
+
+        <div id="authMfaField" class="auth-field hidden">
+          <label for="authTotpInput">Authenticator 6-Digit Code</label>
+          <input id="authTotpInput" class="owui-input textarea-mono" type="text" maxlength="6" placeholder="123456" autocomplete="one-time-code" />
+        </div>
+
+        <div id="authSsoNotice" class="owui-banner-warn hidden" style="margin:8px 0 12px;">
+          <span id="authSsoLabel">SSO / LDAP configured by administrator (air-gapped offline host).</span>
+        </div>
+
+        <button type="submit" id="btnAuthSubmit" class="owui-save-btn" style="width:100%; padding:10px; margin-top:4px;">Sign In</button>
+      </form>
+
+      <div id="authModeToggleWrap" style="text-align:center; margin-top:14px; font-size:12px; color:#a1a1aa;">
+        <span id="authModePrompt">Need an account?</span>
+        <button type="button" id="btnToggleAuthMode" style="background:none; border:none; color:#60a5fa; font-weight:600; cursor:pointer; padding:0 4px;">Sign Up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Open WebUI-Style Account & Admin Settings Panel -->
+  <div id="accountAdminModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="owuiActiveTitle">
+    <div class="owui-modal">
+      <aside class="owui-sidebar" aria-label="Account and Admin Navigation">
+        <div class="owui-sidebar-top">
+          <button type="button" class="btn btn-xs" data-close-modal="accountAdminModal">&larr; Back</button>
+          <span style="font-size:12px; font-weight:700; color:#e4e4e7;">Settings</span>
+        </div>
+        <input id="owuiNavSearch" class="owui-search-input" type="text" placeholder="Search settings..." />
+        <div class="owui-nav-scroll">
+          <div class="owui-nav-heading">Personal</div>
+          <button type="button" class="owui-nav-btn active" data-owui-tab="account">Account</button>
+          <button type="button" class="owui-nav-btn" data-owui-tab="data">Data Controls</button>
+          <button type="button" class="owui-nav-btn" data-owui-tab="about">About</button>
+
+          <div id="owuiAdminNavSection" class="hidden">
+            <div class="owui-nav-heading">Admin &bull; System</div>
+            <button type="button" class="owui-nav-btn" data-owui-tab="admin-users">Users</button>
+            <button type="button" class="owui-nav-btn" data-owui-tab="admin-groups">Groups</button>
+            <button type="button" class="owui-nav-btn" data-owui-tab="admin-auth">Authentication</button>
+            <button type="button" class="owui-nav-btn" data-owui-tab="admin-audit">Security Audit</button>
+          </div>
+        </div>
+        <div class="owui-sidebar-footer">
+          <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+            <span id="owuiFooterAvatar" class="user-avatar-dot">U</span>
+            <div style="min-width:0;">
+              <div id="owuiFooterName" style="font-size:12px; font-weight:700; color:#f4f4f5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">User</div>
+              <div id="owuiFooterRole" style="font-size:10.5px; color:#a1a1aa; text-transform:uppercase;">user</div>
+            </div>
+          </div>
+          <button type="button" id="btnSignOut" class="btn btn-xs">Sign Out</button>
+        </div>
+      </aside>
+
+      <section class="owui-content">
+        <div class="owui-content-header">
+          <h3 id="owuiActiveTitle">Account</h3>
+          <button type="button" class="btn btn-xs" data-close-modal="accountAdminModal">Close</button>
+        </div>
+        <div id="owuiContentBody" class="owui-content-body"></div>
+        <div id="owuiContentFooter" class="owui-content-footer hidden">
+          <button type="button" id="btnOwuiSaveFooter" class="owui-save-btn">Save</button>
+        </div>
+      </section>
     </div>
   </div>
 

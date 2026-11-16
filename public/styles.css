@@ -995,3 +995,502 @@ button, input, textarea, select {
     min-height: 440px;
   }
 }
+
+/* =========================================================================
+ * v0.3.0-beta: Export File Dropdown, User Account Pill, Auth Gate & Open WebUI Panel
+ * ========================================================================= */
+.export-dropdown-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border-strong);
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.export-select {
+  background: transparent;
+  color: var(--app-text);
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+.export-select option {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.user-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border-strong);
+  color: var(--app-text);
+  border-radius: 9999px;
+  padding: 3px 10px 3px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.user-pill-btn:hover {
+  border-color: var(--app-accent);
+}
+
+.user-avatar-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--app-accent);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.role-chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.role-chip.role-admin {
+  background: rgba(220, 38, 38, 0.22);
+  color: #fca5a5;
+}
+
+.role-chip.role-pending {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+}
+
+/* Auth Gate & Pending Approval Fullscreen Backdrop */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 12, 0.94);
+  backdrop-filter: blur(8px);
+  z-index: 1500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-overlay.open {
+  display: flex;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #171717;
+  border: 1px solid #2a2a2e;
+  border-radius: 14px;
+  padding: 26px 28px;
+  color: #f4f4f5;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.72);
+}
+
+.auth-card h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.auth-sub {
+  margin: 0 0 18px;
+  font-size: 12.5px;
+  color: #a1a1aa;
+  line-height: 1.45;
+}
+
+.auth-field {
+  margin-bottom: 12px;
+}
+
+.auth-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d4d4d8;
+  margin-bottom: 5px;
+}
+
+.auth-error {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+/* Open WebUI-Style Dark Account & Admin Settings Modal */
+.owui-modal {
+  max-width: 1120px;
+  height: 86vh;
+  max-height: 820px;
+  background: #141414;
+  border: 1px solid #27272a;
+  border-radius: 14px;
+  color: #f4f4f5;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  width: 100%;
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.78);
+}
+
+.owui-sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  background: #18181b;
+  border-right: 1px solid #27272a;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 10px;
+}
+
+.owui-sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 10px;
+}
+
+.owui-search-input {
+  width: 100%;
+  background: #111113;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #f4f4f5;
+  font-size: 12.5px;
+  margin-bottom: 10px;
+  outline: none;
+}
+
+.owui-search-input:focus {
+  border-color: #52525b;
+}
+
+.owui-nav-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.owui-nav-heading {
+  font-size: 11px;
+  font-weight: 700;
+  color: #71717a;
+  padding: 10px 8px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.owui-nav-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #d4d4d8;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 2px;
+}
+
+.owui-nav-btn:hover {
+  background: #232327;
+  color: #ffffff;
+}
+
+.owui-nav-btn.active {
+  background: #27272a;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.owui-sidebar-footer {
+  border-top: 1px solid #27272a;
+  padding: 10px 6px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.owui-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #141414;
+  min-width: 0;
+}
+
+.owui-content-header {
+  padding: 16px 24px 12px;
+  border-bottom: 1px solid #27272a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.owui-content-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fafafa;
+}
+
+.owui-content-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 24px 28px;
+}
+
+.owui-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e4e4e7;
+  margin: 18px 0 8px;
+  padding-bottom: 4px;
+}
+
+.owui-section-title:first-child {
+  margin-top: 0;
+}
+
+.owui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+}
+
+.owui-row-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.owui-row-title {
+  font-size: 12.8px;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.owui-row-desc {
+  font-size: 11.2px;
+  color: #a1a1aa;
+  margin-top: 2px;
+}
+
+.owui-field-block {
+  margin: 8px 0 10px;
+}
+
+.owui-input,
+.owui-select {
+  width: 100%;
+  background: #1f1f23;
+  border: 1px solid #2e2e34;
+  border-radius: 8px;
+  color: #f4f4f5;
+  font-size: 12.5px;
+  padding: 8px 11px;
+  outline: none;
+}
+
+.owui-select-compact {
+  width: auto;
+  min-width: 125px;
+  padding: 5px 10px;
+}
+
+.owui-input:focus,
+.owui-select:focus {
+  border-color: #71717a;
+}
+
+.owui-input:disabled,
+.owui-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.owui-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin: 8px 0;
+}
+
+.owui-pw-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.owui-pw-wrap .owui-input,
+.owui-pw-wrap .input {
+  padding-right: 36px;
+}
+
+.owui-pw-eye {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.owui-pw-eye:hover {
+  color: #ffffff;
+}
+
+/* Open WebUI Pill Toggle Switch */
+.owui-switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 19px;
+  flex-shrink: 0;
+}
+
+.owui-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.owui-slider {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: #3f3f46;
+  border-radius: 9999px;
+  transition: background 0.18s ease;
+}
+
+.owui-slider::before {
+  content: '';
+  position: absolute;
+  height: 13px;
+  width: 13px;
+  left: 3px;
+  bottom: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.18s ease;
+}
+
+.owui-switch input:checked + .owui-slider {
+  background: #10b981;
+}
+
+.owui-switch input:checked + .owui-slider::before {
+  transform: translateX(15px);
+}
+
+.owui-banner-warn {
+  background: rgba(161, 98, 7, 0.22);
+  border: 1px solid rgba(202, 138, 4, 0.42);
+  color: #facc15;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.owui-content-footer {
+  padding: 12px 24px;
+  border-top: 1px solid #27272a;
+  background: #141414;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.owui-save-btn {
+  background: #f4f4f5;
+  color: #111827;
+  border: none;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 18px;
+  cursor: pointer;
+}
+
+.owui-save-btn:hover {
+  background: #ffffff;
+}
+
+.owui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-top: 10px;
+}
+
+.owui-table th,
+.owui-table td {
+  border-bottom: 1px solid #27272a;
+  padding: 8px 8px;
+  text-align: left;
+}
+
+.owui-table th {
+  color: #a1a1aa;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .owui-modal {
+    flex-direction: column;
+    height: 92vh;
+  }
+  .owui-sidebar {
+    width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #27272a;
+  }
+  .owui-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}

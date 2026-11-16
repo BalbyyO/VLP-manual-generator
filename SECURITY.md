@@ -4,7 +4,8 @@
 
 | Version | Supported | Notes |
 | --- | --- | --- |
-| `0.1.x` (`beta 0.1.0`) | Yes | Current pre-release container image & tarball |
+| `0.3.x` (`beta 0.3.0`) | Yes | Current pre-release container image, multi-user auth, PII encryption & student exports |
+| `0.2.x` (`beta 0.2.1`) | Security fixes | Superseded by `0.3.0-beta` |
 | `main` | Yes | Active development branch |
 
 ---
@@ -36,7 +37,14 @@ Report vulnerabilities privately using **GitHub Security Advisories**:
    - No external CDNs, remote fonts, third-party analytics, telemetry, or external AI APIs are used at runtime.
    - The Docker image runs cleanly with `--network none`.
 
-2. **Filesystem & Path Traversal Controls (`server.js`)**
+2. **Authentication, Password Storage & PII Encryption at Rest (`server.js`)**
+   - **Password Hashing**: Passwords (8–128 characters) are hashed with per-user 32-byte random CSPRNG salts via `crypto.scryptSync` (`N=16384, r=8, p=1, keylen=64`) and compared using `crypto.timingSafeEqual`.
+   - **PII & Secret Encryption**: User PII (`name`, `email`, `username`) and sensitive admin integration credentials (`oauthClientSecret`, `ldapBindPassword`) are encrypted at rest on disk using **AES-256-GCM** (random 12-byte IV, authenticated data tag) backed by `/data/.secret_key` (`0600` permissions) or `APP_SECRET_KEY`.
+   - **Blind Lookup Indexes**: Email and username uniqueness and sign-in resolution use keyed `HMAC-SHA256` blind indexes so plaintext PII never appears in `/data/users.json` or audit logs.
+   - **Session & HTTP Hardening**: Sessions use HMAC-SHA256 signed `HttpOnly; SameSite=Strict` cookies with configurable expiration (`4w` default), server-side `sessionVersion` revocation on password/role changes, login brute-force throttling (HTTP `429`), and strict security response headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: no-referrer`).
+   - **Per-User Workspace Isolation**: Each active account stores its autosaves and snapshots in `/data/users/<userId>/sessions/`, preventing concurrent authors from overwriting one another.
+
+3. **Filesystem & Path Traversal Controls (`server.js`)**
    - All user-supplied session identifiers and uploaded/imported image filenames are sanitized through `sanitizeId`, `sanitizeFilename`, and `path.basename` before touching `/data/sessions` or `/data/images`.
    - Session JSON persistence uses atomic temporary-file writes followed by `fs.renameSync` to prevent partial writes.
 

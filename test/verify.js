@@ -189,20 +189,27 @@ async function main() {
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
   });
 
-  await check('4c. v0.2.1-beta UX: Startup Guide Checkbox, Full Undo/Redo & Scroll-Preserving Preview', () => {
+  await check('4c. v0.3.0-beta UX: Startup Guide Checkbox, Full Undo/Redo, Scroll-Preserving Preview & Multi-User/Export UI', () => {
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const appJs = fs.readFileSync(path.join(rootDir, 'public', 'app.js'), 'utf8');
 
-    assert(indexHtml.includes('v0.2.1-beta'), 'index.html badge should display v0.2.1-beta');
+    assert(indexHtml.includes('v0.3.0-beta'), 'index.html badge should display v0.3.0-beta');
     assert(indexHtml.includes('id="btnUndo"'), 'index.html should contain Undo button');
     assert(indexHtml.includes('id="btnRedo"'), 'index.html should contain Redo button');
     assert(indexHtml.includes('id="chkHideGuideStartup"'), 'index.html should contain startup guide opt-out checkbox');
+    assert(indexHtml.includes('id="exportFormatSelect"'), 'index.html should contain Export format dropdown');
+    assert(indexHtml.includes('id="exportScopeSelect"'), 'index.html should contain Export scope dropdown');
+    assert(indexHtml.includes('id="btnExportDocument"'), 'index.html should contain Export File button');
+    assert(indexHtml.includes('id="authGateOverlay"'), 'index.html should contain authentication gate overlay');
+    assert(indexHtml.includes('id="accountAdminModal"'), 'index.html should contain Open WebUI-style account/admin modal');
 
     assert(!/https?:\/\//i.test(appJs), 'app.js must not reference external URLs');
     assert(appJs.includes('vlp_hide_guide_on_startup'), 'app.js should persist startup guide preference in localStorage');
     assert(appJs.includes('function performRedo()'), 'app.js should define performRedo()');
     assert(appJs.includes('function armTypingUndo('), 'app.js should define armTypingUndo()');
     assert(appJs.includes('doc.body.innerHTML = previewHtmlSnippet'), 'app.js should update preview iframe DOM in-place to preserve scroll');
+    assert(appJs.includes('function exportDocument()'), 'app.js should define exportDocument()');
+    assert(appJs.includes('renderOwuiAdminAuthTab'), 'app.js should include Open WebUI-style admin Authentication tab');
   });
 
   await check('4b. v0.2.0-beta Features: Color Themes, Rich Text, Multi-VM Creds, Nested Tables & Round-Trip', () => {
@@ -449,6 +456,242 @@ async function main() {
       // Delete snapshot
       const delRes = await httpRequest(testPort, 'DELETE', '/api/sessions/ckpt-1');
       assert.strictEqual(delRes.status, 200);
+    });
+
+    await check('7. Student Document Exports (.pdf, .html, .mdx, .rtf) with Inline Images & Themes', async () => {
+      const exportManual = {
+        id: 'exp-1',
+        name: 'student.export.lab',
+        defaultLanguageCode: 'en',
+        dataFormat: 'default',
+        colorTheme: 'cobalt-sky',
+        contentNodes: [
+          {
+            id: 'node-ov',
+            title: 'Lab Introduction',
+            mode: 'overview',
+            overview: {
+              courseTitle: 'ENTERPRISE LINUX LAB',
+              overviewText: 'Welcome **Student** to `bash` training.',
+              showDivider: true,
+              purposeEnabled: true,
+              purposeTitle: 'Learning Goal',
+              purposeText: 'Master <strong>basic CLI</strong> diagnostics.',
+              credentialsEnabled: true,
+              credentialsTitle: 'Lab VM Access',
+              credentialsList: [VLP.createDefaultCredentialEntry({ targetSystem: 'SRV01', username: 'student', password: 'LabPassword1!' })],
+              tables: [VLP.createDefaultTable({ title: 'Inventory', hasHeader: true, rows: [['Host', 'IP'], ['SRV01', '10.10.0.5']] })]
+            },
+            stepsData: VLP.createDefaultStepsData(),
+            rawHtml: '',
+            images: [],
+            children: [
+              {
+                id: 'node-st',
+                title: 'Exercise 1',
+                mode: 'steps',
+                overview: VLP.createDefaultOverviewData(),
+                stepsData: {
+                  sectionTitle: 'Verify Shell & Hostname',
+                  introText: 'Complete each step carefully.',
+                  steps: [
+                    {
+                      id: 's-1',
+                      instruction: 'Type `hostnamectl` and press [[Enter]].',
+                      contextText: 'Shows Linux distribution and kernel release.',
+                      credentialsList: [],
+                      tables: [],
+                      termPrompt: '[student@srv01 ~]$',
+                      termCommand: 'hostnamectl',
+                      termOutput: 'Static hostname: srv01',
+                      images: [{ src: './images/test-img.png', alt: 'Host Output' }]
+                    }
+                  ]
+                },
+                rawHtml: '',
+                images: [],
+                children: []
+              }
+            ]
+          }
+        ]
+      };
+
+      const pdfRes = await httpRequest(testPort, 'POST', '/api/export-document', {
+        manual: exportManual,
+        format: 'pdf',
+        scope: 'full'
+      });
+      assert.strictEqual(pdfRes.status, 200);
+      assert(String(pdfRes.headers['content-type']).includes('application/pdf'));
+      const pdfStr = pdfRes.body.toString('latin1');
+      assert(pdfStr.startsWith('%PDF-1.4'), 'PDF must start with %PDF-1.4 header');
+      assert(pdfStr.includes('%%EOF'), 'PDF must end with %%EOF');
+      assert(pdfStr.includes('/Subtype /Image'), 'PDF should embed uploaded PNG as Image XObject');
+
+      const htmlRes = await httpRequest(testPort, 'POST', '/api/export-document', {
+        manual: exportManual,
+        format: 'html',
+        scope: 'full'
+      });
+      assert.strictEqual(htmlRes.status, 200);
+      const htmlBody = htmlRes.body.toString('utf8');
+      assert(htmlBody.includes('<!DOCTYPE html>') && htmlBody.includes('ENTERPRISE LINUX LAB'));
+      assert(htmlBody.includes('data:image/png;base64,'), 'Standalone HTML must inline base64 images');
+      assert(htmlBody.includes('@media print'), 'Standalone HTML must include print stylesheet');
+
+      const mdxRes = await httpRequest(testPort, 'POST', '/api/export-document', {
+        manual: exportManual,
+        format: 'mdx',
+        scope: 'current',
+        activeNodeId: 'node-st'
+      });
+      assert.strictEqual(mdxRes.status, 200);
+      const mdxBody = mdxRes.body.toString('utf8');
+      assert(mdxBody.startsWith('---') && mdxBody.includes('scope: "current"'));
+      assert(mdxBody.includes('```bash') && mdxBody.includes('<kbd>Enter</kbd>'));
+
+      const rtfRes = await httpRequest(testPort, 'POST', '/api/export-document', {
+        manual: exportManual,
+        format: 'rtf',
+        scope: 'full'
+      });
+      assert.strictEqual(rtfRes.status, 200);
+      const rtfBody = rtfRes.body.toString('utf8');
+      assert(rtfBody.startsWith('{\\rtf1\\ansi') && rtfBody.includes('\\trowd') && rtfBody.includes('\\pngblip') && rtfBody.trim().endsWith('}'));
+    });
+
+    await check('8. Multi-User Auth, AES-256-GCM PII Encryption, Per-User Isolation & Admin Controls', async () => {
+      function extractCookie(res) {
+        const sc = res.headers['set-cookie'];
+        if (!sc || !sc.length) return '';
+        return sc[0].split(';')[0];
+      }
+
+      const st0 = await httpRequest(testPort, 'GET', '/api/auth/status');
+      assert.strictEqual(JSON.parse(st0.body.toString()).needsSetup, true);
+
+      // 1. First-User Admin Bootstrap
+      const adminSignup = await httpRequest(testPort, 'POST', '/api/auth/signup', {
+        name: 'Alice Admin',
+        email: 'alice@lab.local',
+        username: 'aliceadmin',
+        password: 'StrongAdminPw!1'
+      });
+      assert.strictEqual(adminSignup.status, 201);
+      const adminCookie = extractCookie(adminSignup);
+      const adminJson = JSON.parse(adminSignup.body.toString());
+      assert.strictEqual(adminJson.user.role, 'admin');
+
+      // Inspect raw users.json on disk: zero plaintext PII or passwords allowed
+      const rawUsersDisk = fs.readFileSync(path.join(tmpDataDir, 'users.json'), 'utf8');
+      assert(!rawUsersDisk.includes('alice@lab.local'), 'users.json must NOT contain plaintext email');
+      assert(!rawUsersDisk.includes('Alice Admin'), 'users.json must NOT contain plaintext name');
+      assert(!rawUsersDisk.includes('aliceadmin'), 'users.json must NOT contain plaintext username');
+      assert(!rawUsersDisk.includes('StrongAdminPw!1'), 'users.json must NOT contain plaintext password');
+      assert(rawUsersDisk.includes('enc:v1:') && rawUsersDisk.includes('scrypt$'), 'users.json must store AES-256-GCM PII & scrypt hashes');
+
+      // Unauthenticated requests are now blocked
+      const unauthSess = await httpRequest(testPort, 'GET', '/api/sessions');
+      assert.strictEqual(unauthSess.status, 401);
+
+      // 2. Second User Sign-Up defaults to pending
+      const bobSignup = await httpRequest(testPort, 'POST', '/api/auth/signup', {
+        name: 'Bob Student',
+        email: 'bob@lab.local',
+        username: 'bobstu',
+        password: 'StudentPw!234'
+      });
+      assert.strictEqual(bobSignup.status, 201);
+      const bobCookie = extractCookie(bobSignup);
+      const bobJson = JSON.parse(bobSignup.body.toString());
+      assert.strictEqual(bobJson.user.role, 'pending');
+
+      // Pending Bob cannot access workspace sessions or admin APIs
+      const bobPendingSess = await httpRequest(testPort, 'GET', '/api/sessions', null, { Cookie: bobCookie });
+      assert.strictEqual(bobPendingSess.status, 403);
+      const bobAdminAttempt = await httpRequest(testPort, 'GET', '/api/admin/users', null, { Cookie: bobCookie });
+      assert.strictEqual(bobAdminAttempt.status, 403);
+
+      // Wrong password rejected cleanly
+      const badLogin = await httpRequest(testPort, 'POST', '/api/auth/login', {
+        identifier: 'alice@lab.local',
+        password: 'WrongPassword99'
+      });
+      assert.strictEqual(badLogin.status, 401);
+
+      // 3. Admin creates a Group, approves Bob -> 'user', and configures Authentication settings
+      const grpRes = await httpRequest(testPort, 'POST', '/api/admin/groups', {
+        name: 'Instructors',
+        description: 'Lab cohort authors'
+      }, { Cookie: adminCookie });
+      assert.strictEqual(grpRes.status, 201);
+      const grpId = JSON.parse(grpRes.body.toString()).group.id;
+
+      const approveBob = await httpRequest(testPort, 'PUT', '/api/admin/users/' + encodeURIComponent(bobJson.user.id), {
+        role: 'user',
+        groupId: grpId
+      }, { Cookie: adminCookie });
+      assert.strictEqual(approveBob.status, 200);
+
+      // Role change increments sessionVersion -> Bob signs in again with fresh approved token
+      const bobLogin = await httpRequest(testPort, 'POST', '/api/auth/login', {
+        identifier: 'bobstu',
+        password: 'StudentPw!234'
+      });
+      assert.strictEqual(bobLogin.status, 200);
+      const bobActiveCookie = extractCookie(bobLogin);
+
+      // 4. Verify Per-User Workspace Isolation & Shared Team Manuals
+      await httpRequest(testPort, 'POST', '/api/sessions/save', {
+        id: 'alice-priv',
+        name: 'Alice Private Lab',
+        state: { manual: { id: 'm-a', name: 'alice.manual', contentNodes: [] } }
+      }, { Cookie: adminCookie });
+
+      await httpRequest(testPort, 'POST', '/api/sessions/save', {
+        id: 'bob-priv',
+        name: 'Bob Private Lab',
+        state: { manual: { id: 'm-b', name: 'bob.manual', contentNodes: [] } }
+      }, { Cookie: bobActiveCookie });
+
+      const bobList = JSON.parse((await httpRequest(testPort, 'GET', '/api/sessions', null, { Cookie: bobActiveCookie })).body.toString());
+      assert.strictEqual(bobList.sessions.length, 1);
+      assert.strictEqual(bobList.sessions[0].id, 'bob-priv');
+
+      const crossRead = await httpRequest(testPort, 'GET', '/api/sessions/alice-priv', null, { Cookie: bobActiveCookie });
+      assert.strictEqual(crossRead.status, 404, 'Bob must not see Alice private snapshot');
+
+      await httpRequest(testPort, 'POST', '/api/sessions-shared', {
+        id: 'shared-1',
+        name: 'Team Template Lab',
+        state: { manual: { id: 'm-s', name: 'team.manual', contentNodes: [] } }
+      }, { Cookie: adminCookie });
+
+      const sharedList = JSON.parse((await httpRequest(testPort, 'GET', '/api/sessions-shared', null, { Cookie: bobActiveCookie })).body.toString());
+      assert.strictEqual(sharedList.sessions.length, 1);
+      assert.strictEqual(sharedList.sessions[0].authorName, 'Alice Admin');
+
+      // 5. Verify Admin Authentication config persists & encrypts OAuth/LDAP secrets on disk
+      const cfgSave = await httpRequest(testPort, 'PUT', '/api/admin/auth-config', {
+        defaultUserRole: 'user',
+        enableOauthPersistentConfig: true,
+        oauthEnabled: true,
+        oauthProviderName: 'CorpSSO',
+        oauthClientSecret: 'super-secret-oauth-99',
+        ldapEnabled: true,
+        ldapBindPassword: 'ldap-secret-77',
+        pendingOverlayTitle: 'Custom Pending Notice'
+      }, { Cookie: adminCookie });
+      assert.strictEqual(cfgSave.status, 200);
+      const savedCfgView = JSON.parse(cfgSave.body.toString()).config;
+      assert.strictEqual(savedCfgView.hasOauthClientSecret, true);
+      assert.strictEqual(savedCfgView.oauthClientSecret, '');
+      assert.strictEqual(savedCfgView.hasLdapBindPassword, true);
+
+      const rawCfgDisk = fs.readFileSync(path.join(tmpDataDir, 'auth-config.json'), 'utf8');
+      assert(!rawCfgDisk.includes('super-secret-oauth-99'), 'OAuth secret must be encrypted on disk');
+      assert(!rawCfgDisk.includes('ldap-secret-77'), 'LDAP password must be encrypted on disk');
     });
   } finally {
     serverProc.kill();

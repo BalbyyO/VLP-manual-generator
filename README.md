@@ -6,17 +6,23 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.2.1`)
+## Release & Pre-Packaged Docker Image (`beta 0.3.0`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.2.1-beta`)
-- **GitHub Release (`beta 0.2.1`)**: [v0.2.1-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.1-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.2.1-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.2.1-beta/vlp-manual-generator-0.2.1-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.0-beta`)
+- **GitHub Release (`beta 0.3.0`)**: [v0.3.0-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.0-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.0-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.0-beta/vlp-manual-generator-0.3.0-beta.tar)
 
 ---
 
 ## Key Features
 
 - **100% Native & Air-Gapped**: Deterministic formatting engine (`public/vlp-formatter.js`) with zero external CDNs, fonts, or AI dependencies.
+- **Multi-Format Student Export Dropdown (`.pdf`, `.html`, `.mdx`, `.rtf`)**: Alongside the untouched **Export XML** and **Export VLP ZIP** tools, export the **Full Manual** or **Current Page** as a standalone **Student `.pdf`** (pure binary PDF with inline screenshots), **Standalone `.html`** (with offline dark/light toggle and embedded base64 screenshots), **`.mdx` Markdown**, **`.rtf` Rich Text**, or browser **Print / Save PDF**.
+- **Multi-User Local Accounts & Admin Panel (<30 Concurrent Users)**:
+  - **First-User Admin Bootstrap**: The first registered account (or `ADMIN_EMAIL` + `ADMIN_PASSWORD` environment variables) automatically becomes Administrator; subsequent accounts sign in or register according to Admin settings.
+  - **Open WebUI-Style Settings & Admin Panel**: Manage **Account** (Profile, Password, Offline TOTP MFA, API Keys), **Users** (create, approve pending accounts, assign roles/groups, reset passwords), **Groups**, **Authentication** (`User Access`, `Pending Accounts` custom overlay, `LDAP`, `OAuth / OIDC` config & claim mappings), and **Security Audit**.
+  - **Encrypted PII & Hardened Sessions**: Passwords hashed via salted `scrypt` (`timingSafeEqual`), user PII & secrets encrypted at rest with `AES-256-GCM`, blind-indexed via `HMAC-SHA256`, and protected by signed `HttpOnly; SameSite=Strict` cookies and brute-force login throttling.
+  - **Per-User Workspace Isolation + Shared Team Manuals**: Each user's autosave (`IndexedDB` + `/data/users/<id>/sessions/`) is isolated so up to 30 concurrent authors never overwrite each other, with optional publishing to **Shared Team Manuals**.
 - **Strict VLP Spec Compliance**: Implements the Master `<style>` block and layout rules from `vlp-manual-html-formatter.txt` (Course Overview `.course-overview`, Procedural Steps `.lab-wrapper`, `.purpose-card`, `.lab-note`, and semantic inline tags).
 - **Curated Color Themes (Figma Color Combinations)**: Top-bar theme dropdown with 8 pre-defined Light/Dark-compatible palettes (`Crimson & Slate`, `Cobalt & Electric Sky`, `Emerald & Mint`, `Royal Indigo & Violet`, `Amber Gold & Obsidian`, `Teal & Coral`, `Rose & Burgundy`, `Cyber Cyan & Neon Slate`) that restyle both the Editor UI and generated HTML `<style>` tokens.
 - **Rich Text & Semantic Toolbar**: Bold (`Ctrl+B`), Italic (`Ctrl+I`), Underline (`Ctrl+U`), Strikethrough (`Ctrl+Shift+S`), Text Highlight, Bullet/Numbered Lists, plus `UI Target`, `Command`, and `Key Press`.
@@ -49,13 +55,15 @@ flowchart LR
 
 | Control | What It Does |
 | --- | --- |
-| **Saved (Browser & Disk)** badge | Confirms dual auto-save status (`IndexedDB` + server `/data/sessions/autosave.json`). |
+| **Saved (Browser & Disk)** badge | Confirms dual auto-save status (user-scoped `IndexedDB` + `/data/users/<id>/sessions/autosave.json`). |
 | **Undo** / **Redo** | Full edit history (`Ctrl+Z`, `Ctrl+Y` / `Ctrl+Shift+Z`) covering typing bursts, toolbar formatting, tables, credentials, steps, themes, and structural changes. |
 | **Templates & Button Guide** | Opens the 3-tab modal (**Pre-Made Templates**, **What Every Button Does**, and **Reference Manuals**). Shows the **Button Demo Guide** automatically on startup unless **Do not show this guide automatically on startup** is checked. |
 | **Load Annex B** / **Load Annex C** | Loads the bundled reference manuals (`dsac.annexb.lab01-en` end-goal example and `dsac.annexc.lab01-en` multi-chapter XML example). |
-| **Sessions** | Save/restore named server snapshots or download/restore portable `.json` project backups. |
+| **Sessions** | Manage private snapshots, publish/load **Shared Team Manuals**, or download/restore `.json` backups. |
 | **Import XML / ZIP** | Imports an existing VLP `content.xml` or `.zip` manual package (including `./images/*`). |
-| **Export XML** / **Export VLP ZIP** | Downloads `content.xml` alone or a complete `<manual-name>-en.zip` containing `content.xml` and `images/`. |
+| **Export XML** / **Export VLP ZIP** | Untouched live tools downloading `content.xml` or a complete `<manual-name>-en.zip`. |
+| **Export File Dropdown** | Exports **Full Manual** or **Current Page** as `.pdf`, `.html`, `.mdx`, `.rtf`, or **Print / Save PDF...**. |
+| **Account / Admin Pill** | Opens the Open WebUI-style Settings & Admin panel (`Account`, `Users`, `Groups`, `Authentication`, `Security Audit`). |
 
 ---
 
@@ -145,6 +153,10 @@ services:
     environment:
       - PORT=8080
       - DATA_DIR=/data
+      # Optional: pre-seed Administrator credentials & master PII encryption key
+      # - APP_SECRET_KEY=replace-with-random-64-char-secret
+      # - ADMIN_EMAIL=admin@lab.local
+      # - ADMIN_PASSWORD=StrongPassword123!
     volumes:
       - ./data:/data
     restart: unless-stopped
@@ -156,22 +168,22 @@ Start the service:
 docker compose up -d
 ```
 
-Open **`http://localhost:8080`** in your browser. Sessions and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
+Open **`http://localhost:8080`** in your browser. On first launch, create the Administrator account (or configure `ADMIN_EMAIL` / `ADMIN_PASSWORD`). User accounts, encrypted PII, sessions, and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`beta 0.2.1` Tarball)
+### Option 2: Air-Gapped Transfer (`beta 0.3.0` Tarball)
 
-Download `vlp-manual-generator-0.2.1-beta.tar` from the [**beta 0.2.1** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.1-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+Download `vlp-manual-generator-0.3.0-beta.tar` from the [**beta 0.3.0** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.0-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
 
 ```bash
-docker load -i vlp-manual-generator-0.2.1-beta.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.2.1-beta
+docker load -i vlp-manual-generator-0.3.0-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.0-beta
 ```
 
 To build and export the tarball yourself from source:
 
 ```bash
-docker build -t vlp-manual-generator:0.2.1-beta .
-docker save -o vlp-manual-generator-0.2.1-beta.tar vlp-manual-generator:0.2.1-beta
+docker build -t vlp-manual-generator:0.3.0-beta .
+docker save -o vlp-manual-generator-0.3.0-beta.tar vlp-manual-generator:0.3.0-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests

@@ -2687,6 +2687,1313 @@
     ];
   }
 
+  /* =========================================================================
+   * Multi-Format Student Exports (.html, .mdx, .rtf, .pdf)
+   * ========================================================================= */
+
+  /**
+   * Flattens manual contentNodes in reading order with hierarchical numbering.
+   */
+  function collectExportNodes(manual, scope, activeNodeId) {
+    const items = [];
+    const rootNodes = (manual && Array.isArray(manual.contentNodes)) ? manual.contentNodes : [];
+
+    function walk(nodes, prefix, depth, parents) {
+      (nodes || []).forEach(function (n, idx) {
+        const numLabel = prefix ? (prefix + '.' + (idx + 1)) : String(idx + 1);
+        const trail = parents.concat([n.title || ('Section ' + numLabel)]);
+        items.push({
+          node: n,
+          numberLabel: numLabel,
+          depth: depth,
+          breadcrumb: trail.join(' > ')
+        });
+        walk(n.children || [], numLabel, depth + 1, trail);
+      });
+    }
+
+    walk(rootNodes, '', 0, []);
+    if (scope === 'current') {
+      const matched = items.find(function (it) { return it.node && it.node.id === activeNodeId; });
+      if (matched) return [matched];
+      return items.length ? [items[0]] : [];
+    }
+    return items;
+  }
+
+  function hexToRgb(hex) {
+    const clean = String(hex || '#dc2626').replace('#', '');
+    const full = clean.length === 3
+      ? clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2]
+      : clean.padEnd(6, '0').slice(0, 6);
+    const num = parseInt(full, 16);
+    const r = Number.isNaN(num) ? 220 : ((num >> 16) & 255);
+    const g = Number.isNaN(num) ? 38 : ((num >> 8) & 255);
+    const b = Number.isNaN(num) ? 38 : (num & 255);
+    return { r255: r, g255: g, b255: b, r: r / 255, g: g / 255, b: b / 255 };
+  }
+
+  /**
+   * Tokenizes VLP inline markup or legacy HTML into styled text runs for MDX, RTF, and PDF.
+   */
+  function tokenizeInlineRuns(rawText, options) {
+    const opts = options || {};
+    let html = String(rawText == null ? '' : rawText);
+    if (!html.trim()) return [];
+
+    if (opts.isRawHtml) {
+      html = html
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<(?:p|div|h[1-6]|tr)\b[^>]*>/gi, '')
+        .replace(/<\/(?:p|div|h[1-6]|tr)>/gi, '\n\n')
+        .replace(/<(?:th|td)\b[^>]*>/gi, '  ')
+        .replace(/<\/(?:th|td)>/gi, ' | ');
+    } else {
+      html = formatInlineMarkup(html);
+    }
+
+    html = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<li\b[^>]*>/gi, '\n• ')
+      .replace(/<\/li>/gi, '')
+      .replace(/<\/(?:ul|ol)>/gi, '\n')
+      .replace(/<(?:ul|ol)\b[^>]*>/gi, '');
+
+    const runs = [];
+    const stack = [];
+    const tagRe = /<\/?([a-zA-Z0-9]+)\b([^>]*)>/g;
+    let lastIdx = 0;
+    let m;
+
+    function currentStyle() {
+      const s = { bold: false, italic: false, underline: false, strike: false, highlight: false, ui: false, cmd: false, kbd: false };
+      stack.forEach(function (item) {
+        Object.keys(item.flags).forEach(function (k) {
+          if (item.flags[k]) s[k] = true;
+        });
+      });
+      return s;
+    }
+
+    function pushText(rawChunk) {
+      if (!rawChunk) return;
+      const decoded = stripZeroWidthAndNbsp(decodeXmlEntities(rawChunk));
+      if (!decoded) return;
+      const style = currentStyle();
+      runs.push(Object.assign({ text: decoded }, style));
+    }
+
+    while ((m = tagRe.exec(html)) !== null) {
+      if (m.index > lastIdx) {
+        pushText(html.slice(lastIdx, m.index));
+      }
+      const isClose = m[0].startsWith('</');
+      const tag = m[1].toLowerCase();
+      const attrs = m[2] || '';
+      if (isClose) {
+        for (let i = stack.length - 1; i >= 0; i--) {
+          if (stack[i].tag === tag) {
+            stack.splice(i, 1);
+            break;
+          }
+        }
+      } else if (!m[0].endsWith('/>')) {
+        const flags = {};
+        if (tag === 'strong' || tag === 'b') flags.bold = true;
+        else if (tag === 'em' || tag === 'i') flags.italic = true;
+        else if (tag === 'u') flags.underline = true;
+        else if (tag === 's' || tag === 'strike' || tag === 'del') flags.strike = true;
+        else if (tag === 'mark') flags.highlight = true;
+        else if (tag === 'code') flags.cmd = true;
+        else if (tag === 'kbd') flags.kbd = true;
+        else if (tag === 'span' && /\bui-target\b/i.test(attrs)) {
+          flags.ui = true;
+          flags.bold = true;
+        }
+        stack.push({ tag: tag, flags: flags });
+      }
+      lastIdx = m.index + m[0].length;
+    }
+    if (lastIdx < html.length) {
+      pushText(html.slice(lastIdx));
+    }
+    return runs;
+  }
+
+  function resolveRawHtmlFallbackData(node) {
+    const raw = String((node && node.rawHtml) || '');
+    const parsed = parseHtmlToNodeState(raw, node && node.title, node && node.images);
+    if (parsed && (parsed.mode === 'overview' || parsed.mode === 'steps')) {
+      return parsed;
+    }
+    const plainRuns = tokenizeInlineRuns(raw, { isRawHtml: true });
+    return { mode: 'raw-text', text: plainRuns.map(function (r) { return r.text; }).join('').trim() };
+  }
+
+  /**
+   * Generates a standalone offline HTML5 student manual (Full Manual or Current Page).
+   */
+  function generateStandaloneManualHtml(manual, options) {
+    const opts = options || {};
+    const scope = opts.scope === 'current' ? 'current' : 'full';
+    const colorTheme = opts.colorTheme || (manual && manual.colorTheme) || 'crimson-slate';
+    const theme = getColorTheme(colorTheme);
+    const items = collectExportNodes(manual, scope, opts.activeNodeId);
+    const manualTitle = stripZeroWidthAndNbsp((manual && manual.name) || 'VLP Lab Manual');
+
+    const renderedSections = items.map(function (it, idx) {
+      let nodeHtml = generateNodeHtml(it.node, {
+        imageMode: 'base64',
+        imageMap: opts.imageMap || {},
+        samplePrefix: opts.samplePrefix || '',
+        colorTheme: colorTheme
+      });
+      // Strip duplicate embedded <style> inside each section; master CSS sits in <head> once
+      nodeHtml = nodeHtml.replace(/<style\b[^>]*>[\s\S]*?<\/style>\s*/i, '');
+      const secId = 'sec-' + (idx + 1);
+      const tocLabel = escapeHtmlPreserveEntities(it.numberLabel + '. ' + (it.node.title || 'Section'));
+      return {
+        id: secId,
+        tocLabel: tocLabel,
+        depth: it.depth,
+        breadcrumb: escapeHtmlPreserveEntities(it.breadcrumb),
+        bodyHtml: nodeHtml
+      };
+    });
+
+    const tocHtml = renderedSections.length > 1
+      ? '<nav class="student-toc" aria-label="Manual Contents"><h2>Contents</h2><ul>' +
+        renderedSections.map(function (s) {
+          const pad = Math.min(s.depth, 3) * 16;
+          return '<li style="margin-left:' + pad + 'px;"><a href="#' + s.id + '">' + s.tocLabel + '</a></li>';
+        }).join('\n') +
+        '</ul></nav>'
+      : '';
+
+    const sectionsHtml = renderedSections.map(function (s, idx) {
+      const divider = idx > 0 ? '<div class="student-section-break"></div>' : '';
+      return divider +
+        '<section id="' + s.id + '" class="student-section">\n' +
+        '  <div class="student-breadcrumb">' + s.breadcrumb + '</div>\n' +
+        s.bodyHtml + '\n' +
+        '</section>';
+    }).join('\n');
+
+    return [
+      '<!DOCTYPE html>',
+      '<html lang="' + escapeHtml((manual && manual.defaultLanguageCode) || 'en') + '">',
+      '<head>',
+      '  <meta charset="UTF-8" />',
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+      '  <title>' + escapeHtmlPreserveEntities(manualTitle) + ' — Student Guide</title>',
+      getMasterStyleBlock(colorTheme),
+      '  <style>',
+      '    :root { --stu-bg: #f8fafc; --stu-surface: #ffffff; --stu-border: #e2e8f0; --stu-text: #1e293b; --stu-muted: #64748b; }',
+      '    html.theme-dark { --stu-bg: #141920; --stu-surface: #1b2129; --stu-border: #2c3746; --stu-text: #e5edf7; --stu-muted: #94a3b8; }',
+      '    body { margin: 0; padding: 0; background: var(--stu-bg); color: var(--stu-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }',
+      '    .student-topbar { position: sticky; top: 0; z-index: 50; background: var(--stu-surface); border-bottom: 1px solid var(--stu-border); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }',
+      '    .student-topbar-title { font-weight: 700; font-size: 15px; color: var(--stu-text); border-left: 4px solid ' + theme.light.accent + '; padding-left: 10px; }',
+      '    .student-topbar-actions { display: flex; gap: 8px; }',
+      '    .student-btn { padding: 6px 12px; font-size: 12.5px; font-weight: 600; border-radius: 6px; border: 1px solid var(--stu-border); background: transparent; color: var(--stu-text); cursor: pointer; }',
+      '    .student-btn-accent { background: ' + theme.light.accent + '; border-color: ' + theme.light.accent + '; color: #ffffff; }',
+      '    .student-container { max-width: 980px; margin: 22px auto 48px; padding: 28px 34px; background: var(--stu-surface); border: 1px solid var(--stu-border); border-radius: 10px; }',
+      '    .student-toc { background: rgba(128, 128, 128, 0.06); border: 1px solid var(--stu-border); border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; }',
+      '    .student-toc h2 { margin: 0 0 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--stu-muted); }',
+      '    .student-toc ul { margin: 0; padding-left: 16px; }',
+      '    .student-toc a { color: ' + theme.light.accent + '; text-decoration: none; font-weight: 600; line-height: 1.7; }',
+      '    .student-breadcrumb { font-size: 12px; color: var(--stu-muted); margin-bottom: 8px; font-weight: 600; }',
+      '    .student-section-break { border-top: 2px dashed var(--stu-border); margin: 32px 0 24px; }',
+      '    @media print {',
+      '      @page { margin: 0.55in; }',
+      '      .student-topbar { display: none !important; }',
+      '      body, .student-container { background: #ffffff !important; color: #111827 !important; border: none !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; }',
+      '      .student-section { break-inside: auto; }',
+      '      .student-section-break { page-break-before: always; border: none; margin: 0; }',
+      '      .lab-table tr, .purpose-card, .lab-note, .term-box, .step-context { break-inside: avoid; }',
+      '    }',
+      '  </style>',
+      '</head>',
+      '<body>',
+      '  <header class="student-topbar">',
+      '    <div class="student-topbar-title">' + escapeHtmlPreserveEntities(manualTitle) + '</div>',
+      '    <div class="student-topbar-actions">',
+      '      <button type="button" class="student-btn" onclick="document.documentElement.classList.toggle(\'theme-dark\');document.documentElement.classList.toggle(\'clr-theme-dark\');">Toggle Dark Mode</button>',
+      '      <button type="button" class="student-btn student-btn-accent" onclick="window.print();">Print / Save PDF</button>',
+      '    </div>',
+      '  </header>',
+      '  <main class="student-container">',
+      tocHtml,
+      sectionsHtml,
+      '  </main>',
+      '</body>',
+      '</html>'
+    ].join('\n');
+  }
+
+  function renderRunsToMdx(rawText, options) {
+    const runs = tokenizeInlineRuns(rawText, options);
+    return runs.map(function (r) {
+      let s = r.text;
+      if (!s) return '';
+      if (r.cmd) return '`' + s.replace(/`/g, "'") + '`';
+      if (r.kbd) return '<kbd>' + escapeHtmlPreserveEntities(s) + '</kbd>';
+      if (r.highlight) return '<mark>' + escapeHtmlPreserveEntities(s) + '</mark>';
+      if (r.strike) s = '~~' + s + '~~';
+      if (r.underline) s = '<u>' + s + '</u>';
+      if (r.italic && !r.bold) s = '*' + s + '*';
+      if (r.bold || r.ui) s = '**' + s + '**';
+      return s;
+    }).join('').trim();
+  }
+
+  function renderTablesToMdx(tables) {
+    if (!Array.isArray(tables) || tables.length === 0) return '';
+    return tables.map(function (tbl) {
+      const rows = Array.isArray(tbl.rows) ? tbl.rows : [];
+      if (!rows.length) return '';
+      const out = [];
+      if (tbl.title && tbl.title.trim()) {
+        out.push('**' + tbl.title.trim() + '**\n');
+      }
+      const cols = Math.max.apply(null, rows.map(function (r) { return (r || []).length; }).concat([1]));
+      const hasHeader = tbl.hasHeader !== false;
+      function fmtRow(r) {
+        const padded = [];
+        for (let c = 0; c < cols; c++) {
+          const cell = renderRunsToMdx((r && r[c]) || '').replace(/\|/g, '\\|').replace(/\r?\n/g, '<br />');
+          padded.push(cell || ' ');
+        }
+        return '| ' + padded.join(' | ') + ' |';
+      }
+      if (hasHeader) {
+        out.push(fmtRow(rows[0]));
+        out.push('| ' + new Array(cols).fill('---').join(' | ') + ' |');
+        for (let i = 1; i < rows.length; i++) out.push(fmtRow(rows[i]));
+      } else {
+        out.push('| ' + new Array(cols).fill(' ').join(' | ') + ' |');
+        out.push('| ' + new Array(cols).fill('---').join(' | ') + ' |');
+        for (let i = 0; i < rows.length; i++) out.push(fmtRow(rows[i]));
+      }
+      return out.join('\n');
+    }).filter(Boolean).join('\n\n');
+  }
+
+  function renderCredsToMdx(title, credList) {
+    const entries = (Array.isArray(credList) ? credList : []).filter(function (c) {
+      return c && ((c.targetSystem && c.targetSystem.trim()) || (c.username && c.username.trim()) || (c.password && c.password.trim()));
+    });
+    if (!entries.length) return '';
+    const out = ['#### ' + ((title && title.trim()) || 'Target VM Credentials'), '', '| System | Username | Password | Role / IP |', '| --- | --- | --- | --- |'];
+    entries.forEach(function (c) {
+      out.push('| ' + [
+        (c.targetSystem || '-').replace(/\|/g, '\\|'),
+        c.username ? '`' + c.username.replace(/`/g, "'") + '`' : '-',
+        c.password ? '`' + c.password.replace(/`/g, "'") + '`' : '-',
+        (c.note || '-').replace(/\|/g, '\\|')
+      ].join(' | ') + ' |');
+    });
+    return out.join('\n');
+  }
+
+  /**
+   * Generates a clean .mdx Markdown/MDX document for Full Manual or Current Page.
+   */
+  function generateManualMdx(manual, options) {
+    const opts = options || {};
+    const scope = opts.scope === 'current' ? 'current' : 'full';
+    const colorTheme = opts.colorTheme || (manual && manual.colorTheme) || 'crimson-slate';
+    const items = collectExportNodes(manual, scope, opts.activeNodeId);
+    const title = ((manual && manual.name) || 'VLP Manual').replace(/"/g, '\\"');
+    const lang = (manual && manual.defaultLanguageCode) || 'en';
+
+    const lines = [
+      '---',
+      'title: "' + title + '"',
+      'manual: "' + title + '"',
+      'language: "' + lang.replace(/"/g, '\\"') + '"',
+      'theme: "' + colorTheme + '"',
+      'scope: "' + scope + '"',
+      'exportedAt: "' + new Date().toISOString() + '"',
+      '---',
+      ''
+    ];
+
+    items.forEach(function (it) {
+      const hPrefix = '#'.repeat(Math.min(it.depth + 1, 4));
+      let node = it.node;
+      let mode = node.mode;
+      let ov = node.overview;
+      let stData = node.stepsData;
+      if (mode === 'raw') {
+        const fb = resolveRawHtmlFallbackData(node);
+        if (fb.mode === 'overview') { mode = 'overview'; ov = fb.overview; }
+        else if (fb.mode === 'steps') { mode = 'steps'; stData = fb.stepsData; }
+        else {
+          lines.push(hPrefix + ' ' + it.numberLabel + '. ' + (node.title || 'Section'), '', fb.text || '', '');
+          return;
+        }
+      }
+
+      if (mode === 'overview') {
+        const d = Object.assign(createDefaultOverviewData(), ov || {});
+        d.credentialsList = normalizeCredentialsList(d);
+        const heading = (d.courseTitle && d.courseTitle.trim()) || node.title || 'Overview';
+        lines.push(hPrefix + ' ' + it.numberLabel + '. ' + heading, '');
+        if (d.bannerSrc && d.bannerSrc.trim()) {
+          const src = resolveImageSrc(d.bannerSrc.trim(), { imageMode: 'vlp', imageMap: opts.imageMap || {} });
+          lines.push('![' + (d.bannerAlt || 'Course Banner') + '](' + src + ')', '');
+        }
+        splitParagraphs(d.overviewText).forEach(function (p) {
+          lines.push(renderRunsToMdx(p), '');
+        });
+        const tMdx = renderTablesToMdx(d.tables);
+        if (tMdx) lines.push(tMdx, '');
+        if (d.purposeEnabled) {
+          lines.push('> **' + ((d.purposeTitle && d.purposeTitle.trim()) || 'INSTRUCTIONAL PURPOSE') + '**');
+          splitParagraphs(d.purposeText || 'Purpose details for the course annex.').forEach(function (p) {
+            lines.push('> ' + renderRunsToMdx(p).replace(/\n/g, '\n> '));
+          });
+          lines.push('');
+        }
+        if (d.credentialsEnabled || d.credentialsList.length > 0) {
+          const cMdx = renderCredsToMdx(d.credentialsTitle, d.credentialsList);
+          if (cMdx) lines.push(cMdx, '');
+        }
+      } else {
+        const d = Object.assign(createDefaultStepsData(), stData || {});
+        d.credentialsList = normalizeCredentialsList(d);
+        const heading = (d.sectionTitle && d.sectionTitle.trim()) || node.title || 'Procedure';
+        lines.push(hPrefix + ' ' + it.numberLabel + '. ' + heading, '');
+        splitParagraphs(d.introText).forEach(function (p) {
+          lines.push(renderRunsToMdx(p), '');
+        });
+        const itMdx = renderTablesToMdx(d.tables);
+        if (itMdx) lines.push(itMdx, '');
+        if (d.credentialsEnabled || d.credentialsList.length > 0) {
+          const pcMdx = renderCredsToMdx(d.credentialsTitle, d.credentialsList);
+          if (pcMdx) lines.push(pcMdx, '');
+        }
+        (d.steps || []).map(migrateStepData).forEach(function (step, idx) {
+          lines.push('#### Step ' + (idx + 1), '');
+          if (step.instruction && step.instruction.trim()) {
+            lines.push(renderRunsToMdx(step.instruction), '');
+          }
+          if (step.contextText && step.contextText.trim()) {
+            lines.push('> ' + renderRunsToMdx(step.contextText).replace(/\n/g, '\n> '), '');
+          }
+          const scMdx = renderCredsToMdx('Target VM Credentials', step.credentialsList);
+          if (scMdx) lines.push(scMdx, '');
+          const stMdx = renderTablesToMdx(step.tables);
+          if (stMdx) lines.push(stMdx, '');
+          const hasTerm = Boolean((step.termPrompt && step.termPrompt.trim()) || (step.termCommand && step.termCommand.trim()) || (step.termOutput && step.termOutput.trim()));
+          if (hasTerm) {
+            lines.push('```bash');
+            if ((step.termPrompt && step.termPrompt.trim()) || (step.termCommand && step.termCommand.trim())) {
+              lines.push(((step.termPrompt || '').trim() + ' ' + (step.termCommand || '').trim()).trim());
+            }
+            if (step.termOutput && step.termOutput.trim()) {
+              lines.push(step.termOutput.trim());
+            }
+            lines.push('```', '');
+          }
+          (step.images || []).forEach(function (img, imIdx) {
+            if (!img || !img.src) return;
+            const src = resolveImageSrc(img.src.trim(), { imageMode: 'vlp', imageMap: opts.imageMap || {} });
+            const alt = (img.alt && img.alt.trim()) || ('Step ' + (idx + 1) + ' Image ' + (imIdx + 1));
+            lines.push('![' + alt + '](' + src + ')', '');
+          });
+        });
+      }
+    });
+
+    return lines.join('\n');
+  }
+
+  function escapeRtfText(str) {
+    let out = '';
+    const s = String(str == null ? '' : str);
+    for (let i = 0; i < s.length; i++) {
+      const code = s.charCodeAt(i);
+      const ch = s[i];
+      if (ch === '\\' || ch === '{' || ch === '}') {
+        out += '\\' + ch;
+      } else if (ch === '\n') {
+        out += '\\line ';
+      } else if (ch === '\r') {
+        continue;
+      } else if (ch === '\t') {
+        out += '\\tab ';
+      } else if (code > 127) {
+        const signed = code > 32767 ? code - 65536 : code;
+        out += '\\u' + signed + '?';
+      } else {
+        out += ch;
+      }
+    }
+    return out;
+  }
+
+  function renderRunsToRtf(rawText, options) {
+    const runs = tokenizeInlineRuns(rawText, options);
+    return runs.map(function (r) {
+      let prefix = '';
+      let suffix = '';
+      if (r.bold || r.ui) { prefix += '\\b '; suffix = '\\b0 ' + suffix; }
+      if (r.italic) { prefix += '\\i '; suffix = '\\i0 ' + suffix; }
+      if (r.underline) { prefix += '\\ul '; suffix = '\\ulnone ' + suffix; }
+      if (r.strike) { prefix += '\\strike '; suffix = '\\strike0 ' + suffix; }
+      if (r.ui) { prefix += '\\cf1 '; suffix = '\\cf2 ' + suffix; }
+      if (r.cmd || r.kbd) { prefix += '\\f1\\fs20 '; suffix = '\\f0\\fs22 ' + suffix; }
+      if (r.highlight) { prefix += '\\highlight4 '; suffix = '\\highlight0 ' + suffix; }
+      return prefix + escapeRtfText(r.text) + suffix;
+    }).join('');
+  }
+
+  function detectImageDimensionsAndFormat(buf) {
+    if (!buf || buf.length < 16) return null;
+    // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47 && buf.length >= 24) {
+      const w = (buf[16] << 24 | buf[17] << 16 | buf[18] << 8 | buf[19]) >>> 0;
+      const h = (buf[20] << 24 | buf[21] << 16 | buf[22] << 8 | buf[23]) >>> 0;
+      return { type: 'png', width: w || 320, height: h || 200 };
+    }
+    // JPEG signature: FF D8
+    if (buf[0] === 0xFF && buf[1] === 0xD8) {
+      let i = 2;
+      while (i + 9 < buf.length) {
+        if (buf[i] !== 0xFF) break;
+        const marker = buf[i + 1];
+        if (marker === 0xD9 || marker === 0xDA) break;
+        const segLen = (buf[i + 2] << 8) | buf[i + 3];
+        if (marker >= 0xC0 && marker <= 0xC3) {
+          const h = (buf[i + 5] << 8) | buf[i + 6];
+          const w = (buf[i + 7] << 8) | buf[i + 8];
+          const comps = buf[i + 9];
+          return { type: 'jpeg', width: w || 320, height: h || 200, components: comps || 3 };
+        }
+        if (segLen < 2) break;
+        i += 2 + segLen;
+      }
+      return { type: 'jpeg', width: 480, height: 300, components: 3 };
+    }
+    return null;
+  }
+
+  function renderRtfTable(rows, hasHeader, twipsWidth) {
+    if (!Array.isArray(rows) || !rows.length) return '';
+    const totalW = twipsWidth || 9360; // 6.5 inches
+    const cols = Math.max.apply(null, rows.map(function (r) { return (r || []).length; }).concat([1]));
+    const colW = Math.floor(totalW / cols);
+    const out = [];
+    rows.forEach(function (r, rIdx) {
+      const isHdr = hasHeader !== false && rIdx === 0;
+      let def = '\\trowd\\trgaph108\\trleft0';
+      for (let c = 0; c < cols; c++) {
+        def += (isHdr ? '\\clcbpat5' : '') +
+          '\\clbrdrt\\brdrs\\brdrw10\\brdrcf6\\clbrdrl\\brdrs\\brdrw10\\brdrcf6\\clbrdrb\\brdrs\\brdrw10\\brdrcf6\\clbrdrr\\brdrs\\brdrw10\\brdrcf6' +
+          '\\cellx' + ((c + 1) * colW);
+      }
+      out.push(def);
+      let rowCells = '';
+      for (let c = 0; c < cols; c++) {
+        const cellRtf = renderRunsToRtf((r && r[c]) || '');
+        rowCells += '\\pard\\intbl\\f0\\fs20 ' + (isHdr ? '\\b ' + cellRtf + '\\b0 ' : cellRtf) + '\\cell';
+      }
+      out.push(rowCells + '\\row');
+    });
+    return out.join('\n') + '\n\\pard\\sa120\\par';
+  }
+
+  /**
+   * Generates a valid RTF 1.5 document compatible with Word/LibreOffice/WordPad.
+   */
+  function generateManualRtf(manual, options) {
+    const opts = options || {};
+    const scope = opts.scope === 'current' ? 'current' : 'full';
+    const colorTheme = opts.colorTheme || (manual && manual.colorTheme) || 'crimson-slate';
+    const theme = getColorTheme(colorTheme);
+    const accentRgb = hexToRgb(theme.light.accent);
+    const items = collectExportNodes(manual, scope, opts.activeNodeId);
+    const resolvedImages = opts.resolvedImages || {};
+
+    const parts = [
+      '{\\rtf1\\ansi\\ansicpg1252\\deff0',
+      '{\\fonttbl{\\f0\\fswiss Segoe UI;}{\\f1\\fmodern Consolas;}}',
+      '{\\colortbl;' +
+        '\\red' + accentRgb.r255 + '\\green' + accentRgb.g255 + '\\blue' + accentRgb.b255 + ';' + // cf1 accent
+        '\\red31\\green41\\blue55;' +   // cf2 dark slate text
+        '\\red248\\green250\\blue252;' + // cf3 light fill
+        '\\red254\\green240\\blue138;' + // cf4 highlight yellow
+        '\\red226\\green232\\blue240;' + // cf5 table hdr fill
+        '\\red203\\green213\\blue225;' + // cf6 border gray
+        '\\red15\\green23\\blue42;' +    // cf7 term bg
+        '\\red56\\green189\\blue248;' +  // cf8 term text
+      '}',
+      '\\viewkind4\\uc1\\pard\\f0\\fs22\\cf2'
+    ];
+
+    parts.push('\\pard\\sa140\\fs34\\b\\cf1 ' + escapeRtfText((manual && manual.name) || 'VLP Manual') + '\\b0\\cf2\\par');
+
+    function appendRtfImage(src, alt) {
+      const fn = extractFilenameFromSrc(src);
+      const buf = resolvedImages[src] || resolvedImages['./images/' + fn] || resolvedImages[fn];
+      const meta = buf ? detectImageDimensionsAndFormat(buf) : null;
+      if (meta && (meta.type === 'png' || meta.type === 'jpeg')) {
+        const maxTwips = 8640; // 6 in
+        const wTwips = Math.min(maxTwips, meta.width * 15);
+        const hTwips = Math.max(300, Math.round(wTwips * (meta.height / Math.max(1, meta.width))));
+        const hex = Array.from(buf).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+        const blip = meta.type === 'png' ? '\\pngblip' : '\\jpegblip';
+        parts.push('\\pard\\sa100{\\pict' + blip + '\\picw' + meta.width + '\\pich' + meta.height + '\\picwgoal' + wTwips + '\\pichgoal' + hTwips + ' ' + hex + '}\\par');
+      } else if (src) {
+        parts.push('\\pard\\sa80\\i\\fs19 [Image: ' + escapeRtfText(alt || fn || src) + ']\\i0\\fs22\\par');
+      }
+    }
+
+    items.forEach(function (it, itemIdx) {
+      if (itemIdx > 0) parts.push('\\pard\\sa120\\par');
+      let node = it.node;
+      let mode = node.mode;
+      let ov = node.overview;
+      let stData = node.stepsData;
+      if (mode === 'raw') {
+        const fb = resolveRawHtmlFallbackData(node);
+        if (fb.mode === 'overview') { mode = 'overview'; ov = fb.overview; }
+        else if (fb.mode === 'steps') { mode = 'steps'; stData = fb.stepsData; }
+        else {
+          parts.push('\\pard\\sa120\\fs28\\b\\cf1 ' + escapeRtfText(it.numberLabel + '. ' + (node.title || 'Section')) + '\\b0\\cf2\\fs22\\par');
+          parts.push('\\pard\\sa120 ' + renderRunsToRtf(fb.text || '') + '\\par');
+          return;
+        }
+      }
+
+      if (mode === 'overview') {
+        const d = Object.assign(createDefaultOverviewData(), ov || {});
+        d.credentialsList = normalizeCredentialsList(d);
+        parts.push('\\pard\\sa120\\fs28\\b\\cf1 ' + escapeRtfText(it.numberLabel + '. ' + (d.courseTitle || node.title || 'Overview')) + '\\b0\\cf2\\fs22\\par');
+        if (d.bannerSrc) appendRtfImage(d.bannerSrc, d.bannerAlt || 'Course Banner');
+        splitParagraphs(d.overviewText).forEach(function (p) {
+          parts.push('\\pard\\sa120 ' + renderRunsToRtf(p) + '\\par');
+        });
+        (d.tables || []).forEach(function (tbl) {
+          if (tbl.title) parts.push('\\pard\\sa60\\b ' + escapeRtfText(tbl.title) + '\\b0\\par');
+          parts.push(renderRtfTable(tbl.rows, tbl.hasHeader !== false));
+        });
+        if (d.purposeEnabled) {
+          parts.push('\\pard\\li240\\sa80\\brdrl\\brdrs\\brdrw45\\brdrcf1\\b\\cf1 ' + escapeRtfText(d.purposeTitle || 'INSTRUCTIONAL PURPOSE') + '\\b0\\cf2\\line ' +
+            splitParagraphs(d.purposeText || 'Purpose details for the course annex.').map(function (p) { return renderRunsToRtf(p); }).join('\\line ') + '\\par');
+        }
+        if (d.credentialsEnabled || d.credentialsList.length > 0) {
+          const rows = [['System', 'Username', 'Password', 'Role / IP']];
+          d.credentialsList.forEach(function (c) {
+            rows.push([c.targetSystem || '-', c.username || '-', c.password || '-', c.note || '-']);
+          });
+          if (rows.length > 1) {
+            parts.push('\\pard\\sa60\\b ' + escapeRtfText(d.credentialsTitle || 'Target VM Credentials') + '\\b0\\par');
+            parts.push(renderRtfTable(rows, true));
+          }
+        }
+      } else {
+        const d = Object.assign(createDefaultStepsData(), stData || {});
+        d.credentialsList = normalizeCredentialsList(d);
+        parts.push('\\pard\\sa120\\fs28\\b\\cf1 ' + escapeRtfText(it.numberLabel + '. ' + (d.sectionTitle || node.title || 'Procedure')) + '\\b0\\cf2\\fs22\\par');
+        splitParagraphs(d.introText).forEach(function (p) {
+          parts.push('\\pard\\sa120 ' + renderRunsToRtf(p) + '\\par');
+        });
+        (d.tables || []).forEach(function (tbl) {
+          if (tbl.title) parts.push('\\pard\\sa60\\b ' + escapeRtfText(tbl.title) + '\\b0\\par');
+          parts.push(renderRtfTable(tbl.rows, tbl.hasHeader !== false));
+        });
+        if (d.credentialsEnabled || d.credentialsList.length > 0) {
+          const rows = [['System', 'Username', 'Password', 'Role / IP']];
+          d.credentialsList.forEach(function (c) {
+            rows.push([c.targetSystem || '-', c.username || '-', c.password || '-', c.note || '-']);
+          });
+          if (rows.length > 1) {
+            parts.push('\\pard\\sa60\\b ' + escapeRtfText(d.credentialsTitle || 'Target VM Credentials') + '\\b0\\par');
+            parts.push(renderRtfTable(rows, true));
+          }
+        }
+        (d.steps || []).map(migrateStepData).forEach(function (step, sIdx) {
+          parts.push('\\pard\\sa100\\b\\cf1 Step ' + (sIdx + 1) + ': \\b0\\cf2 ' + renderRunsToRtf(step.instruction || '') + '\\par');
+          if (step.contextText && step.contextText.trim()) {
+            parts.push('\\pard\\li360\\sa80\\brdrl\\brdrs\\brdrw35\\brdrcf1 ' + renderRunsToRtf(step.contextText) + '\\par');
+          }
+          if (step.credentialsList && step.credentialsList.length) {
+            const cRows = [['System', 'Username', 'Password', 'Role / IP']];
+            step.credentialsList.forEach(function (c) {
+              cRows.push([c.targetSystem || '-', c.username || '-', c.password || '-', c.note || '-']);
+            });
+            parts.push(renderRtfTable(cRows, true, 8600));
+          }
+          (step.tables || []).forEach(function (tbl) {
+            if (tbl.title) parts.push('\\pard\\li240\\sa40\\b ' + escapeRtfText(tbl.title) + '\\b0\\par');
+            parts.push(renderRtfTable(tbl.rows, tbl.hasHeader !== false, 8600));
+          });
+          if ((step.termPrompt && step.termPrompt.trim()) || (step.termCommand && step.termCommand.trim()) || (step.termOutput && step.termOutput.trim())) {
+            const tLine = [((step.termPrompt || '').trim() + ' ' + (step.termCommand || '').trim()).trim(), (step.termOutput || '').trim()].filter(Boolean).join('\n');
+            parts.push('\\pard\\li360\\sa80\\f1\\fs19\\cbpat7\\cf8 ' + escapeRtfText(tLine) + '\\f0\\fs22\\cf2\\par');
+          }
+          (step.images || []).forEach(function (img, imIdx) {
+            appendRtfImage(img.src, img.alt || ('Step ' + (sIdx + 1) + ' Image ' + (imIdx + 1)));
+          });
+        });
+      }
+    });
+
+    parts.push('}');
+    return parts.join('\n');
+  }
+
+  /* =========================================================================
+   * Pure-JS Binary PDF 1.4 Student Document Generator
+   * ========================================================================= */
+  function toPdfWinAnsiBytes(str) {
+    const s = String(str == null ? '' : str)
+      .replace(/\u2022/g, '\x95')
+      .replace(/\u2013/g, '\x96')
+      .replace(/\u2014/g, '\x97')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/\u2026/g, '...')
+      .replace(/\u2192/g, '->')
+      .replace(/\u2190/g, '<-')
+      .replace(/\u2191/g, '^')
+      .replace(/\u2193/g, 'v');
+    let escaped = '';
+    for (let i = 0; i < s.length; i++) {
+      const code = s.charCodeAt(i);
+      const ch = s[i];
+      if (ch === '\\' || ch === '(' || ch === ')') {
+        escaped += '\\' + ch;
+      } else if (code >= 32 && code <= 126) {
+        escaped += ch;
+      } else if (code === 0x95 || code === 0x96 || code === 0x97 || (code >= 0xA0 && code <= 0xFF)) {
+        escaped += '\\' + code.toString(8).padStart(3, '0');
+      } else {
+        escaped += ' ';
+      }
+    }
+    return '(' + escaped + ')';
+  }
+
+  function measurePdfWidth(str, fontKey, fontSize) {
+    const s = String(str || '');
+    const isMono = fontKey === 'F4' || fontKey === 'F5';
+    const isBold = fontKey === 'F2';
+    let units = 0;
+    for (let i = 0; i < s.length; i++) {
+      if (isMono) {
+        units += 0.6;
+      } else {
+        const ch = s[i];
+        if ('il.,;:\'!|[]() '.indexOf(ch) !== -1) units += 0.28;
+        else if ('mwMW@#%'.indexOf(ch) !== -1) units += 0.84;
+        else if (ch >= 'A' && ch <= 'Z') units += isBold ? 0.68 : 0.64;
+        else units += isBold ? 0.56 : 0.52;
+      }
+    }
+    return units * fontSize;
+  }
+
+  function decodePngToPdfImage(buf) {
+    if (typeof require !== 'function') return null;
+    let zlib;
+    try { zlib = require('zlib'); } catch (_e) { return null; }
+    if (!buf || buf.length < 24) return null;
+
+    let offset = 8;
+    let width = 0;
+    let height = 0;
+    let bitDepth = 8;
+    let colorType = 2;
+    let interlace = 0;
+    let palette = null;
+    const idatChunks = [];
+
+    while (offset + 8 <= buf.length) {
+      const len = (buf[offset] << 24 | buf[offset + 1] << 16 | buf[offset + 2] << 8 | buf[offset + 3]) >>> 0;
+      const type = String.fromCharCode(buf[offset + 4], buf[offset + 5], buf[offset + 6], buf[offset + 7]);
+      const dataStart = offset + 8;
+      if (dataStart + len > buf.length) break;
+      if (type === 'IHDR' && len >= 13) {
+        width = (buf[dataStart] << 24 | buf[dataStart + 1] << 16 | buf[dataStart + 2] << 8 | buf[dataStart + 3]) >>> 0;
+        height = (buf[dataStart + 4] << 24 | buf[dataStart + 5] << 16 | buf[dataStart + 6] << 8 | buf[dataStart + 7]) >>> 0;
+        bitDepth = buf[dataStart + 8];
+        colorType = buf[dataStart + 9];
+        interlace = buf[dataStart + 12];
+      } else if (type === 'PLTE') {
+        palette = buf.slice(dataStart, dataStart + len);
+      } else if (type === 'IDAT') {
+        idatChunks.push(buf.slice(dataStart, dataStart + len));
+      } else if (type === 'IEND') {
+        break;
+      }
+      offset = dataStart + len + 4;
+    }
+
+    if (!width || !height || bitDepth !== 8 || interlace !== 0 || !idatChunks.length) return null;
+    if ([0, 2, 3, 4, 6].indexOf(colorType) === -1) return null;
+
+    const bppMap = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
+    const bpp = bppMap[colorType];
+    const compressed = Buffer.concat(idatChunks);
+    const raw = zlib.inflateSync(compressed);
+    const stride = width * bpp;
+    const scanlines = new Uint8Array(height * stride);
+
+    function paeth(a, b, c) {
+      const p = a + b - c;
+      const pa = Math.abs(p - a);
+      const pb = Math.abs(p - b);
+      const pc = Math.abs(p - c);
+      if (pa <= pb && pa <= pc) return a;
+      if (pb <= pc) return b;
+      return c;
+    }
+
+    for (let y = 0; y < height; y++) {
+      const inRow = y * (stride + 1);
+      const outRow = y * stride;
+      if (inRow >= raw.length) break;
+      const filter = raw[inRow];
+      for (let x = 0; x < stride; x++) {
+        const val = raw[inRow + 1 + x] || 0;
+        const a = x >= bpp ? scanlines[outRow + x - bpp] : 0;
+        const b = y > 0 ? scanlines[outRow - stride + x] : 0;
+        const c = (y > 0 && x >= bpp) ? scanlines[outRow - stride + x - bpp] : 0;
+        let recon = val;
+        if (filter === 1) recon = (val + a) & 0xFF;
+        else if (filter === 2) recon = (val + b) & 0xFF;
+        else if (filter === 3) recon = (val + ((a + b) >> 1)) & 0xFF;
+        else if (filter === 4) recon = (val + paeth(a, b, c)) & 0xFF;
+        scanlines[outRow + x] = recon;
+      }
+    }
+
+    const rgb = new Uint8Array(width * height * 3);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const dst = (y * width + x) * 3;
+        const src = y * stride + x * bpp;
+        if (colorType === 2) {
+          rgb[dst] = scanlines[src];
+          rgb[dst + 1] = scanlines[src + 1];
+          rgb[dst + 2] = scanlines[src + 2];
+        } else if (colorType === 6) {
+          const alpha = scanlines[src + 3] / 255;
+          rgb[dst] = Math.round(scanlines[src] * alpha + 255 * (1 - alpha));
+          rgb[dst + 1] = Math.round(scanlines[src + 1] * alpha + 255 * (1 - alpha));
+          rgb[dst + 2] = Math.round(scanlines[src + 2] * alpha + 255 * (1 - alpha));
+        } else if (colorType === 0) {
+          rgb[dst] = rgb[dst + 1] = rgb[dst + 2] = scanlines[src];
+        } else if (colorType === 4) {
+          const gVal = scanlines[src];
+          const alpha = scanlines[src + 1] / 255;
+          const v = Math.round(gVal * alpha + 255 * (1 - alpha));
+          rgb[dst] = rgb[dst + 1] = rgb[dst + 2] = v;
+        } else if (colorType === 3 && palette) {
+          const pIdx = scanlines[src] * 3;
+          rgb[dst] = palette[pIdx] || 0;
+          rgb[dst + 1] = palette[pIdx + 1] || 0;
+          rgb[dst + 2] = palette[pIdx + 2] || 0;
+        }
+      }
+    }
+
+    return {
+      width: width,
+      height: height,
+      colorSpace: '/DeviceRGB',
+      filter: '/FlateDecode',
+      data: zlib.deflateSync(Buffer.from(rgb))
+    };
+  }
+
+  /**
+   * Generates a valid multi-page binary PDF 1.4 Buffer/Uint8Array for Full Manual or Current Page.
+   */
+  function generateManualPdfBuffer(manual, options) {
+    const opts = options || {};
+    const scope = opts.scope === 'current' ? 'current' : 'full';
+    const colorTheme = opts.colorTheme || (manual && manual.colorTheme) || 'crimson-slate';
+    const theme = getColorTheme(colorTheme);
+    const accent = hexToRgb(theme.light.accent);
+    const items = collectExportNodes(manual, scope, opts.activeNodeId);
+    const resolvedImages = opts.resolvedImages || {};
+
+    const PAGE_W = 612;
+    const PAGE_H = 792;
+    const MARGIN = 44;
+    const CONTENT_W = PAGE_W - MARGIN * 2;
+    const BOTTOM_Y = 56;
+
+    const pages = [];
+    const pdfImages = [];
+    let currentOps = null;
+    let cursorY = PAGE_H - MARGIN;
+
+    function fNum(n) { return Number(n).toFixed(2); }
+
+    function newPage() {
+      currentOps = [];
+      pages.push(currentOps);
+      cursorY = PAGE_H - MARGIN;
+    }
+
+    function ensureSpace(h) {
+      if (!currentOps || cursorY - h < BOTTOM_Y) {
+        newPage();
+      }
+    }
+
+    function drawRect(x, yTop, w, h, fillRgb, strokeRgb, lineW) {
+      const ops = currentOps;
+      ops.push('q');
+      if (fillRgb) ops.push(fNum(fillRgb[0]) + ' ' + fNum(fillRgb[1]) + ' ' + fNum(fillRgb[2]) + ' rg');
+      if (strokeRgb) ops.push(fNum(strokeRgb[0]) + ' ' + fNum(strokeRgb[1]) + ' ' + fNum(strokeRgb[2]) + ' RG');
+      if (lineW) ops.push(fNum(lineW) + ' w');
+      ops.push(fNum(x) + ' ' + fNum(yTop - h) + ' ' + fNum(w) + ' ' + fNum(h) + ' re ' + (fillRgb && strokeRgb ? 'B' : (fillRgb ? 'f' : 'S')));
+      ops.push('Q');
+    }
+
+    function drawTextLine(text, x, yBaseline, fontKey, fontSize, rgb) {
+      const col = rgb || [0.12, 0.16, 0.22];
+      currentOps.push(
+        'BT ' + fNum(col[0]) + ' ' + fNum(col[1]) + ' ' + fNum(col[2]) + ' rg /' + fontKey + ' ' + fNum(fontSize) +
+        ' Tf 1 0 0 1 ' + fNum(x) + ' ' + fNum(yBaseline) + ' Tm ' + toPdfWinAnsiBytes(text) + ' Tj ET'
+      );
+    }
+
+    function wrapRunsToLines(runs, maxWidth, baseFontSize) {
+      const fs = baseFontSize || 10.5;
+      const lines = [[]];
+      let lineW = 0;
+
+      function pushToken(tokText, runStyle) {
+        const fontKey = (runStyle.cmd || runStyle.kbd)
+          ? (runStyle.bold ? 'F5' : 'F4')
+          : (runStyle.bold || runStyle.ui ? 'F2' : (runStyle.italic ? 'F3' : 'F1'));
+        const w = measurePdfWidth(tokText, fontKey, fs);
+        if (lineW > 0 && lineW + w > maxWidth && tokText.trim() !== '') {
+          lines.push([]);
+          lineW = 0;
+          if (/^\s+$/.test(tokText)) return;
+        }
+        lines[lines.length - 1].push({
+          text: tokText,
+          fontKey: fontKey,
+          width: w,
+          ui: runStyle.ui,
+          cmd: runStyle.cmd,
+          kbd: runStyle.kbd,
+          highlight: runStyle.highlight,
+          underline: runStyle.underline,
+          strike: runStyle.strike
+        });
+        lineW += w;
+      }
+
+      runs.forEach(function (r) {
+        const subLines = String(r.text || '').split('\n');
+        subLines.forEach(function (sl, slIdx) {
+          if (slIdx > 0) {
+            lines.push([]);
+            lineW = 0;
+          }
+          const words = sl.match(/\S+\s*|\s+/g) || [];
+          words.forEach(function (w) {
+            pushToken(w, r);
+          });
+        });
+      });
+
+      return lines;
+    }
+
+    function drawWrappedRuns(runs, x, maxWidth, fontSize, lineHeight, optionsDraw) {
+      const dOpts = optionsDraw || {};
+      const fs = fontSize || 10.5;
+      const lh = lineHeight || (fs * 1.42);
+      const wrapped = wrapRunsToLines(runs, maxWidth, fs);
+      wrapped.forEach(function (segs) {
+        ensureSpace(lh + 2);
+        let curX = x;
+        const baseline = cursorY - fs;
+        segs.forEach(function (seg) {
+          if (seg.highlight) {
+            drawRect(curX, cursorY - 1, seg.width, lh - 2, [0.996, 0.94, 0.54], null, 0);
+          } else if (seg.cmd || seg.kbd) {
+            drawRect(curX, cursorY - 1, seg.width, lh - 2, [0.94, 0.96, 0.98], [0.80, 0.84, 0.89], 0.4);
+          }
+          let col = dOpts.defaultColor || [0.12, 0.16, 0.22];
+          if (seg.ui) col = [accent.r * 0.82, accent.g * 0.82, accent.b * 0.82];
+          else if (seg.cmd) col = [0.06, 0.15, 0.35];
+          drawTextLine(seg.text, curX, baseline, seg.fontKey, fs, col);
+          if (seg.underline) {
+            drawRect(curX, baseline - 1.5, seg.width, 0.6, col, null, 0);
+          }
+          if (seg.strike) {
+            drawRect(curX, baseline + fs * 0.32, seg.width, 0.6, col, null, 0);
+          }
+          curX += seg.width;
+        });
+        cursorY -= lh;
+      });
+    }
+
+    function drawDataTablePdf(tbl, x, maxWidth) {
+      const rows = Array.isArray(tbl.rows) ? tbl.rows : [];
+      if (!rows.length) return;
+      if (tbl.title && tbl.title.trim()) {
+        ensureSpace(20);
+        drawTextLine(tbl.title.trim(), x, cursorY - 11, 'F2', 10, [accent.r * 0.8, accent.g * 0.8, accent.b * 0.8]);
+        cursorY -= 16;
+      }
+      const cols = Math.max.apply(null, rows.map(function (r) { return (r || []).length; }).concat([1]));
+      const colW = maxWidth / cols;
+      const cellPadX = 6;
+      const cellFs = 9.2;
+      const cellLh = 12.5;
+
+      function renderTableRow(r, isHdr) {
+        const cellLineArrays = [];
+        let maxLines = 1;
+        for (let c = 0; c < cols; c++) {
+          const runs = tokenizeInlineRuns((r && r[c]) || '');
+          const wrapped = wrapRunsToLines(runs, colW - cellPadX * 2, cellFs);
+          cellLineArrays.push(wrapped);
+          if (wrapped.length > maxLines) maxLines = wrapped.length;
+        }
+        const rowH = Math.max(18, maxLines * cellLh + 8);
+        if (cursorY - rowH < BOTTOM_Y) {
+          newPage();
+          if (!isHdr && tbl.hasHeader !== false && rows[0]) {
+            renderTableRow(rows[0], true);
+          }
+        }
+        for (let c = 0; c < cols; c++) {
+          const cx = x + c * colW;
+          const bg = isHdr ? [0.91, 0.94, 0.97] : (rIdxEven ? [0.98, 0.99, 1.0] : [1, 1, 1]);
+          drawRect(cx, cursorY, colW, rowH, bg, [0.78, 0.82, 0.88], 0.5);
+          const linesForCell = cellLineArrays[c];
+          linesForCell.forEach(function (segs, lIdx) {
+            let tx = cx + cellPadX;
+            const baseline = cursorY - 5 - cellFs - lIdx * cellLh;
+            segs.forEach(function (seg) {
+              const fk = isHdr ? 'F2' : seg.fontKey;
+              drawTextLine(seg.text, tx, baseline, fk, cellFs, [0.12, 0.16, 0.22]);
+              tx += seg.width;
+            });
+          });
+        }
+        cursorY -= rowH;
+      }
+
+      let rIdxEven = false;
+      rows.forEach(function (r, rIdx) {
+        const isHdr = tbl.hasHeader !== false && rIdx === 0;
+        rIdxEven = !isHdr && rIdx % 2 === 1;
+        renderTableRow(r, isHdr);
+      });
+      cursorY -= 8;
+    }
+
+    function drawCalloutBox(title, bodyRuns, x, width, bgRgb, barRgb) {
+      const innerW = width - 20;
+      const lines = wrapRunsToLines(bodyRuns, innerW, 9.8);
+      const boxH = (title ? 20 : 6) + Math.max(1, lines.length) * 14 + 8;
+      ensureSpace(boxH + 6);
+      const topY = cursorY;
+      drawRect(x, topY, width, boxH, bgRgb, [0.84, 0.87, 0.91], 0.5);
+      drawRect(x, topY, 3.5, boxH, barRgb, null, 0);
+      cursorY = topY - 7;
+      if (title) {
+        drawTextLine(title, x + 12, cursorY - 10, 'F2', 10, [accent.r * 0.85, accent.g * 0.85, accent.b * 0.85]);
+        cursorY -= 16;
+      }
+      drawWrappedRuns(bodyRuns, x + 12, innerW, 9.8, 13.8);
+      cursorY = topY - boxH - 8;
+    }
+
+    function appendPdfImage(src, alt, x, maxW) {
+      const fn = extractFilenameFromSrc(src);
+      const buf = resolvedImages[src] || resolvedImages['./images/' + fn] || resolvedImages[fn];
+      const meta = buf ? detectImageDimensionsAndFormat(buf) : null;
+      let imgObj = null;
+      if (meta && buf) {
+        if (meta.type === 'jpeg') {
+          imgObj = {
+            width: meta.width,
+            height: meta.height,
+            colorSpace: meta.components === 1 ? '/DeviceGray' : (meta.components === 4 ? '/DeviceCMYK' : '/DeviceRGB'),
+            filter: '/DCTDecode',
+            data: buf
+          };
+        } else if (meta.type === 'png') {
+          try { imgObj = decodePngToPdfImage(buf); } catch (_e) { imgObj = null; }
+        }
+      }
+
+      if (imgObj) {
+        const scale = Math.min(maxW / imgObj.width, 260 / imgObj.height, 0.75);
+        const drawW = Math.max(40, imgObj.width * scale);
+        const drawH = Math.max(30, imgObj.height * scale);
+        ensureSpace(drawH + 12);
+        const imName = 'Im' + (pdfImages.length + 1);
+        pdfImages.push({ name: imName, spec: imgObj });
+        const yBottom = cursorY - drawH;
+        drawRect(x, cursorY, drawW, drawH, null, [0.82, 0.86, 0.90], 0.5);
+        currentOps.push('q ' + fNum(drawW) + ' 0 0 ' + fNum(drawH) + ' ' + fNum(x) + ' ' + fNum(yBottom) + ' cm /' + imName + ' Do Q');
+        cursorY -= (drawH + 8);
+      } else if (src) {
+        ensureSpace(22);
+        drawRect(x, cursorY, Math.min(maxW, 380), 18, [0.96, 0.97, 0.99], [0.82, 0.86, 0.90], 0.5);
+        drawTextLine('[Image: ' + (alt || fn || src) + ']', x + 8, cursorY - 12, 'F3', 8.8, [0.38, 0.44, 0.52]);
+        cursorY -= 24;
+      }
+    }
+
+    // Start first page & render cover banner
+    newPage();
+    drawRect(MARGIN, cursorY, CONTENT_W, 36, [accent.r, accent.g, accent.b], null, 0);
+    drawTextLine((manual && manual.name) || 'VLP Student Lab Manual', MARGIN + 12, cursorY - 22, 'F2', 14, [1, 1, 1]);
+    drawTextLine(scope === 'current' ? 'Single Page Export' : 'Complete Manual', PAGE_W - MARGIN - 110, cursorY - 22, 'F1', 9.5, [0.95, 0.97, 1]);
+    cursorY -= 48;
+
+    items.forEach(function (it, idx) {
+      if (idx > 0 && it.depth <= 1 && cursorY < 620) {
+        newPage();
+      }
+      let node = it.node;
+      let mode = node.mode;
+      let ov = node.overview;
+      let stData = node.stepsData;
+      if (mode === 'raw') {
+        const fb = resolveRawHtmlFallbackData(node);
+        if (fb.mode === 'overview') { mode = 'overview'; ov = fb.overview; }
+        else if (fb.mode === 'steps') { mode = 'steps'; stData = fb.stepsData; }
+        else {
+          ensureSpace(28);
+          drawTextLine(it.numberLabel + '. ' + (node.title || 'Section'), MARGIN, cursorY - 14, 'F2', 13, [accent.r, accent.g, accent.b]);
+          cursorY -= 22;
+          drawWrappedRuns(tokenizeInlineRuns(fb.text || ''), MARGIN, CONTENT_W, 10, 14);
+          return;
+        }
+      }
+
+      if (mode === 'overview') {
+        const d = Object.assign(createDefaultOverviewData(), ov || {});
+        d.credentialsList = normalizeCredentialsList(d);
+        const hText = it.numberLabel + '. ' + ((d.courseTitle && d.courseTitle.trim()) || node.title || 'Overview');
+        ensureSpace(30);
+        drawTextLine(hText, MARGIN, cursorY - 15, 'F2', 14, [accent.r * 0.9, accent.g * 0.9, accent.b * 0.9]);
+        drawRect(MARGIN, cursorY - 20, CONTENT_W, 1.2, [accent.r, accent.g, accent.b], null, 0);
+        cursorY -= 28;
+
+        if (d.bannerSrc) appendPdfImage(d.bannerSrc, d.bannerAlt || 'Course Banner', MARGIN, CONTENT_W);
+        splitParagraphs(d.overviewText).forEach(function (p) {
+          drawWrappedRuns(tokenizeInlineRuns(p), MARGIN, CONTENT_W, 10.2, 14.5);
+          cursorY -= 5;
+        });
+        (d.tables || []).forEach(function (tbl) { drawDataTablePdf(tbl, MARGIN, CONTENT_W); });
+        if (d.purposeEnabled) {
+          drawCalloutBox(
+            (d.purposeTitle && d.purposeTitle.trim()) || 'INSTRUCTIONAL PURPOSE',
+            tokenizeInlineRuns(d.purposeText || 'Purpose details for the course annex.'),
+            MARGIN,
+            CONTENT_W,
+            [0.98, 0.95, 0.95],
+            [accent.r, accent.g, accent.b]
+          );
+        }
+        if (d.credentialsEnabled || d.credentialsList.length > 0) {
+          const cRows = [['Target System', 'Username', 'Password', 'Role / IP']];
+          d.credentialsList.forEach(function (c) {
+            cRows.push([c.targetSystem || '-', c.username || '-', c.password || '-', c.note || '-']);
+          });
+          if (cRows.length > 1) {
+            drawDataTablePdf({ title: d.credentialsTitle || 'Target VM Credentials', hasHeader: true, rows: cRows }, MARGIN, CONTENT_W);
+          }
+        }
+      } else {
+        const d = Object.assign(createDefaultStepsData(), stData || {});
+        d.credentialsList = normalizeCredentialsList(d);
+        const hText = it.numberLabel + '. ' + ((d.sectionTitle && d.sectionTitle.trim()) || node.title || 'Lab Procedure');
+        ensureSpace(30);
+        drawTextLine(hText, MARGIN, cursorY - 15, 'F2', 13.5, [0.10, 0.14, 0.22]);
+        drawRect(MARGIN, cursorY - 20, CONTENT_W, 1, [0.80, 0.84, 0.90], null, 0);
+        cursorY -= 28;
+
+        splitParagraphs(d.introText).forEach(function (p) {
+          drawWrappedRuns(tokenizeInlineRuns(p), MARGIN, CONTENT_W, 10.2, 14.5);
+          cursorY -= 5;
+        });
+        (d.tables || []).forEach(function (tbl) { drawDataTablePdf(tbl, MARGIN, CONTENT_W); });
+        if (d.credentialsEnabled || d.credentialsList.length > 0) {
+          const cRows = [['Target System', 'Username', 'Password', 'Role / IP']];
+          d.credentialsList.forEach(function (c) {
+            cRows.push([c.targetSystem || '-', c.username || '-', c.password || '-', c.note || '-']);
+          });
+          if (cRows.length > 1) {
+            drawDataTablePdf({ title: d.credentialsTitle || 'Target VM Credentials', hasHeader: true, rows: cRows }, MARGIN, CONTENT_W);
+          }
+        }
+
+        (d.steps || []).map(migrateStepData).forEach(function (step, sIdx) {
+          ensureSpace(36);
+          const badgeY = cursorY;
+          drawRect(MARGIN, badgeY, 22, 18, [accent.r, accent.g, accent.b], null, 0);
+          drawTextLine(String(sIdx + 1), MARGIN + (sIdx + 1 >= 10 ? 5 : 8), badgeY - 12.5, 'F2', 10, [1, 1, 1]);
+
+          const bodyX = MARGIN + 30;
+          const bodyW = CONTENT_W - 30;
+          if (step.instruction && step.instruction.trim()) {
+            drawWrappedRuns(tokenizeInlineRuns(step.instruction), bodyX, bodyW, 10.2, 14.5);
+            cursorY -= 4;
+          } else {
+            cursorY -= 20;
+          }
+          if (step.contextText && step.contextText.trim()) {
+            drawCalloutBox(null, tokenizeInlineRuns(step.contextText), bodyX, bodyW, [0.96, 0.96, 0.98], [accent.r, accent.g, accent.b]);
+          }
+          if (step.credentialsList && step.credentialsList.length) {
+            const cRows = [['Target System', 'Username', 'Password', 'Role / IP']];
+            step.credentialsList.forEach(function (c) {
+              cRows.push([c.targetSystem || '-', c.username || '-', c.password || '-', c.note || '-']);
+            });
+            drawDataTablePdf({ title: 'Target VM Credentials', hasHeader: true, rows: cRows }, bodyX, bodyW);
+          }
+          (step.tables || []).forEach(function (tbl) { drawDataTablePdf(tbl, bodyX, bodyW); });
+          const hasTerm = Boolean((step.termPrompt && step.termPrompt.trim()) || (step.termCommand && step.termCommand.trim()) || (step.termOutput && step.termOutput.trim()));
+          if (hasTerm) {
+            const termLines = [];
+            if ((step.termPrompt && step.termPrompt.trim()) || (step.termCommand && step.termCommand.trim())) {
+              termLines.push(((step.termPrompt || '').trim() + ' ' + (step.termCommand || '').trim()).trim());
+            }
+            if (step.termOutput && step.termOutput.trim()) {
+              step.termOutput.split(/\r?\n/).forEach(function (ol) { termLines.push(ol); });
+            }
+            const tH = Math.max(22, termLines.length * 12 + 12);
+            ensureSpace(tH + 6);
+            const tTop = cursorY;
+            drawRect(bodyX, tTop, bodyW, tH, [0.06, 0.09, 0.16], [0.20, 0.25, 0.33], 0.8);
+            termLines.forEach(function (tl, lIdx) {
+              drawTextLine(tl, bodyX + 8, tTop - 14 - lIdx * 12, 'F4', 8.8, [0.22, 0.74, 0.97]);
+            });
+            cursorY = tTop - tH - 8;
+          }
+          (step.images || []).forEach(function (img, imIdx) {
+            appendPdfImage(img.src, img.alt || ('Step ' + (sIdx + 1) + ' Image ' + (imIdx + 1)), bodyX, bodyW);
+          });
+          cursorY -= 4;
+        });
+      }
+    });
+
+    // Stamp page footers across all pages
+    const totalPages = pages.length;
+    pages.forEach(function (ops, pIdx) {
+      ops.push('q 0.82 0.85 0.90 RG 0.5 w ' + MARGIN + ' 38 m ' + (PAGE_W - MARGIN) + ' 38 l S Q');
+      const leftFooter = ((manual && manual.name) || 'VLP Manual') + '  (Air-Gapped Export)';
+      const rightFooter = 'Page ' + (pIdx + 1) + ' of ' + totalPages;
+      ops.push('BT 0.45 0.50 0.58 rg /F1 8.5 Tf 1 0 0 1 ' + MARGIN + ' 24 Tm ' + toPdfWinAnsiBytes(leftFooter) + ' Tj ET');
+      ops.push('BT 0.45 0.50 0.58 rg /F1 8.5 Tf 1 0 0 1 ' + (PAGE_W - MARGIN - 65) + ' 24 Tm ' + toPdfWinAnsiBytes(rightFooter) + ' Tj ET');
+    });
+
+    // Assemble PDF 1.4 binary with exact byte-offset xref table
+    const objects = [];
+    function addObj(bodyOrChunks) {
+      objects.push(bodyOrChunks);
+      return objects.length; // 1-based PDF object ID
+    }
+
+    const idCatalog = addObj(null); // 1
+    const idPages = addObj(null);   // 2
+    const fontIds = {
+      F1: addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'),
+      F2: addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'),
+      F3: addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >>'),
+      F4: addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>'),
+      F5: addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>')
+    };
+
+    const imageObjMap = {};
+    pdfImages.forEach(function (im) {
+      const headStr =
+        '<< /Type /XObject /Subtype /Image /Width ' + im.spec.width +
+        ' /Height ' + im.spec.height +
+        ' /ColorSpace ' + im.spec.colorSpace +
+        ' /BitsPerComponent 8' +
+        ' /Filter ' + im.spec.filter +
+        ' /Length ' + im.spec.data.length + ' >>\nstream\n';
+      imageObjMap[im.name] = addObj([headStr, im.spec.data, '\nendstream']);
+    });
+
+    const xObjectRef = pdfImages.length
+      ? (' /XObject << ' + pdfImages.map(function (im) { return '/' + im.name + ' ' + imageObjMap[im.name] + ' 0 R'; }).join(' ') + ' >>')
+      : '';
+    const resourcesDict = '<< /Font << /F1 ' + fontIds.F1 + ' 0 R /F2 ' + fontIds.F2 + ' 0 R /F3 ' + fontIds.F3 + ' 0 R /F4 ' + fontIds.F4 + ' 0 R /F5 ' + fontIds.F5 + ' 0 R >>' + xObjectRef + ' >>';
+
+    const pageObjIds = pages.map(function (ops) {
+      const streamStr = ops.join('\n');
+      const streamLen = typeof Buffer !== 'undefined' ? Buffer.byteLength(streamStr, 'latin1') : streamStr.length;
+      const contentId = addObj('<< /Length ' + streamLen + ' >>\nstream\n' + streamStr + '\nendstream');
+      return addObj('<< /Type /Page /Parent ' + idPages + ' 0 R /MediaBox [0 0 ' + PAGE_W + ' ' + PAGE_H + '] /Resources ' + resourcesDict + ' /Contents ' + contentId + ' 0 R >>');
+    });
+
+    objects[idPages - 1] = '<< /Type /Pages /Kids [' + pageObjIds.map(function (id) { return id + ' 0 R'; }).join(' ') + '] /Count ' + pageObjIds.length + ' >>';
+    objects[idCatalog - 1] = '<< /Type /Catalog /Pages ' + idPages + ' 0 R >>';
+
+    function strToLatin1Bytes(str) {
+      if (typeof Buffer !== 'undefined') return Buffer.from(str, 'latin1');
+      const arr = new Uint8Array(str.length);
+      for (let i = 0; i < str.length; i++) arr[i] = str.charCodeAt(i) & 0xFF;
+      return arr;
+    }
+
+    const byteChunks = [];
+    let byteCursor = 0;
+    function pushChunk(chunk) {
+      const bytes = (typeof chunk === 'string') ? strToLatin1Bytes(chunk) : new Uint8Array(chunk);
+      byteChunks.push(bytes);
+      byteCursor += bytes.length;
+    }
+
+    pushChunk('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    const offsets = [0];
+    objects.forEach(function (obj, idx) {
+      offsets.push(byteCursor);
+      pushChunk((idx + 1) + ' 0 obj\n');
+      if (Array.isArray(obj)) {
+        obj.forEach(pushChunk);
+      } else {
+        pushChunk(String(obj));
+      }
+      pushChunk('\nendobj\n');
+    });
+
+    const xrefOffset = byteCursor;
+    let xref = 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n';
+    for (let i = 1; i < offsets.length; i++) {
+      xref += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+    }
+    xref += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root ' + idCatalog + ' 0 R >>\nstartxref\n' + xrefOffset + '\n%%EOF\n';
+    pushChunk(xref);
+
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.concat(byteChunks.map(function (c) { return Buffer.from(c); }));
+    }
+    const merged = new Uint8Array(byteCursor);
+    let pos = 0;
+    byteChunks.forEach(function (c) {
+      merged.set(c, pos);
+      pos += c.length;
+    });
+    return merged;
+  }
+
   return {
     VLP_COLOR_THEMES: VLP_COLOR_THEMES,
     MASTER_STYLE_BLOCK: MASTER_STYLE_BLOCK,
@@ -2713,6 +4020,11 @@
     generateCourseOverviewHtml: generateCourseOverviewHtml,
     generateProceduralStepsHtml: generateProceduralStepsHtml,
     generateNodeHtml: generateNodeHtml,
+    collectExportNodes: collectExportNodes,
+    generateStandaloneManualHtml: generateStandaloneManualHtml,
+    generateManualMdx: generateManualMdx,
+    generateManualRtf: generateManualRtf,
+    generateManualPdfBuffer: generateManualPdfBuffer,
     parseRawTextToSteps: parseRawTextToSteps,
     parseHtmlToNodeState: parseHtmlToNodeState,
     convertLegacyContentToStep: convertLegacyContentToStep,
