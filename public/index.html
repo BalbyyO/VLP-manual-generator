@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VLP Manual HTML Formatter &amp; XML Builder</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand-mark" aria-hidden="true">VLP</div>
+      <span class="brand-title">VLP Manual HTML Formatter</span>
+      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • Native</span>
+      <span id="saveStatusBadge" class="badge status-ok" title="Dual Auto-Save (Browser IndexedDB + Server Disk)">
+        <span class="status-dot"></span>
+        <span id="saveStatusText">Ready</span>
+      </span>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="btnUndo" class="btn btn-sm" title="Undo last structural/template change" disabled>Undo</button>
+      <button id="btnOpenTemplates" class="btn btn-sm btn-blue">Templates &amp; Button Guide</button>
+      <button id="btnLoadAnnexB" class="btn btn-sm" title="Load dsac.annexb.lab01-en reference manual">Load Annex B</button>
+      <button id="btnLoadAnnexC" class="btn btn-sm" title="Load dsac.annexc.lab01-en multi-chapter XML example">Load Annex C</button>
+      <button id="btnOpenSessions" class="btn btn-sm">Sessions</button>
+      <label class="btn btn-sm" for="importPackageInput" title="Import VLP .zip package or content.xml">
+        Import XML / ZIP
+        <input id="importPackageInput" type="file" accept=".xml,.zip" class="hidden" />
+      </label>
+      <button id="btnExportXml" class="btn btn-sm" title="Download VLP content.xml">Export XML</button>
+      <button id="btnExportZip" class="btn btn-sm btn-primary" title="Download full VLP package (.zip with content.xml + images/)">Export VLP ZIP</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- Left Pane: Manual Hierarchy Tree -->
+    <aside class="pane" aria-label="Manual Tree">
+      <div class="pane-header">
+        <span class="pane-title">Manual Structure</span>
+        <div style="display:flex; gap:4px;">
+          <button id="btnNewManual" class="btn btn-xs" title="Start a blank manual">New</button>
+          <button id="btnAddChapter" class="btn btn-xs btn-blue" title="Add Chapter under Manual Root">+ Chapter</button>
+          <button id="btnAddStepNode" class="btn btn-xs" title="Add Procedural Page under selected Chapter">+ Page</button>
+        </div>
+      </div>
+
+      <div class="pane-body">
+        <div class="manual-meta-card">
+          <label class="field-label" for="manualNameInput">Manual Package Name</label>
+          <input id="manualNameInput" class="input" type="text" placeholder="e.g. dsac.annexb.lab01" />
+          <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+            <div style="flex:1;">
+              <label class="field-label" for="manualLangInput">Language</label>
+              <input id="manualLangInput" class="input" type="text" value="en" />
+            </div>
+            <div style="flex:1;">
+              <label class="field-label">Total Pages</label>
+              <div id="nodeCountLabel" class="badge" style="width:100%; justify-content:center; padding:6px;">0 nodes</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="treeList" class="tree-list" role="tree"></div>
+      </div>
+    </aside>
+
+    <!-- Center Pane: Hybrid Editor & Formatting Toolbar -->
+    <section class="pane" aria-label="Manual Editor">
+      <div class="editor-header-bar">
+        <input id="nodeTitleInput" class="input node-title-input" type="text" placeholder="Node / Page Title" />
+        <div class="segmented" role="group" aria-label="Page Layout Mode">
+          <button type="button" id="modeBtnOverview" data-mode="overview">Course Overview</button>
+          <button type="button" id="modeBtnSteps" data-mode="steps">Procedural Steps</button>
+          <button type="button" id="modeBtnRaw" data-mode="raw">Raw / Imported</button>
+        </div>
+      </div>
+
+      <!-- Sticky Toolbar -->
+      <div id="editorToolbar" class="toolbar-bar" role="toolbar" aria-label="VLP Semantic Formatting Toolbar">
+        <div class="toolbar-group">
+          <span class="toolbar-label">Inline</span>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="ui-target" title="Wrap selection in <span class='ui-target'> (shortcut: **text** or [ui]text[/ui])">
+              <span class="swatch-ui">UI</span> UI Target
+            </button>
+            <button type="button" class="tb-btn-help" data-guide-id="ui-target" title="Show UI Target example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="cmd-inline" title="Wrap selection in <code class='cmd-inline'> (shortcut: `cmd`)">
+              <span class="swatch-cmd">cmd</span> Command
+            </button>
+            <button type="button" class="tb-btn-help" data-guide-id="cmd-inline" title="Show Command example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="key-press" title="Wrap selection in <kbd class='key-press'> (shortcut: [[Key]])">
+              <span class="swatch-kbd">Key</span> Key Press
+            </button>
+            <button type="button" class="tb-btn-help" data-guide-id="key-press" title="Show Key Press example">?</button>
+          </div>
+        </div>
+
+        <div id="overviewToolbarGroup" class="toolbar-group">
+          <span class="toolbar-label">Overview Blocks</span>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-overview-action="focus-title">Course H1</button>
+            <button type="button" class="tb-btn-help" data-guide-id="course-header">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-overview-action="focus-banner">Banner</button>
+            <button type="button" class="tb-btn-help" data-guide-id="banner-img">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-overview-action="toggle-divider">Divider</button>
+            <button type="button" class="tb-btn-help" data-guide-id="section-divider">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-overview-action="toggle-purpose">Purpose Box</button>
+            <button type="button" class="tb-btn-help" data-guide-id="purpose-card">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-overview-action="toggle-credentials">VM Creds Box</button>
+            <button type="button" class="tb-btn-help" data-guide-id="lab-note">?</button>
+          </div>
+        </div>
+
+        <div id="stepsToolbarGroup" class="toolbar-group hidden">
+          <span class="toolbar-label">Step Blocks</span>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-steps-action="focus-header">Section H3</button>
+            <button type="button" class="tb-btn-help" data-guide-id="lab-header">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-steps-action="add-step">+ Step Row</button>
+            <button type="button" class="tb-btn-help" data-guide-id="lab-table">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-steps-action="add-context">+ Context</button>
+            <button type="button" class="tb-btn-help" data-guide-id="step-context">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-steps-action="add-terminal">+ Terminal</button>
+            <button type="button" class="tb-btn-help" data-guide-id="term-box">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-steps-action="add-image">+ Image</button>
+            <button type="button" class="tb-btn-help" data-guide-id="step-inline-img">?</button>
+          </div>
+        </div>
+
+        <div class="toolbar-group">
+          <button type="button" id="btnShowGuideModal" class="btn btn-xs btn-blue">Button Demo Guide</button>
+        </div>
+      </div>
+
+      <!-- Editor Body -->
+      <div id="editorBody" class="pane-body">
+        <!-- Chapter Consolidation Banner (shown when node has children) -->
+        <div id="chapterConsolidateBanner" class="card card-amber hidden">
+          <div class="card-header">
+            <span class="card-title">Chapter Node with Child Steps (<span id="chapterChildCount">0</span>)</span>
+            <button type="button" id="btnConsolidateChapter" class="btn btn-sm btn-primary">
+              Consolidate Chapter Steps into VLP Table
+            </button>
+          </div>
+          <p class="muted-hint" style="margin:0;">
+            Cleans legacy Word/CKEditor formatting, extracts "What you are doing / Why this matters" context blocks, maps screenshots 1-to-1 inline inside table rows, and combines child micro-steps into a formatted VLP <code>.lab-wrapper</code> procedural page.
+          </p>
+        </div>
+
+        <!-- Course Overview Form -->
+        <div id="overviewEditor" class="hidden">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Course / Introduction Header &amp; Banner</span>
+              <span class="muted-hint">.course-overview</span>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label class="field-label" for="ovCourseTitle">Course Title (&lt;h1&gt;, optional)</label>
+                <input id="ovCourseTitle" class="input" type="text" placeholder="e.g. WINDOWS SERVER 2022" />
+              </div>
+              <div>
+                <label class="field-label" for="ovBannerAlt">Banner Alt Text</label>
+                <input id="ovBannerAlt" class="input" type="text" placeholder="e.g. Course Banner" />
+              </div>
+            </div>
+            <div style="margin-top:10px;">
+              <label class="field-label" for="ovBannerSrc">Banner Image (URL, ./images/... path, or Paste/Upload below)</label>
+              <div style="display:flex; gap:8px;">
+                <input id="ovBannerSrc" class="input" type="text" placeholder="e.g. ./images/banner.png or paste screenshot below" />
+                <label class="btn btn-sm" for="ovBannerFileInput">
+                  Upload
+                  <input id="ovBannerFileInput" type="file" accept="image/*" class="hidden" />
+                </label>
+                <button type="button" id="ovBannerClearBtn" class="btn btn-sm">Clear</button>
+              </div>
+              <div id="ovBannerDropzone" class="dropzone" tabindex="0" style="margin-top:8px;">
+                Click here and press <strong>Ctrl+V</strong> to paste a banner screenshot, or drag &amp; drop an image file.
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Overview Paragraphs</span>
+              <span class="muted-hint">Highlight text &amp; click UI Target / Command / Key Press, or type **UI**, `cmd`, [[Key]]</span>
+            </div>
+            <textarea id="ovOverviewText" class="textarea" rows="5" data-track-selection="true" placeholder="Paste or type course/section introduction paragraphs (blank line separates paragraphs)..."></textarea>
+            <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+                <input id="ovShowDivider" type="checkbox" checked />
+                <span>Include Section Divider (<code>&lt;hr class="section-divider" /&gt;</code>) before red callout boxes</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card card-red">
+            <div class="card-header">
+              <label class="card-title" style="cursor:pointer;">
+                <input id="ovPurposeEnabled" type="checkbox" />
+                <span>Red Box #1: Instructional Purpose Card (.purpose-card)</span>
+              </label>
+              <span class="badge">Manual Start Only</span>
+            </div>
+            <div id="ovPurposeFields" class="hidden">
+              <label class="field-label" for="ovPurposeTitle">Heading</label>
+              <input id="ovPurposeTitle" class="input" type="text" value="INSTRUCTIONAL PURPOSE" />
+              <label class="field-label" for="ovPurposeText" style="margin-top:8px;">Purpose Paragraphs</label>
+              <textarea id="ovPurposeText" class="textarea" rows="3" data-track-selection="true" placeholder="Describe the instructional purpose and objectives..."></textarea>
+            </div>
+          </div>
+
+          <div class="card card-red">
+            <div class="card-header">
+              <label class="card-title" style="cursor:pointer;">
+                <input id="ovCredEnabled" type="checkbox" />
+                <span>Red Box #2: Target VM Credentials Card (.lab-note)</span>
+              </label>
+              <span class="badge">New / Switched VM Only</span>
+            </div>
+            <div id="ovCredFields" class="hidden">
+              <div class="grid-2">
+                <div>
+                  <label class="field-label" for="ovCredTitle">Card Heading</label>
+                  <input id="ovCredTitle" class="input" type="text" value="Target VM Credentials" />
+                </div>
+                <div>
+                  <label class="field-label" for="ovCredTarget">Target System (.ui-target)</label>
+                  <input id="ovCredTarget" class="input" type="text" placeholder="e.g. NDSACDC01" />
+                </div>
+              </div>
+              <div class="grid-2" style="margin-top:8px;">
+                <div>
+                  <label class="field-label" for="ovCredUser">Username (.cmd-inline)</label>
+                  <input id="ovCredUser" class="input" type="text" placeholder="e.g. xadministrator" />
+                </div>
+                <div>
+                  <label class="field-label" for="ovCredPass">Password (.cmd-inline)</label>
+                  <input id="ovCredPass" class="input" type="text" placeholder="e.g. M@rines1M@rines1" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Procedural Steps Form -->
+        <div id="stepsEditor" class="hidden">
+          <!-- Raw Text Quick Converter -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Raw Text &rarr; Procedural Steps Converter (Native, No AI)</span>
+              <button type="button" id="btnToggleQuickPaste" class="btn btn-xs">Hide / Show</button>
+            </div>
+            <div id="quickPastePanel">
+              <textarea id="quickPasteInput" class="textarea" rows="5" placeholder="Paste raw numbered steps or lines here (preserves exact wording):&#10;1. Click **Start**, type `gpedit.msc`, and press [[Enter]].&#10;What you are doing: Opening Local Group Policy Editor.&#10;Why this matters: Controls Windows Server security settings.&#10;2. Run `whoami` to verify your account."></textarea>
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:8px;">
+                <span class="muted-hint">Supports numbered steps (<code>1.</code>, <code>Step 1:</code>), <code>What you are doing:</code>, <code>Why this matters:</code>, <code>**UI**</code>, <code>`cmd`</code>, <code>[[Key]]</code>, and <code>```term</code> blocks.</span>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" id="btnQuickPasteAppend" class="btn btn-sm">Append Steps</button>
+                  <button type="button" id="btnQuickPasteReplace" class="btn btn-sm btn-primary">Replace Steps</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Section Header &amp; Context</span>
+              <span class="muted-hint">.lab-wrapper</span>
+            </div>
+            <label class="field-label" for="stSectionTitle">Section Header (&lt;h3&gt; inside .lab-header)</label>
+            <input id="stSectionTitle" class="input" type="text" placeholder="e.g. Access Server Manager and Configure System Time" />
+            <label class="field-label" for="stIntroText" style="margin-top:8px;">Introductory Context Paragraphs (optional)</label>
+            <textarea id="stIntroText" class="textarea" rows="3" data-track-selection="true" placeholder="Explain the task and operational importance..."></textarea>
+          </div>
+
+          <div id="stepsContainer"></div>
+
+          <div style="display:flex; justify-content:center; margin:10px 0 20px;">
+            <button type="button" id="btnAddStepBottom" class="btn btn-blue">+ Add Procedural Step</button>
+          </div>
+        </div>
+
+        <!-- Raw / Imported HTML Mode -->
+        <div id="rawEditor" class="hidden">
+          <div class="card card-amber">
+            <div class="card-header">
+              <span class="card-title">Legacy / Imported HTML Mode</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button type="button" id="btnConvertRawToSteps" class="btn btn-sm btn-primary">Convert Page to Procedural Steps</button>
+                <button type="button" id="btnConvertRawToOverview" class="btn btn-sm btn-blue">Convert Page to Course Overview</button>
+              </div>
+            </div>
+            <p class="muted-hint" style="margin:0;">
+              This node currently preserves imported or custom HTML verbatim so nothing is lost on XML export. Click a convert button above to strip Word/CKEditor inline clutter and standardize it into the official VLP HTML format.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Raw HTML Content</span>
+              <span class="muted-hint">Toolbar inline buttons work here too</span>
+            </div>
+            <textarea id="rawHtmlTextarea" class="textarea textarea-mono" rows="20" data-track-selection="true"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Pane: Live VLP Preview & HTML/XML Output -->
+    <section class="pane" aria-label="VLP Preview and Output">
+      <div class="pane-header">
+        <div class="segmented" role="tablist">
+          <button type="button" id="outTabPreview" class="active" data-out-tab="preview">Live VLP Preview</button>
+          <button type="button" id="outTabHtml" data-out-tab="html">HTML (&lt;/&gt; Source)</button>
+          <button type="button" id="outTabXml" data-out-tab="xml">Node XML</button>
+        </div>
+
+        <div id="previewThemeToggleWrap" class="segmented" role="group" aria-label="Preview Theme">
+          <button type="button" id="themeBtnLight" class="active" data-preview-theme="light">Light Mode</button>
+          <button type="button" id="themeBtnDark" data-preview-theme="dark">VLP Dark Mode</button>
+        </div>
+      </div>
+
+      <div id="previewPane" class="preview-frame-wrap">
+        <iframe id="vlpPreviewFrame" class="preview-iframe" title="Live VLP Preview"></iframe>
+      </div>
+
+      <div id="htmlOutputPane" class="preview-frame-wrap hidden">
+        <textarea id="htmlOutputText" class="code-view" readonly aria-label="Generated VLP HTML"></textarea>
+      </div>
+
+      <div id="xmlOutputPane" class="preview-frame-wrap hidden">
+        <textarea id="xmlOutputText" class="code-view" readonly aria-label="Generated Node XML"></textarea>
+      </div>
+
+      <div class="output-footer">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <label class="field-label" style="margin:0;" for="copyImageModeSelect">Copied HTML Images:</label>
+          <select id="copyImageModeSelect" class="select" style="width:auto; padding:4px 8px; font-size:12px;">
+            <option value="vlp">./images/&lt;uuid&gt;.png (VLP Standard)</option>
+            <option value="base64">Inline Base64 Data URI (Standalone)</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <span id="htmlStatsLabel" class="muted-hint">0 chars</span>
+          <button type="button" id="btnCopyHtml" class="btn btn-sm btn-primary">Copy VLP HTML</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Templates, Button Guide & Sample Manuals -->
+  <div id="templatesModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="templatesModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <strong id="templatesModalTitle">Templates, Button Demonstrations &amp; Sample Manuals</strong>
+          <div class="segmented">
+            <button type="button" id="modalTabTemplates" class="active" data-modal-tab="templates">Pre-Made Templates</button>
+            <button type="button" id="modalTabGuide" data-modal-tab="guide">What Every Button Does</button>
+            <button type="button" id="modalTabSamples" data-modal-tab="samples">Reference Manuals</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm" data-close-modal="templatesModal">Close</button>
+      </div>
+      <div id="templatesModalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Sessions & Backup Manager -->
+  <div id="sessionsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="sessionsModalTitle">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <strong id="sessionsModalTitle">Session Persistence &amp; Snapshots</strong>
+        <button type="button" class="btn btn-sm" data-close-modal="sessionsModal">Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Save Named Snapshot (Server /data + Browser)</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <input id="snapshotNameInput" class="input" type="text" placeholder="e.g. Annex B Lab 01 - Checkpoint" />
+            <button type="button" id="btnSaveSnapshot" class="btn btn-sm btn-primary">Save Snapshot</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Portable Offline Project Backup (.json)</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" id="btnExportJsonBackup" class="btn btn-sm">Download .json Backup</button>
+            <label class="btn btn-sm" for="importJsonBackupInput">
+              Restore .json Backup
+              <input id="importJsonBackupInput" type="file" accept=".json" class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Saved Server Snapshots</span>
+            <button type="button" id="btnRefreshSnapshots" class="btn btn-xs">Refresh</button>
+          </div>
+          <div id="snapshotsList" class="muted-hint">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden reusable file input for inline step images -->
+  <input id="stepImageFileInput" type="file" accept="image/*" multiple class="hidden" />
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="./vlp-formatter.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

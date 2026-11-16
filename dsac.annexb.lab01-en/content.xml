@@ -1,0 +1,1628 @@
+<Manual id='76350d3e-2387-488d-8e60-b2f914195c7c'>
+  <name>dsac.annexb.lab01</name>
+  <defaultLanguageCode>en</defaultLanguageCode>
+  <dataFormat>default</dataFormat>
+  <contentNodes>
+    <ContentNode id='f2144d9b-7506-4397-bf70-e833773066ac'>
+      <title>DSAC Annex B | Lab 1: Installing and Configuring Windows Server</title>
+      <orderIndex>0</orderIndex>
+      <children>
+        <ContentNode id='56777934-fb4a-4ef0-b3fc-331ce7ccea05'>
+          <title>Set Correct Date and Time </title>
+          <orderIndex>0</orderIndex>
+          <children>
+            <ContentNode id='aa042d13-ab5c-4228-af17-298f8f10cdac'>
+              <title>Step 1</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='aa042d13-ab5c-4228-af17-298f8f10cdac'>
+                  <title>Step 1</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/a80eebcd-68bb-4ceb-bfd6-12d5a202c8f1.png' filename='a80eebcd-68bb-4ceb-bfd6-12d5a202c8f1.png' width='433' height='289' />
+                    <img src='./images/321224b4-e390-4661-8217-8d96ec6bfaaa.png' filename='321224b4-e390-4661-8217-8d96ec6bfaaa.png' width='438' height='292' />
+                    <img src='./images/09cd8d07-966b-44a5-8271-c2c73db03772.png' filename='09cd8d07-966b-44a5-8271-c2c73db03772.png' width='443' height='295' />
+                    <img src='./images/fb026933-38a4-4c06-9982-2c6bfd56c8ef.png' filename='fb026933-38a4-4c06-9982-2c6bfd56c8ef.png' width='448' height='299' />
+                  </images>
+                  <content>&lt;style type="text/css"&gt;:root {
+    --vlp-border: rgba(128, 128, 128, 0.3);
+    --vlp-accent-red: #dc2626;
+    --vlp-th-bg: rgba(128, 128, 128, 0.15);
+    --vlp-row-even: rgba(128, 128, 128, 0.06);
+    --vlp-kbd-bg: rgba(128, 128, 128, 0.15);
+    --vlp-kbd-border: rgba(128, 128, 128, 0.35);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --vlp-accent-red: #ef4444;
+    }
+  }
+
+  /* Support for VLP / VMware Clarity Dark Mode Selectors */
+  .dark, 
+  [data-theme="dark"], 
+  [clr-theme="dark"], 
+  [cds-theme="dark"], 
+  .theme-dark, 
+  .dark-theme, 
+  .clr-theme-dark, 
+  body.theme-dark {
+    --vlp-accent-red: #ef4444;
+  }
+
+  .lab-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: inherit !important;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .lab-wrapper p {
+    color: inherit !important;
+  }
+
+  .lab-header {
+    border-left: 4px solid var(--vlp-accent-red);
+    padding-left: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .lab-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+  }
+
+  /* Responsive Table - Strips VLP White Odd-Row Backgrounds in Dark Mode */
+  .lab-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--vlp-border) !important;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 16px;
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  .lab-table thead,
+  .lab-table tbody,
+  .lab-table tr,
+  .lab-table td {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+
+  .lab-table tbody tr:nth-child(even),
+  .lab-table tbody tr:nth-child(even) td {
+    background-color: var(--vlp-row-even) !important;
+  }
+
+  .lab-table th {
+    background-color: var(--vlp-th-bg) !important;
+    color: inherit !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--vlp-border) !important;
+  }
+
+  .lab-table td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--vlp-border) !important;
+    vertical-align: top;
+  }
+
+  .lab-table tbody tr:first-child td {
+    border-top: none !important;
+  }
+
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background-color: var(--vlp-accent-red) !important;
+    color: #ffffff !important;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: bold;
+  }
+
+  .ui-target {
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+  }
+
+  /* Inline Terminal Command Override */
+  .lab-wrapper code,
+  code.cmd-inline {
+    display: inline-block !important;
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+    border: 1px solid #334155 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 0.88em !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+  }
+
+  /* Targets all images inside table cells even if VLP strips the class attribute */
+  .lab-table td img,
+  .step-inline-img {
+    max-width: 100%;
+    height: auto;
+    margin-top: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--vlp-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    display: block;
+  }
+&lt;/style&gt;
+&lt;div class="lab-wrapper"&gt;
+&lt;div class="lab-header"&gt;
+&lt;h3&gt;Access Server Manager and Configure System Time&lt;/h3&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In this section, you will utilize Server Manager to navigate to the Local Server view and manually adjust the system&amp;#39;s date and time settings to match a known good source (your laptop). Server Manager is the primary administrative tool for Windows Server, allowing you to monitor and configure current system states.&lt;/p&gt;
+
+&lt;p&gt;Configuring accurate time is critical for a Data Systems Administrator. It ensures proper authentication, accurate system logging, and reliable synchronization with other systems. If the time is incorrect, systems may fail to trust each other, which can disrupt domain communications, network operations, and ultimately mission systems.&lt;/p&gt;
+
+&lt;table class="lab-table"&gt;
+	&lt;thead&gt;
+		&lt;tr&gt;
+			&lt;th style="width: 8%; text-align: center;"&gt;Step&lt;/th&gt;
+			&lt;th style="width: 92%;"&gt;Action &amp;amp; Verification&lt;/th&gt;
+		&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;1&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;&lt;span class="ui-target"&gt;Open Server Manager&lt;/span&gt; and select the &lt;span class="ui-target"&gt;Local Server&lt;/span&gt; view from the left pane to review the current configuration and status of the server. &lt;img alt="Server Manager Local Server View" height="289" src="./images/a80eebcd-68bb-4ceb-bfd6-12d5a202c8f1.png" width="433" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;2&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;In the Properties tile, click on the hyperlinked time next to &lt;span class="ui-target"&gt;Time zone&lt;/span&gt; to open the system date and time settings. &lt;img alt="Date and Time Properties" height="292" src="./images/321224b4-e390-4661-8217-8d96ec6bfaaa.png" width="438" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;3&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Click the &lt;span class="ui-target"&gt;Change date and time...&lt;/span&gt; button to open the menu that allows for manual adjustments. &lt;img alt="Change Date and Time" height="295" src="./images/09cd8d07-966b-44a5-8271-c2c73db03772.png" width="443" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;4&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Adjust the server&amp;rsquo;s date, time, and AM/PM settings so that they match your laptop. &lt;img alt="Adjusting the Date and Time Settings" height="299" src="./images/fb026933-38a4-4c06-9982-2c6bfd56c8ef.png" width="448" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;5&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Click &lt;span class="ui-target"&gt;OK&lt;/span&gt; to apply the changes.&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;6&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;&lt;span class="ui-target"&gt;Verification:&lt;/span&gt; Confirm the updated time is now correctly reflected in the Local Server properties dashboard.&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='56777934-fb4a-4ef0-b3fc-331ce7ccea05'>
+              <title>Set Correct Date and Time </title>
+              <languageCode>en</languageCode>
+              <content>&lt;style&gt;
+  :root {
+    --vlp-bg-card: #ffffff;
+    --vlp-text: #1f2937;
+    --vlp-muted: #4b5563;
+    --vlp-border: rgba(128, 128, 128, 0.25);
+    --vlp-accent-red: #dc2626;
+    --vlp-card-bg: rgba(220, 38, 38, 0.08);
+    --vlp-card-border: rgba(239, 68, 68, 0.4);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --vlp-bg-card: #18181b;
+      --vlp-text: #f3f4f6;
+      --vlp-muted: #9ca3af;
+      --vlp-border: rgba(255, 255, 255, 0.15);
+      --vlp-accent-red: #ef4444;
+      --vlp-card-bg: rgba(239, 68, 68, 0.14);
+      --vlp-card-border: rgba(239, 68, 68, 0.45);
+    }
+  }
+
+  /* Support for VLP / VMware Clarity Dark Mode Selectors */
+  .dark, 
+  [data-theme="dark"], 
+  [clr-theme="dark"], 
+  [cds-theme="dark"], 
+  .theme-dark, 
+  .dark-theme, 
+  .clr-theme-dark, 
+  body.theme-dark {
+    --vlp-bg-card: #18181b;
+    --vlp-text: #f3f4f6;
+    --vlp-muted: #9ca3af;
+    --vlp-border: rgba(255, 255, 255, 0.15);
+    --vlp-accent-red: #ef4444;
+    --vlp-card-bg: rgba(239, 68, 68, 0.14);
+    --vlp-card-border: rgba(239, 68, 68, 0.45);
+  }
+
+  .course-overview {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: inherit !important;
+    line-height: 1.65;
+    font-size: 15px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .course-overview p {
+    color: inherit !important;
+  }
+
+  /* Adaptive Credentials Card - Strips VLP Black UL Background &amp; Preserves Contrast */
+  .lab-note {
+    background-color: var(--vlp-card-bg) !important;
+    border: 1px solid var(--vlp-card-border) !important;
+    border-left: 5px solid var(--vlp-accent-red) !important;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: inherit !important;
+  }
+
+  .lab-note h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+    margin: 0 0 0.75rem 0;
+  }
+
+  .lab-note ul,
+  .lab-note li {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+
+  .lab-note ul {
+    margin: 0 !important;
+    padding-left: 20px !important;
+  }
+
+  .lab-note li {
+    margin-bottom: 6px !important;
+  }
+
+  .lab-note li:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .lab-note li strong {
+    color: inherit !important;
+  }
+
+  .ui-target {
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+  }
+
+  /* Terminal Command Pill Override (Prevents VLP Default White Box) */
+  .course-overview code,
+  code.cmd-inline {
+    display: inline-block !important;
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+    border: 1px solid #334155 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 0.88em !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+  }
+&lt;/style&gt;
+
+&lt;div class="course-overview"&gt;
+  &lt;p&gt;All the following steps will be conducted on the virtual machine labeled &lt;span class="ui-target"&gt;NDSACDC01&lt;/span&gt; in your console menu.&lt;/p&gt;
+
+  &lt;div class="lab-note"&gt;
+    &lt;h2&gt;Target VM Credentials&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;strong&gt;Target System:&lt;/strong&gt; &lt;span class="ui-target"&gt;NDSACDC01&lt;/span&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;strong&gt;Username:&lt;/strong&gt; &lt;code class="cmd-inline"&gt;xadministrator&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;strong&gt;Password:&lt;/strong&gt; &lt;code class="cmd-inline"&gt;M@rines1M@rines1&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+        <ContentNode id='8a504fa6-e457-4d24-82af-e9d8db1a93a6'>
+          <title>Disable Firewall</title>
+          <orderIndex>1</orderIndex>
+          <children>
+            <ContentNode id='2c55894c-3f10-430e-8418-ef32d78ae2dc'>
+              <title>Step 1</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='2c55894c-3f10-430e-8418-ef32d78ae2dc'>
+                  <title>Step 1</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/b4946168-7d75-4ea9-8d81-e1101a766a8c.png' filename='b4946168-7d75-4ea9-8d81-e1101a766a8c.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are opening the &lt;strong&gt;Local Group Policy Editor&lt;/strong&gt; by typing &lt;code&gt;gpedit.msc&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Group Policy controls security and system behavior on Windows servers. As a data systems administrator, you must know how to access this tool to configure security settings such as the firewall&lt;/p&gt;
+
+&lt;p&gt;​​​​​​​Click the windows key&amp;nbsp;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:110%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:110%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;and type &lt;strong&gt;gpedit.msc&amp;nbsp;&lt;/strong&gt;​​​​​​​and open the group policy editor.&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:110%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:110%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/b4946168-7d75-4ea9-8d81-e1101a766a8c.png" /&gt;​​​​​​​​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='19e10903-fc4c-436e-8c12-d7480826fb96'>
+              <title>Step 2</title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='19e10903-fc4c-436e-8c12-d7480826fb96'>
+                  <title>Step 2</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/25791310-146b-4e02-9837-06dcefbab681.png' filename='25791310-146b-4e02-9837-06dcefbab681.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are expanding &lt;strong&gt;Computer Configuration&lt;/strong&gt; and then &lt;strong&gt;Windows Settings&lt;/strong&gt; within the Group Policy Editor.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+System‑wide security settings are organized under Computer Configuration. Knowing how to navigate this structure allows you to locate and adjust critical security controls&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:16px"&gt;​​​​​​​&lt;/span&gt;&lt;img alt="" src="./images/25791310-146b-4e02-9837-06dcefbab681.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='7bedcbb2-8ebb-4daa-bdbf-3080967d0e70'>
+              <title>Step 3</title>
+              <orderIndex>2</orderIndex>
+              <localizations>
+                <LocaleContent id='7bedcbb2-8ebb-4daa-bdbf-3080967d0e70'>
+                  <title>Step 3</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/ee33c719-f93b-48f6-86bb-4ddd585a39b5.png' filename='ee33c719-f93b-48f6-86bb-4ddd585a39b5.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are expanding &lt;strong&gt;Security Settings&lt;/strong&gt;, then &lt;strong&gt;Windows Defender Firewall&lt;/strong&gt;, and selecting the Windows Defender Firewall option.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+This location contains the firewall policies that control how the server allows or blocks network traffic. Accessing this area is required before making any firewall changes&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:16px"&gt;​​​​​​​&lt;/span&gt;&lt;img alt="" src="./images/ee33c719-f93b-48f6-86bb-4ddd585a39b5.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='3e028a00-5bde-4ae9-828c-cf0fcca538bc'>
+              <title>Step 4</title>
+              <orderIndex>3</orderIndex>
+              <localizations>
+                <LocaleContent id='3e028a00-5bde-4ae9-828c-cf0fcca538bc'>
+                  <title>Step 4</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/1e500d35-351d-49aa-9759-a2ae5b32e8d1.png' filename='1e500d35-351d-49aa-9759-a2ae5b32e8d1.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are selecting &lt;strong&gt;Windows Defender Firewall Properties&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Firewall Properties allow you to configure firewall behavior for different network profiles (Domain, Private, and Public), which directly affects server connectivity&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="" src="./images/1e500d35-351d-49aa-9759-a2ae5b32e8d1.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='9b764999-20f7-4943-86fc-ca393808e382'>
+              <title>Step 5</title>
+              <orderIndex>4</orderIndex>
+              <localizations>
+                <LocaleContent id='9b764999-20f7-4943-86fc-ca393808e382'>
+                  <title>Step 5</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/c03acfba-6eb5-4c08-b930-4b41d0c0e294.png' filename='c03acfba-6eb5-4c08-b930-4b41d0c0e294.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are setting the &lt;strong&gt;Firewall state&lt;/strong&gt; to &lt;strong&gt;Off&lt;/strong&gt; for the &lt;strong&gt;Domain Profile&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+In a training environment, disabling the firewall prevents it from blocking required services during server setup and configuration&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="" src="./images/c03acfba-6eb5-4c08-b930-4b41d0c0e294.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='0c98386a-1d90-45f7-a11a-119307d078f9'>
+              <title>Step 6</title>
+              <orderIndex>5</orderIndex>
+              <localizations>
+                <LocaleContent id='0c98386a-1d90-45f7-a11a-119307d078f9'>
+                  <title>Step 6</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/bb2945cf-dc89-49e2-8300-cd651f19bcf3.png' filename='bb2945cf-dc89-49e2-8300-cd651f19bcf3.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are repeating the same firewall setting change for the &lt;strong&gt;Private Profile&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Ensuring the firewall is disabled across profiles prevents connectivity issues if the server identifies the network as private&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="" src="./images/bb2945cf-dc89-49e2-8300-cd651f19bcf3.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='ca267b31-2140-40fb-8ec5-2d973a042143'>
+              <title>Step 7</title>
+              <orderIndex>6</orderIndex>
+              <localizations>
+                <LocaleContent id='ca267b31-2140-40fb-8ec5-2d973a042143'>
+                  <title>Step 7</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/85e73abf-41f7-4d28-af14-80affd794514.png' filename='85e73abf-41f7-4d28-af14-80affd794514.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are disabling the firewall under the &lt;strong&gt;Public Profile&lt;/strong&gt; as well.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+This ensures the firewall does not interfere with network communication during the lab, even if the network type changes&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="" src="./images/85e73abf-41f7-4d28-af14-80affd794514.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='90496c40-0a19-4c35-97ba-7aaefb73b22f'>
+              <title>Step 8</title>
+              <orderIndex>7</orderIndex>
+              <localizations>
+                <LocaleContent id='90496c40-0a19-4c35-97ba-7aaefb73b22f'>
+                  <title>Step 8</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/3254ab24-3c65-4b81-840a-9d23f8a8e257.png' filename='3254ab24-3c65-4b81-840a-9d23f8a8e257.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are clicking &lt;strong&gt;OK&lt;/strong&gt; to save the firewall settings and returning to &lt;strong&gt;Server Manager&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Firewall changes do not take effect until they are confirmed. Returning to Server Manager allows you to continue configuring the server&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="" src="./images/3254ab24-3c65-4b81-840a-9d23f8a8e257.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='7200e79b-6c74-47ab-a45f-0d623e1164ec'>
+              <title>Step 1 v1</title>
+              <orderIndex>8</orderIndex>
+              <localizations>
+                <LocaleContent id='7200e79b-6c74-47ab-a45f-0d623e1164ec'>
+                  <title>Step 1 v1</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/b4946168-7d75-4ea9-8d81-e1101a766a8c-1.png' filename='b4946168-7d75-4ea9-8d81-e1101a766a8c-1.png' width='488' height='326' />
+                    <img src='./images/25791310-146b-4e02-9837-06dcefbab681-1.png' filename='25791310-146b-4e02-9837-06dcefbab681-1.png' width='489' height='326' />
+                    <img src='./images/ee33c719-f93b-48f6-86bb-4ddd585a39b5-1.png' filename='ee33c719-f93b-48f6-86bb-4ddd585a39b5-1.png' width='483' height='322' />
+                    <img src='./images/1e500d35-351d-49aa-9759-a2ae5b32e8d1-1.png' filename='1e500d35-351d-49aa-9759-a2ae5b32e8d1-1.png' width='485' height='323' />
+                  </images>
+                  <content>&lt;style type="text/css"&gt;:root {
+    --vlp-bg-card: #ffffff;
+    --vlp-text: #1f2937;
+    --vlp-muted: #4b5563;
+    --vlp-border: #e5e7eb;
+    --vlp-accent-red: #b91c1c;
+    --vlp-accent-bg: #fef2f2;
+    --vlp-accent-border: #f87171;
+    --vlp-cmd-bg: #1e293b;
+    --vlp-cmd-text: #38bdf8;
+    --vlp-kbd-bg: #f3f4f6;
+    --vlp-kbd-border: #cbd5e1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --vlp-bg-card: #18181b;
+      --vlp-text: #f3f4f6;
+      --vlp-muted: #9ca3af;
+      --vlp-border: #27272a;
+      --vlp-accent-red: #ef4444;
+      --vlp-accent-bg: #450a0a;
+      --vlp-accent-border: #991b1b;
+      --vlp-cmd-bg: #090d16;
+      --vlp-cmd-text: #38bdf8;
+      --vlp-kbd-bg: #27272a;
+      --vlp-kbd-border: #3f3f46;
+    }
+  }
+
+  .dark, [data-theme="dark"] {
+    --vlp-bg-card: #18181b;
+    --vlp-text: #f3f4f6;
+    --vlp-muted: #9ca3af;
+    --vlp-border: #27272a;
+    --vlp-accent-red: #ef4444;
+    --vlp-accent-bg: #450a0a;
+    --vlp-accent-border: #991b1b;
+    --vlp-cmd-bg: #090d16;
+    --vlp-cmd-text: #38bdf8;
+    --vlp-kbd-bg: #27272a;
+    --vlp-kbd-border: #3f3f46;
+  }
+
+  .lab-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--vlp-text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .lab-header {
+    border-left: 4px solid var(--vlp-accent-red);
+    padding-left: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .lab-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red);
+  }
+
+  .lab-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--vlp-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 16px;
+  }
+
+  .lab-table th {
+    background-color: var(--vlp-border);
+    color: var(--vlp-text);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .lab-table td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--vlp-border);
+    vertical-align: top;
+  }
+
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background-color: var(--vlp-accent-red);
+    color: #ffffff !important;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: bold;
+  }
+
+  .ui-target {
+    font-weight: 700;
+    color: var(--vlp-accent-red);
+  }
+
+  .cmd-inline {
+    display: inline-block;
+    background: var(--vlp-cmd-bg);
+    color: var(--vlp-cmd-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.88em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .key-press {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 0.8em;
+    font-weight: 700;
+    background-color: var(--vlp-kbd-bg);
+    border: 1px solid var(--vlp-kbd-border);
+    border-radius: 4px;
+    box-shadow: 0 1px 0 var(--vlp-kbd-border);
+  }
+
+  .step-inline-img {
+    max-width: 100%;
+    height: auto;
+    margin-top: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--vlp-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: block;
+  }
+
+  /* Compact grid to show supplemental reference images side-by-side */
+  .ref-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .ref-card {
+    background: var(--vlp-bg-card);
+    border: 1px solid var(--vlp-border);
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  .ref-card span {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--vlp-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+&lt;/style&gt;
+&lt;div class="lab-wrapper"&gt;
+&lt;div class="lab-header"&gt;
+&lt;h3&gt;Step 1: Access the Local Group Policy Editor&lt;/h3&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In this section, you will launch the Local Group Policy Editor (&lt;code class="cmd-inline"&gt;gpedit.msc&lt;/code&gt;) on the server. Group Policy controls critical security baselines and operating system behavior across Windows Server environments. As a data systems administrator, accessing this tool is a prerequisite for managing administrative templates, user rights, and network security controls such as the Windows Defender Firewall.&lt;/p&gt;
+
+&lt;table class="lab-table"&gt;
+	&lt;thead&gt;
+		&lt;tr&gt;
+			&lt;th style="width: 8%; text-align: center;"&gt;Step&lt;/th&gt;
+			&lt;th style="width: 92%;"&gt;Action &amp;amp; Verification&lt;/th&gt;
+		&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;1&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Click the &lt;span class="ui-target"&gt;Windows Key&lt;/span&gt; (or open the Start menu).&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;2&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Type &lt;code class="cmd-inline"&gt;gpedit.msc&lt;/code&gt; and press &lt;kbd class="key-press"&gt;Enter&lt;/kbd&gt; to open the Local Group Policy Editor. &lt;img alt="Start Menu Search for gpedit.msc" height="326" src="./images/b4946168-7d75-4ea9-8d81-e1101a766a8c-1.png" width="488" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;3&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;&lt;span class="ui-target"&gt;Verification:&lt;/span&gt; Confirm that the &lt;span class="ui-target"&gt;Local Group Policy Editor&lt;/span&gt; management console opens, displaying the &lt;span class="ui-target"&gt;Local Computer Policy&lt;/span&gt; tree in the left navigation pane. &lt;img alt="Local Group Policy Editor Console" height="326" src="./images/25791310-146b-4e02-9837-06dcefbab681-1.png" width="489" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;4&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;&lt;span class="ui-target"&gt;Remediation (If required):&lt;/span&gt; If the Run dialog or Start search fails to locate the file, open an administrative PowerShell prompt, type &lt;code class="cmd-inline"&gt;gpedit.msc&lt;/code&gt;, and press &lt;kbd class="key-press"&gt;Enter&lt;/kbd&gt;.&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;!-- Supplemental Navigation Images displayed in a compact side-by-side grid to prevent excessive vertical scrolling --&gt;
+
+&lt;div class="ref-gallery"&gt;
+&lt;div class="ref-card"&gt;&lt;span&gt;Console Navigation Reference&lt;/span&gt; &lt;img alt="Security Settings and Windows Defender Firewall" height="322" src="./images/ee33c719-f93b-48f6-86bb-4ddd585a39b5-1.png" width="483" /&gt;&lt;/div&gt;
+
+&lt;div class="ref-card"&gt;&lt;span&gt;Firewall Properties Reference&lt;/span&gt; &lt;img alt="Windows Defender Firewall Properties Dialog" height="323" src="./images/1e500d35-351d-49aa-9759-a2ae5b32e8d1-1.png" width="485" /&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='946072cc-c595-4c58-954f-0379566fcf42'>
+              <title>Step 2 v1</title>
+              <orderIndex>9</orderIndex>
+              <localizations>
+                <LocaleContent id='946072cc-c595-4c58-954f-0379566fcf42'>
+                  <title>Step 2 v1</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/b4946168-7d75-4ea9-8d81-e1101a766a8c-2.png' filename='b4946168-7d75-4ea9-8d81-e1101a766a8c-2.png' width='408' height='272' />
+                    <img src='./images/25791310-146b-4e02-9837-06dcefbab681-2.png' filename='25791310-146b-4e02-9837-06dcefbab681-2.png' width='391' height='261' />
+                    <img src='./images/ee33c719-f93b-48f6-86bb-4ddd585a39b5-2.png' filename='ee33c719-f93b-48f6-86bb-4ddd585a39b5-2.png' width='391' height='261' />
+                    <img src='./images/1e500d35-351d-49aa-9759-a2ae5b32e8d1-2.png' filename='1e500d35-351d-49aa-9759-a2ae5b32e8d1-2.png' width='395' height='263' />
+                  </images>
+                  <content>&lt;style type="text/css"&gt;:root {
+    --vlp-bg-card: #ffffff;
+    --vlp-text: #1f2937;
+    --vlp-muted: #4b5563;
+    --vlp-border: #e5e7eb;
+    --vlp-accent-red: #b91c1c;
+    --vlp-accent-bg: #fef2f2;
+    --vlp-accent-border: #f87171;
+    --vlp-cmd-bg: #1e293b;
+    --vlp-cmd-text: #38bdf8;
+    --vlp-kbd-bg: #f3f4f6;
+    --vlp-kbd-border: #cbd5e1;
+    --vlp-verify-bg: #f0fdf4;
+    --vlp-verify-border: #86efac;
+    --vlp-verify-text: #166534;
+    --vlp-remed-bg: #fffbeb;
+    --vlp-remed-border: #fcd34d;
+    --vlp-remed-text: #92400e;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --vlp-bg-card: #18181b;
+      --vlp-text: #f3f4f6;
+      --vlp-muted: #9ca3af;
+      --vlp-border: #27272a;
+      --vlp-accent-red: #ef4444;
+      --vlp-accent-bg: #450a0a;
+      --vlp-accent-border: #991b1b;
+      --vlp-cmd-bg: #090d16;
+      --vlp-cmd-text: #38bdf8;
+      --vlp-kbd-bg: #27272a;
+      --vlp-kbd-border: #3f3f46;
+      --vlp-verify-bg: #052e16;
+      --vlp-verify-border: #166534;
+      --vlp-verify-text: #86efac;
+      --vlp-remed-bg: #451a03;
+      --vlp-remed-border: #92400e;
+      --vlp-remed-text: #fde68a;
+    }
+  }
+
+  .dark, [data-theme="dark"] {
+    --vlp-bg-card: #18181b;
+    --vlp-text: #f3f4f6;
+    --vlp-muted: #9ca3af;
+    --vlp-border: #27272a;
+    --vlp-accent-red: #ef4444;
+    --vlp-accent-bg: #450a0a;
+    --vlp-accent-border: #991b1b;
+    --vlp-cmd-bg: #090d16;
+    --vlp-cmd-text: #38bdf8;
+    --vlp-kbd-bg: #27272a;
+    --vlp-kbd-border: #3f3f46;
+    --vlp-verify-bg: #052e16;
+    --vlp-verify-border: #166534;
+    --vlp-verify-text: #86efac;
+    --vlp-remed-bg: #451a03;
+    --vlp-remed-border: #92400e;
+    --vlp-remed-text: #fde68a;
+  }
+
+  .lab-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--vlp-text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .lab-header {
+    border-left: 4px solid var(--vlp-accent-red);
+    padding-left: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .lab-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red);
+  }
+
+  .lab-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--vlp-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 16px;
+  }
+
+  .lab-table th {
+    background-color: var(--vlp-border);
+    color: var(--vlp-text);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .lab-table td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--vlp-border);
+    vertical-align: top;
+  }
+
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background-color: var(--vlp-accent-red);
+    color: #ffffff !important;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: bold;
+  }
+
+  .ui-target {
+    font-weight: 700;
+    color: var(--vlp-accent-red);
+  }
+
+  .cmd-inline {
+    display: inline-block;
+    background: var(--vlp-cmd-bg);
+    color: var(--vlp-cmd-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.88em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .key-press {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 0.8em;
+    font-weight: 700;
+    background-color: var(--vlp-kbd-bg);
+    border: 1px solid var(--vlp-kbd-border);
+    border-radius: 4px;
+    box-shadow: 0 1px 0 var(--vlp-kbd-border);
+  }
+
+  .step-inline-img {
+    max-width: 100%;
+    height: auto;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--vlp-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: block;
+  }
+
+  .verify-card {
+    background-color: var(--vlp-verify-bg);
+    border: 1px solid var(--vlp-verify-border);
+    border-left: 4px solid var(--vlp-verify-border);
+    color: var(--vlp-verify-text);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-top: 16px;
+    font-size: 0.93rem;
+  }
+
+  .verify-card strong {
+    color: var(--vlp-verify-text);
+  }
+
+  .remed-card {
+    background-color: var(--vlp-remed-bg);
+    border: 1px solid var(--vlp-remed-border);
+    border-left: 4px solid var(--vlp-remed-border);
+    color: var(--vlp-remed-text);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    font-size: 0.93rem;
+  }
+
+  .remed-card strong {
+    color: var(--vlp-remed-text);
+  }
+&lt;/style&gt;
+&lt;div class="lab-wrapper"&gt;
+&lt;div class="lab-header"&gt;
+&lt;h3&gt;Step 1: Access the Local Group Policy Editor&lt;/h3&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In this section, you will launch the Local Group Policy Editor (&lt;code class="cmd-inline"&gt;gpedit.msc&lt;/code&gt;) on the server. Group Policy controls critical security baselines and operating system behavior across Windows Server environments. As a data systems administrator, you must know how to access and manage this tool to configure essential security settings, including the Windows Defender Firewall.&lt;/p&gt;
+
+&lt;table class="lab-table"&gt;
+	&lt;thead&gt;
+		&lt;tr&gt;
+			&lt;th style="width: 8%; text-align: center;"&gt;Step&lt;/th&gt;
+			&lt;th style="width: 92%;"&gt;Action &amp;amp; Reference Image&lt;/th&gt;
+		&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;1&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Click the &lt;span class="ui-target"&gt;Windows Key&lt;/span&gt; (or click the Start button) to open the Start menu. &lt;img alt="Start Menu Search for gpedit.msc" height="272" src="./images/b4946168-7d75-4ea9-8d81-e1101a766a8c-2.png" width="408" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;2&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Type &lt;code class="cmd-inline"&gt;gpedit.msc&lt;/code&gt; into the search bar. &lt;img alt="Local Group Policy Editor Console" height="261" src="./images/25791310-146b-4e02-9837-06dcefbab681-2.png" width="391" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;3&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Select &lt;span class="ui-target"&gt;gpedit.msc&lt;/span&gt; from the search results. &lt;img alt="Security Settings and Windows Defender Firewall" height="261" src="./images/ee33c719-f93b-48f6-86bb-4ddd585a39b5-2.png" width="391" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td style="text-align:center"&gt;&lt;span class="step-badge"&gt;4&lt;/span&gt;&lt;/td&gt;
+			&lt;td&gt;Click &lt;span class="ui-target"&gt;Open&lt;/span&gt; (or press &lt;kbd class="key-press"&gt;Enter&lt;/kbd&gt;) to launch the management console. &lt;img alt="Windows Defender Firewall Properties Dialog" height="263" src="./images/1e500d35-351d-49aa-9759-a2ae5b32e8d1-2.png" width="395" /&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;div class="verify-card"&gt;&lt;strong&gt;Verification:&lt;/strong&gt; Confirm that the &lt;span class="ui-target"&gt;Local Group Policy Editor&lt;/span&gt; window opens successfully and displays the &lt;span class="ui-target"&gt;Local Computer Policy&lt;/span&gt; tree in the left navigation pane.&lt;/div&gt;
+
+&lt;div class="remed-card"&gt;&lt;strong&gt;Remediation (If required):&lt;/strong&gt; If the Start search does not locate the console, press &lt;kbd class="key-press"&gt;Windows Key + R&lt;/kbd&gt; to open the Run dialog, enter &lt;code class="cmd-inline"&gt;gpedit.msc&lt;/code&gt;, and press &lt;kbd class="key-press"&gt;Enter&lt;/kbd&gt;.&lt;/div&gt;
+&lt;/div&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='8a504fa6-e457-4d24-82af-e9d8db1a93a6'>
+              <title>Disable Firewall</title>
+              <languageCode>en</languageCode>
+              <content>&lt;style&gt;
+  :root {
+    --vlp-bg-card: #ffffff;
+    --vlp-text: #1f2937;
+    --vlp-muted: #4b5563;
+    --vlp-border: #e5e7eb;
+    --vlp-accent-red: #b91c1c;
+    --vlp-accent-bg: #fef2f2;
+    --vlp-accent-border: #f87171;
+    --vlp-cmd-bg: #1e293b;
+    --vlp-cmd-text: #38bdf8;
+    --vlp-kbd-bg: #f3f4f6;
+    --vlp-kbd-border: #cbd5e1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --vlp-bg-card: #18181b;
+      --vlp-text: #f3f4f6;
+      --vlp-muted: #9ca3af;
+      --vlp-border: #27272a;
+      --vlp-accent-red: #ef4444;
+      --vlp-accent-bg: #450a0a;
+      --vlp-accent-border: #991b1b;
+      --vlp-cmd-bg: #090d16;
+      --vlp-cmd-text: #38bdf8;
+      --vlp-kbd-bg: #27272a;
+      --vlp-kbd-border: #3f3f46;
+    }
+  }
+
+  .dark, [data-theme="dark"] {
+    --vlp-bg-card: #18181b;
+    --vlp-text: #f3f4f6;
+    --vlp-muted: #9ca3af;
+    --vlp-border: #27272a;
+    --vlp-accent-red: #ef4444;
+    --vlp-accent-bg: #450a0a;
+    --vlp-accent-border: #991b1b;
+    --vlp-cmd-bg: #090d16;
+    --vlp-cmd-text: #38bdf8;
+    --vlp-kbd-bg: #27272a;
+    --vlp-kbd-border: #3f3f46;
+  }
+
+  .course-overview {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--vlp-text);
+    line-height: 1.65;
+    font-size: 15px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .lab-note {
+    background-color: var(--vlp-accent-bg);
+    border: 1px solid var(--vlp-accent-border);
+    border-left: 5px solid var(--vlp-accent-red);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .lab-note h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red);
+    margin: 0 0 0.75rem 0;
+  }
+
+  .lab-note ul {
+    margin-bottom: 0;
+  }
+
+  .ui-target {
+    font-weight: 700;
+    color: var(--vlp-accent-red);
+  }
+&lt;/style&gt;
+
+&lt;div class="course-overview"&gt;
+  &lt;p&gt;In this section, you will log into the &lt;span class="ui-target"&gt;NDSACDC01&lt;/span&gt; Virtual Machine and utilize the &lt;span class="ui-target"&gt;Local Group Policy Editor&lt;/span&gt; to disable the Windows Defender Firewall. Disabling the local firewall is often required in closed lab and field environments to ensure unobstructed communication between internal domain services, routing protocols, and administrative management tools without interference during initial configuration.&lt;/p&gt;
+
+  &lt;div class="lab-note"&gt;
+    &lt;h2&gt;Target VM Credentials&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;strong&gt;Target System:&lt;/strong&gt; &lt;span class="ui-target"&gt;NDSACDC01&lt;/span&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+        <ContentNode id='32693c88-0faa-46ed-abc8-a44776e2fdac'>
+          <title>Configure network adapter settings</title>
+          <orderIndex>2</orderIndex>
+          <children>
+            <ContentNode id='d159205d-c8c6-47fe-aaca-13207996c5c4'>
+              <title>Step 1</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='d159205d-c8c6-47fe-aaca-13207996c5c4'>
+                  <title>Step 1</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/a057448d-9994-4930-8753-d77e7c0aaab3.png' filename='a057448d-9994-4930-8753-d77e7c0aaab3.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are clicking on the &lt;strong&gt;IPv4 address currently assigned to the server&lt;/strong&gt; from the Local Server view in Server Manager.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+This opens the network configuration for the server. Since the address is currently assigned by DHCP, it must be changed to a static IP that fits the network design&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:11.0pt"&gt;&lt;span style="line-height:107%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/a057448d-9994-4930-8753-d77e7c0aaab3.png" /&gt;​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='b1f420cc-aa01-4c81-9b84-21c5618d85db'>
+              <title>Step 2</title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='b1f420cc-aa01-4c81-9b84-21c5618d85db'>
+                  <title>Step 2</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/4a8b03d9-4808-47d0-9a41-938de362f3ad.png' filename='4a8b03d9-4808-47d0-9a41-938de362f3ad.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are opening the Ethernet network adapter to view its connection details.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Accessing the Ethernet adapter is required to modify the network protocols and IP configuration used by the server&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:11.0pt"&gt;&lt;span style="line-height:107%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/4a8b03d9-4808-47d0-9a41-938de362f3ad.png" /&gt;​​​​​​​​​​​​​​​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='221b10ef-6152-4683-9ede-43ecd9bbb5ca'>
+              <title>Step 3</title>
+              <orderIndex>2</orderIndex>
+              <localizations>
+                <LocaleContent id='221b10ef-6152-4683-9ede-43ecd9bbb5ca'>
+                  <title>Step 3</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/0c57f87e-c2d8-4f20-be56-77e2023b4b8b.png' filename='0c57f87e-c2d8-4f20-be56-77e2023b4b8b.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are selecting &lt;strong&gt;Properties&lt;/strong&gt; for the Ethernet adapter.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+The Properties menu allows you to configure which network protocols the adapter uses and how they are configured, including IP addressing&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="" src="./images/0c57f87e-c2d8-4f20-be56-77e2023b4b8b.png" /&gt;​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='ef579628-af8d-445e-be51-717f4914a4ff'>
+              <title>Step 4</title>
+              <orderIndex>3</orderIndex>
+              <localizations>
+                <LocaleContent id='ef579628-af8d-445e-be51-717f4914a4ff'>
+                  <title>Step 4</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/65ae8287-1d0d-43e1-88f8-a24634c635dc.png' filename='65ae8287-1d0d-43e1-88f8-a24634c635dc.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are opening &lt;strong&gt;Internet Protocol Version 4 (IPv4)&lt;/strong&gt; settings.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+IPv4 controls how the server communicates on the network. Proper IPv4 configuration is required for reliable connectivity and service availability&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:106%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/65ae8287-1d0d-43e1-88f8-a24634c635dc.png" /&gt;​​​​​​​​​​​​​​​​​​​​​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='48f47329-7d48-4186-8b3b-8d20d73c40f8'>
+              <title>Step 5</title>
+              <orderIndex>4</orderIndex>
+              <localizations>
+                <LocaleContent id='48f47329-7d48-4186-8b3b-8d20d73c40f8'>
+                  <title>Step 5</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/dc873d79-8621-44d7-8ed8-0de168e7cf24.png' filename='dc873d79-8621-44d7-8ed8-0de168e7cf24.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are selecting &lt;strong&gt;Use the following IP address&lt;/strong&gt; and &lt;strong&gt;Use the following DNS server addresses&lt;/strong&gt;, then entering the provided network information.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Assigning a static IP and DNS configuration ensures the server can always be located on the network and can properly resolve names for domain and network services&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="color:black; font-family:&amp;quot;Times New Roman&amp;quot;,serif; font-size:10pt; letter-spacing:0.02em"&gt;​​​​​​​&lt;/span&gt;&lt;img alt="" src="./images/dc873d79-8621-44d7-8ed8-0de168e7cf24.png" /&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+	&lt;li&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:10.0pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;IP Address: 192.168.40.2&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:10.0pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;Subnet mask: 255.255.255.0&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:10.0pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;Default gateway: 192.168.40.1&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:10.0pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;Preferred DNS server: 192.168.40.2&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:10.0pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;Alternate DNS server: 192.168.40.3&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;​​​​​​​​​​​​​​&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:10.0pt"&gt;&lt;span style="line-height:149%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;&amp;nbsp;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;​​​​​​​&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='56613382-def0-4a9c-88bb-2c4fed6aa2f5'>
+              <title>Step 6</title>
+              <orderIndex>5</orderIndex>
+              <localizations>
+                <LocaleContent id='56613382-def0-4a9c-88bb-2c4fed6aa2f5'>
+                  <title>Step 6</title>
+                  <languageCode>en</languageCode>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are clicking &lt;strong&gt;OK&lt;/strong&gt; to save the IPv4 configuration.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Network changes do not take effect until they are applied. Saving these settings ensures the server begins using the new static configuration&lt;/p&gt;
+
+&lt;p&gt;​​​​​​​​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='7eaee64b-4438-4029-a960-d7584117b21d'>
+              <title>Step 7</title>
+              <orderIndex>6</orderIndex>
+              <localizations>
+                <LocaleContent id='7eaee64b-4438-4029-a960-d7584117b21d'>
+                  <title>Step 7</title>
+                  <languageCode>en</languageCode>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are closing the Ethernet Properties window by clicking &lt;strong&gt;OK&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Closing the properties confirms that all network changes are finalized and applied to the adapter&lt;/p&gt;
+​​​​​​​
+
+&lt;p&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:107%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;&lt;span style="font-size:10.0pt"&gt;&lt;span style="line-height:107%"&gt;&lt;span style="font-family:&amp;quot;Times New Roman&amp;quot;,serif"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='32693c88-0faa-46ed-abc8-a44776e2fdac'>
+              <title>Configure network adapter settings</title>
+              <languageCode>en</languageCode>
+              <content>&lt;p&gt;​​​​​​​​​​​​​​​​​​​​​&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:102%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;The network IP address for the server has not been set yet and is set to DHCP. You want your servers to be static IP addresses so they never change. &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;​​​​​​​&lt;/p&gt;
+</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+        <ContentNode id='7ec4ed95-bca3-4054-b859-b36085112aa7'>
+          <title>Change Computer Name</title>
+          <orderIndex>3</orderIndex>
+          <children>
+            <ContentNode id='b62fbabc-a20a-4c52-9aa1-a8c42d3317b1'>
+              <title>Step 1</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='b62fbabc-a20a-4c52-9aa1-a8c42d3317b1'>
+                  <title>Step 1</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/29db4bef-14ba-48ed-abe9-d9c4b03a983e.png' filename='29db4bef-14ba-48ed-abe9-d9c4b03a983e.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are accessing the system settings where the computer name can be changed.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+This menu allows administrators to modify system‑level identity settings, including the name the server uses to identify itself on the network.&lt;/p&gt;
+​​​​​​​
+
+&lt;p style="margin-left:7px; margin-right:3px"&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:102%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/29db4bef-14ba-48ed-abe9-d9c4b03a983e.png" /&gt;​​​​​​​​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='98f30123-757b-4ddb-ac9a-4c7b69d1d59a'>
+              <title>Step 2</title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='98f30123-757b-4ddb-ac9a-4c7b69d1d59a'>
+                  <title>Step 2</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/62c17075-0d5a-4f6f-9280-48d99b24752f.png' filename='62c17075-0d5a-4f6f-9280-48d99b24752f.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are clicking &lt;strong&gt;Change&lt;/strong&gt; to open the dialog box that allows you to rename the computer.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+The Change option is required to modify the server&amp;rsquo;s computer name so it can follow the proper naming convention&lt;/p&gt;
+​​​​​​​
+
+&lt;p style="margin-left:7px; margin-right:3px"&gt;&lt;span style="font-size:11.0pt"&gt;&lt;span style="line-height:107%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/62c17075-0d5a-4f6f-9280-48d99b24752f.png" /&gt;​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='e3899454-35d3-4013-ba4b-f25496b92c56'>
+              <title>Step 3</title>
+              <orderIndex>2</orderIndex>
+              <localizations>
+                <LocaleContent id='e3899454-35d3-4013-ba4b-f25496b92c56'>
+                  <title>Step 3</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/3f38baa7-1892-4542-bb33-7e1ed848d036.png' filename='3f38baa7-1892-4542-bb33-7e1ed848d036.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are changing the computer name to &lt;strong&gt;NDSACDC01&lt;/strong&gt; and clicking &lt;strong&gt;OK&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Using a standardized name helps administrators immediately identify this server as a domain controller. This reduces confusion and supports effective network management&lt;/p&gt;
+​​​​​​​
+
+&lt;p style="margin-left:7px; margin-right:3px"&gt;&lt;span style="font-size:11.0pt"&gt;&lt;span style="line-height:107%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/3f38baa7-1892-4542-bb33-7e1ed848d036.png" /&gt;​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='bc1db9cd-d0c6-4595-9839-886178762491'>
+              <title>Step 4</title>
+              <orderIndex>3</orderIndex>
+              <localizations>
+                <LocaleContent id='bc1db9cd-d0c6-4595-9839-886178762491'>
+                  <title>Step 4</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/ac853952-9450-486b-9ae5-dbaebebbd3ce.png' filename='ac853952-9450-486b-9ae5-dbaebebbd3ce.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are acknowledging the notification that changing the computer name requires a restart by clicking &lt;strong&gt;OK&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+System‑level changes such as a computer name update do not take effect until the server restarts. Acknowledging this ensures the process can continue correctly​​​​​​​&lt;/p&gt;
+
+&lt;p style="margin-left:7px; margin-right:3px"&gt;&lt;span style="font-size:11.0pt"&gt;&lt;span style="line-height:107%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/ac853952-9450-486b-9ae5-dbaebebbd3ce.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='5d9ce57a-2c52-4e6d-a599-1bb77d23171c'>
+              <title>Step 5</title>
+              <orderIndex>4</orderIndex>
+              <localizations>
+                <LocaleContent id='5d9ce57a-2c52-4e6d-a599-1bb77d23171c'>
+                  <title>Step 5</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/79798005-9d0f-4ccd-a854-df07d9567e9b.png' filename='79798005-9d0f-4ccd-a854-df07d9567e9b.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are restarting the server to apply the new computer name.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Restarting ensures the new computer name is fully applied and recognized by the operating system and the network before moving on to additional configuration tasks.&lt;/p&gt;
+
+&lt;p style="margin-bottom:19px; margin-left:7px; margin-right:3px"&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:102%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/79798005-9d0f-4ccd-a854-df07d9567e9b.png" /&gt;​​​​​​​​​​​​​​​​​​​​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='ddb22a2c-d4dc-4d60-8f6a-02f9305eb7b2'>
+              <title>Step 6</title>
+              <orderIndex>5</orderIndex>
+              <localizations>
+                <LocaleContent id='ddb22a2c-d4dc-4d60-8f6a-02f9305eb7b2'>
+                  <title>Step 6</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/de50594b-ed19-4479-b8f5-f3a8c04a5638.png' filename='de50594b-ed19-4479-b8f5-f3a8c04a5638.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:100%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;You will be given the option to restart now or restart later. It is highly recommended to always choose restart now in case you forget to do it later. Click &lt;strong&gt;RESTART NOW&lt;/strong&gt;.&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:11pt"&gt;&lt;span style="line-height:100%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;span style="color:black"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/de50594b-ed19-4479-b8f5-f3a8c04a5638.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='7ec4ed95-bca3-4054-b859-b36085112aa7'>
+              <title>Change Computer Name</title>
+              <languageCode>en</languageCode>
+              <content>​​​​​​​​​​​​​​
+&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are renaming the server to a standardized computer name.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Server names identify the role and purpose of a system on the network. Consistent naming conventions make it easier for administrators to manage, troubleshoot, and identify servers in both garrison and operational environments.&lt;/p&gt;
+</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+        <ContentNode id='1a44e777-62fd-4443-a7d2-74447120a8e7'>
+          <title>Setting up secondary domain controller.</title>
+          <orderIndex>4</orderIndex>
+          <children>
+            <ContentNode id='454dbed5-085c-48b0-a61e-95f26cfeb7d9'>
+              <title>Step 1</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='454dbed5-085c-48b0-a61e-95f26cfeb7d9'>
+                  <title>Step 1</title>
+                  <languageCode>en</languageCode>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are assigning a &lt;strong&gt;different static IP configuration&lt;/strong&gt; to the secondary domain controller than the one used on the primary domain controller.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Each server on the network must have a &lt;strong&gt;unique IP address&lt;/strong&gt;. Using the correct addressing scheme prevents network conflicts and ensures both domain controllers can operate simultaneously&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Secondary Domain Controller IP Settings:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+	&lt;li&gt;IP address: 192.168.40.3&lt;/li&gt;
+	&lt;li&gt;Subnet mask: 255.255.255.0&lt;/li&gt;
+	&lt;li&gt;Default gateway: 192.168.40.1&lt;/li&gt;
+	&lt;li&gt;Preferred DNS server: 192.168.40.2&lt;/li&gt;
+	&lt;li&gt;Alternate DNS server: 192.168.40.3&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='8b76c087-c38e-47fd-b21a-82b1f3c3b434'>
+              <title>Step 2</title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='8b76c087-c38e-47fd-b21a-82b1f3c3b434'>
+                  <title>Step 2</title>
+                  <languageCode>en</languageCode>
+                  <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are assigning a different computer name to the secondary domain controller.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+Each domain controller must have a unique name so administrators can clearly identify its role and distinguish it from the primary domain controller during management and troubleshooting.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Secondary Domain Controller Name:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+	&lt;li&gt;NDSACDC02&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='1a44e777-62fd-4443-a7d2-74447120a8e7'>
+              <title>Setting up secondary domain controller.</title>
+              <languageCode>en</languageCode>
+              <content>&lt;p&gt;&lt;strong&gt;What you are doing:&lt;/strong&gt;&lt;br /&gt;
+You are configuring a &lt;strong&gt;secondary domain controller&lt;/strong&gt; using the same baseline configuration steps as the primary domain controller.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Why this matters:&lt;/strong&gt;&lt;br /&gt;
+A secondary domain controller provides &lt;strong&gt;redundancy&lt;/strong&gt;. If the primary domain controller becomes unavailable, authentication and directory services can continue, which is critical for maintaining network operations and mission continuity.&lt;/p&gt;
+</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+      </children>
+      <localizations>
+        <LocaleContent id='f2144d9b-7506-4397-bf70-e833773066ac'>
+          <title>DSAC Annex B | Lab 1: Installing and Configuring Windows Server</title>
+          <languageCode>en</languageCode>
+          <content>&lt;style type="text/css"&gt;:root {
+    --vlp-bg-card: #ffffff;
+    --vlp-text: #1f2937;
+    --vlp-muted: #4b5563;
+    --vlp-border: rgba(128, 128, 128, 0.25);
+    --vlp-accent-red: #dc2626;
+    --vlp-card-bg: rgba(220, 38, 38, 0.08);
+    --vlp-card-border: rgba(239, 68, 68, 0.35);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --vlp-bg-card: #18181b;
+      --vlp-text: #f3f4f6;
+      --vlp-muted: #9ca3af;
+      --vlp-border: rgba(255, 255, 255, 0.15);
+      --vlp-accent-red: #ef4444;
+      --vlp-card-bg: rgba(239, 68, 68, 0.14);
+      --vlp-card-border: rgba(239, 68, 68, 0.45);
+    }
+  }
+
+  /* Support for VLP / Clarity Dark Mode Selectors */
+  .dark, 
+  [data-theme="dark"], 
+  [clr-theme="dark"], 
+  [cds-theme="dark"], 
+  .theme-dark, 
+  .dark-theme, 
+  .clr-theme-dark, 
+  body.theme-dark {
+    --vlp-bg-card: #18181b;
+    --vlp-text: #f3f4f6;
+    --vlp-muted: #9ca3af;
+    --vlp-border: rgba(255, 255, 255, 0.15);
+    --vlp-accent-red: #ef4444;
+    --vlp-card-bg: rgba(239, 68, 68, 0.14);
+    --vlp-card-border: rgba(239, 68, 68, 0.45);
+  }
+
+  .course-overview {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: inherit !important;
+    line-height: 1.65;
+    font-size: 15px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .course-overview p {
+    color: inherit !important;
+  }
+
+  .course-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .course-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--vlp-accent-red) !important;
+    margin: 0 0 1rem 0;
+    letter-spacing: -0.025em;
+  }
+
+  .banner-container {
+    text-align: center;
+    margin: 1.25rem 0 1.75rem 0;
+  }
+
+  .banner-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--vlp-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .section-divider {
+    border: 0;
+    height: 1px;
+    background-color: var(--vlp-border);
+    margin: 2rem 0 1.5rem 0;
+  }
+
+  /* Instructional Purpose Card with Adaptive Tint &amp; Preserved Contrast */
+  .purpose-card {
+    background-color: var(--vlp-card-bg) !important;
+    border: 1px solid var(--vlp-card-border) !important;
+    border-left: 5px solid var(--vlp-accent-red) !important;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .purpose-card h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+    margin: 0 0 0.75rem 0;
+    letter-spacing: 0.02em;
+  }
+
+  .purpose-card p {
+    color: inherit !important;
+    margin-bottom: 0.75rem;
+  }
+
+  .purpose-card p:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .ui-target {
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+  }
+
+  /* Terminal Command Pill Override */
+  .course-overview code,
+  code.cmd-inline {
+    display: inline-block !important;
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+    border: 1px solid #334155 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 0.88em !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+  }
+&lt;/style&gt;
+&lt;div class="course-overview"&gt;
+&lt;div class="course-header"&gt;
+&lt;h1&gt;WINDOWS SERVER 2022&lt;/h1&gt;
+&lt;/div&gt;
+
+&lt;div class="banner-container"&gt;&lt;img alt="Windows Server Administration Overview" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxB-9O16eWF9OSYJgXb2pc4ZyqAw_S89zFASkRODmJBgyrroCHCFduiIo&amp;amp;s=10" /&gt;&lt;/div&gt;
+
+&lt;p&gt;Windows Server is the backbone operating system used across Marine Corps enterprise and tactical networks to manage user accounts, control access, and run critical network services. As a Data Systems Administrator, your job is to build and maintain these systems so mission-critical applications stay online and secure. In this lab, you will learn the fundamental skills required to get a server up and running from scratch&amp;mdash;including completing the initial operating system installation, navigating &lt;span class="ui-target"&gt;Server Manager&lt;/span&gt;, setting the system hostname and accurate time, and configuring basic local policies before deploying the server into an operational network.&lt;/p&gt;
+
+&lt;hr class="section-divider" /&gt;
+&lt;div class="purpose-card"&gt;
+&lt;h2&gt;INSTRUCTIONAL PURPOSE&lt;/h2&gt;
+
+&lt;p&gt;This annex is developed for instructional use in the &lt;strong&gt;United States Marine Corps entry-level school for MOS 0671 &amp;ndash; Data Systems Administrator&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;It provides a structured, step-by-step approach to installing, configuring, and operating within a Windows Server environment. Students will learn how to complete an initial operating system installation, navigate &lt;span class="ui-target"&gt;Server Manager&lt;/span&gt;, configure system hostnames and time settings, and perform baseline administrative tasks in support of Marine Corps network environments.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+</content>
+        </LocaleContent>
+      </localizations>
+    </ContentNode>
+  </contentNodes>
+</Manual>

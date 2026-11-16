@@ -1,0 +1,1246 @@
+<Manual id='4e92f43a-e22b-46c5-baaf-c954fabaddee'>
+  <name>dsac.annexc.lab01</name>
+  <defaultLanguageCode>en</defaultLanguageCode>
+  <dataFormat>default</dataFormat>
+  <contentNodes>
+    <ContentNode id='75d2c974-5e39-486f-b71a-41751901421e'>
+      <title>Annex C LAB 01</title>
+      <orderIndex>0</orderIndex>
+      <children>
+        <ContentNode id='a5ee0be6-9e9b-4cc5-be35-68dd9cf64adb'>
+          <title>Configuring DCUI (Direct Console User Interface) </title>
+          <orderIndex>0</orderIndex>
+          <children>
+            <ContentNode id='6122ff33-2d8e-4fd8-8780-6bfa5cd3c737'>
+              <title>Customizing the System</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='6122ff33-2d8e-4fd8-8780-6bfa5cd3c737'>
+                  <title>Customizing the System</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/0944ce30-24c2-4e64-bdbe-9a34c25f77a1.png' filename='0944ce30-24c2-4e64-bdbe-9a34c25f77a1.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Press&amp;nbsp;&lt;strong&gt;F2&amp;nbsp;&lt;/strong&gt;​​​​​​​on your keyboard.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/0944ce30-24c2-4e64-bdbe-9a34c25f77a1.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='b5559717-3121-46d5-89b7-06c179105bc1'>
+              <title>Login in page </title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='b5559717-3121-46d5-89b7-06c179105bc1'>
+                  <title>Login in page </title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/b168cf12-854f-45f1-b67e-043f95e230a7.png' filename='b168cf12-854f-45f1-b67e-043f95e230a7.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;A&amp;nbsp;login page will pop up, the&amp;nbsp;&lt;em&gt;Default&lt;em&gt;&amp;nbsp;&lt;/em&gt;&lt;/em&gt;username will be&amp;nbsp;&lt;strong&gt;&lt;u&gt;root&lt;/u&gt;&lt;/strong&gt;&amp;nbsp;and password will be what you set during the initial setup, for this lab,&amp;nbsp;&lt;strong&gt;M@rines1M@rines1.&lt;/strong&gt;​​​​​​​&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;username: &lt;strong&gt;root&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;password: &lt;strong&gt;M@rines1M@rines1&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/b168cf12-854f-45f1-b67e-043f95e230a7.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;​​&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='9393e5f8-8457-4847-84fd-c617bb6ac48f'>
+              <title>System Customization</title>
+              <orderIndex>2</orderIndex>
+              <localizations>
+                <LocaleContent id='9393e5f8-8457-4847-84fd-c617bb6ac48f'>
+                  <title>System Customization</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/c4e90e16-01ad-414a-af81-fcfab051ba69.png' filename='c4e90e16-01ad-414a-af81-fcfab051ba69.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This is the&amp;nbsp;&lt;strong&gt;Main menu&lt;/strong&gt;&amp;nbsp;of the DCUI, you can troubleshoot any connection problems, restart the network, and check logs.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;Configure Management Network&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Press&amp;nbsp;&lt;strong&gt;Enter&lt;/strong&gt;​​​​​​​&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&lt;img alt="" src="./images/c4e90e16-01ad-414a-af81-fcfab051ba69.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='05035c1e-03ad-492f-a78b-b8097b44809e'>
+              <title>Configure Management Network</title>
+              <orderIndex>3</orderIndex>
+              <localizations>
+                <LocaleContent id='05035c1e-03ad-492f-a78b-b8097b44809e'>
+                  <title>Configure Management Network</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/9e49b7bf-9e7d-4d66-8a12-20400390820a.png' filename='9e49b7bf-9e7d-4d66-8a12-20400390820a.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This menu will allow you to setup the&amp;nbsp;&lt;strong&gt;Management Network&lt;/strong&gt;&amp;nbsp;Configuring this Network will permit the server to be managed remotely other the web.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;You will need to modify every field in this menu.&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/9e49b7bf-9e7d-4d66-8a12-20400390820a.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='2d13e34f-fa7d-4861-945a-74a872df8591'>
+              <title>Network Adapters</title>
+              <orderIndex>4</orderIndex>
+              <localizations>
+                <LocaleContent id='2d13e34f-fa7d-4861-945a-74a872df8591'>
+                  <title>Network Adapters</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/79e7513b-fc1d-4f41-951a-444e7696fe84.png' filename='79e7513b-fc1d-4f41-951a-444e7696fe84.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This allows the user to assign what&amp;nbsp;&lt;strong&gt;physical NIC&amp;nbsp;&lt;/strong&gt;(Network Interface Card) the server will use for the&amp;nbsp;&lt;strong&gt;Management Network.&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;vmnic2&amp;nbsp;&lt;/strong&gt;and&amp;nbsp;&lt;strong&gt;vmnic3&lt;/strong&gt;&amp;nbsp;by using the arrows keys to highlight the&amp;nbsp;&lt;em&gt;vmnics&lt;/em&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;pressing&amp;nbsp;&lt;strong&gt;spacebar&amp;nbsp;&lt;/strong&gt;to confirm selection&lt;/p&gt;
+
+&lt;p&gt;Press&amp;nbsp;&lt;strong&gt;Enter&amp;nbsp;&lt;/strong&gt;​​​​​​​to close&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/79e7513b-fc1d-4f41-951a-444e7696fe84.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='35ba8f88-92d4-4dc2-9de0-13c0aad89dfc'>
+              <title>Configure Management Network</title>
+              <orderIndex>5</orderIndex>
+              <localizations>
+                <LocaleContent id='35ba8f88-92d4-4dc2-9de0-13c0aad89dfc'>
+                  <title>Configure Management Network</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/26063f63-c2cd-4271-9148-bdd69cc0522c.png' filename='26063f63-c2cd-4271-9148-bdd69cc0522c.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This menu will allow you to setup the&amp;nbsp;&lt;strong&gt;Vlan (optional)&lt;/strong&gt;&amp;nbsp;Configuring this Network setting will permit the server to be managed remotely other the web.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Type: &lt;strong&gt;VLAN 10&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/26063f63-c2cd-4271-9148-bdd69cc0522c.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='bbf823e2-207b-441e-9ac7-8693399d678a'>
+              <title>IPv4 Configuration</title>
+              <orderIndex>6</orderIndex>
+              <localizations>
+                <LocaleContent id='bbf823e2-207b-441e-9ac7-8693399d678a'>
+                  <title>IPv4 Configuration</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/7bed8e38-abfe-4e5e-8dd5-e4cec8b4e86e.png' filename='7bed8e38-abfe-4e5e-8dd5-e4cec8b4e86e.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;The IPv4 will be the address you will use on your browser to access the vSphere webpage to further configure your server.&lt;/p&gt;
+
+&lt;p&gt;Make sure select the &lt;strong&gt;Set Static...&lt;/strong&gt;​​​​​​​ bubble.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;For this lab you will assign&amp;nbsp;the following:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;NDSACESXI01&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table align="left" border="1" cellpadding="1" cellspacing="1" style="height:100px; width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;IPv4 Address&lt;/td&gt;
+			&lt;td&gt;192.168.10.11&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;SubnetMask&lt;/td&gt;
+			&lt;td&gt;255.255.255.0&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Default GW&lt;/td&gt;
+			&lt;td&gt;192.168.10.1&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;NDSACESXI02&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="height:100px; width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;IPv4 Address&lt;/td&gt;
+			&lt;td&gt;192.168.10.12&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;SubnetMask&lt;/td&gt;
+			&lt;td&gt;255.255.255.0&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Default GW&lt;/td&gt;
+			&lt;td&gt;192.168.10.1&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;NDSACESXI03&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="height:100px; width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;IPv4 Address&lt;/td&gt;
+			&lt;td&gt;192.168.10.13&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;SubnetMask&lt;/td&gt;
+			&lt;td&gt;255.255.255.0&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Default GW&lt;/td&gt;
+			&lt;td&gt;192.168.10.1&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/7bed8e38-abfe-4e5e-8dd5-e4cec8b4e86e.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='d0e8e96a-d0c9-4b51-84be-d45622e175d0'>
+              <title>IPv6 Configuration</title>
+              <orderIndex>7</orderIndex>
+              <localizations>
+                <LocaleContent id='d0e8e96a-d0c9-4b51-84be-d45622e175d0'>
+                  <title>IPv6 Configuration</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/3638c14e-0e35-4b22-84c7-d37f4921e046.png' filename='3638c14e-0e35-4b22-84c7-d37f4921e046.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;The Marine Corps does not use IPv6 as of right now, this maybe enabled in the future.&lt;/p&gt;
+
+&lt;p&gt;We will set this setting to&amp;nbsp;&lt;strong&gt;Disable IPv6.&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/3638c14e-0e35-4b22-84c7-d37f4921e046.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='595421e8-7e03-4be6-975c-9610fa731baa'>
+              <title>DNS Configuration</title>
+              <orderIndex>8</orderIndex>
+              <localizations>
+                <LocaleContent id='595421e8-7e03-4be6-975c-9610fa731baa'>
+                  <title>DNS Configuration</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/01d2c220-4516-4930-88ef-c48b2f4bf76a.png' filename='01d2c220-4516-4930-88ef-c48b2f4bf76a.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This setting will us to specify where the ESXi server looks to for their&amp;nbsp;&lt;em&gt;name server&amp;nbsp;&lt;/em&gt;resolution. The server needs a DNS server because it will use that server to translate IPs into Names.&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;Use the following DNS...&lt;/strong&gt;&amp;nbsp;and put the fill in the following:&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;NDSACESXI01​​​​​​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Primary DNS server&lt;/td&gt;
+			&lt;td&gt;192.168.40.2&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Alternate DNS server&lt;/td&gt;
+			&lt;td&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Hostname&lt;/td&gt;
+			&lt;td&gt;NDSACESXI01&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;strong&gt;NDSACESXI02&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Primary DNS server&lt;/td&gt;
+			&lt;td&gt;192.168.40.2&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Alternate DNS server&lt;/td&gt;
+			&lt;td&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Hostname&lt;/td&gt;
+			&lt;td&gt;NDSACESXI02&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;strong&gt;NDSACESXI03​​​​​​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Primary DNS server&lt;/td&gt;
+			&lt;td&gt;192.168.40.2&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Alternate DNS server&lt;/td&gt;
+			&lt;td&gt;&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Hostname&lt;/td&gt;
+			&lt;td&gt;NDSACESXI03&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/01d2c220-4516-4930-88ef-c48b2f4bf76a.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='2eaff065-8743-477f-beb2-c240a5732f1c'>
+              <title>Custom DNS Suffixes</title>
+              <orderIndex>9</orderIndex>
+              <localizations>
+                <LocaleContent id='2eaff065-8743-477f-beb2-c240a5732f1c'>
+                  <title>Custom DNS Suffixes</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/f3baa9b9-247f-4dc3-a5b9-320f18ac7e10.png' filename='f3baa9b9-247f-4dc3-a5b9-320f18ac7e10.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;In this section you will put the domain that your unit uses. This setting combined with the &lt;em&gt;Hostname&lt;/em&gt; will generate your FQDN ( Fully Qualified Domain Name ) ex.:&amp;nbsp;&lt;em&gt;NDSACESXI01.MCCES.USMC.MIL&lt;em&gt;&amp;nbsp;&lt;/em&gt;&lt;/em&gt;​​​​​. For this lab use this Domain&amp;nbsp;&lt;strong&gt;MCCES.USMC.MIL&amp;nbsp;&lt;/strong&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/f3baa9b9-247f-4dc3-a5b9-320f18ac7e10.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='6d4dd217-20c6-4383-9992-a4b36a93cc6f'>
+              <title>Saving and Applying </title>
+              <orderIndex>10</orderIndex>
+              <localizations>
+                <LocaleContent id='6d4dd217-20c6-4383-9992-a4b36a93cc6f'>
+                  <title>Saving and Applying </title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/c11d5682-fdef-4067-8b32-e76a1971c4cb.png' filename='c11d5682-fdef-4067-8b32-e76a1971c4cb.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;Once you complete filling out each section of this menu, you can press &lt;strong&gt;ESC&lt;/strong&gt;. A pop-up will appear asking &lt;em&gt;&amp;ldquo;Apply changes and reboot host?&amp;rdquo; &lt;/em&gt;you will select &lt;strong&gt;Y yes&lt;/strong&gt;. The host has to fully reboot to make the modifications.&amp;nbsp;&amp;nbsp;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;​​​​​​​&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/c11d5682-fdef-4067-8b32-e76a1971c4cb.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='8f07ee11-f11d-4703-916a-ba60ebc92eb3'>
+              <title>Checks and balance</title>
+              <orderIndex>11</orderIndex>
+              <localizations>
+                <LocaleContent id='8f07ee11-f11d-4703-916a-ba60ebc92eb3'>
+                  <title>Checks and balance</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/4ad2e389-c7c7-4307-bd98-3182418f945a.png' filename='4ad2e389-c7c7-4307-bd98-3182418f945a.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Once the server is back online, on the homepage you should see the&amp;nbsp;&lt;strong&gt;hostnames&lt;/strong&gt;&amp;nbsp;and &lt;strong&gt;IPv4&lt;/strong&gt; settings you configured.&amp;nbsp;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/4ad2e389-c7c7-4307-bd98-3182418f945a.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='a5ee0be6-9e9b-4cc5-be35-68dd9cf64adb'>
+              <title>Configuring DCUI (Direct Console User Interface) </title>
+              <languageCode>en</languageCode>
+              <images>
+                <img src='./images/4a21f6c5-2fb9-47ee-90e3-9e2bc323c657.png' filename='4a21f6c5-2fb9-47ee-90e3-9e2bc323c657.png' width='' height='' />
+              </images>
+              <content>&lt;p&gt;The DCUI (Direct Console User Interface) is the first opportunity you have to interact with the server you just deployed. This is also the most basic way to send commands to your server, you will plug in a VGA cable and a Keyboard. but for the purpose of this class we will only concern ourselves with setting up the&amp;nbsp;&lt;strong&gt;Network Configuration&lt;/strong&gt;​​​​​​​ of the server. Once that is completed we will manage everything from the GUI (Graphical User Interface) which is more user-friendly for beginners. &lt;em&gt;The image below is what you see when you access the DCUI of your ESXi (Elastic Sky X Integrated)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;em&gt;&amp;nbsp;&lt;/em&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="ESXI_DCUI_Homepage" src="./images/4a21f6c5-2fb9-47ee-90e3-9e2bc323c657.png" /&gt;&lt;/p&gt;
+</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+        <ContentNode id='3363971f-93ab-4840-a1d2-36d9f869c17f'>
+          <title>Initial Setup of vSphere</title>
+          <orderIndex>1</orderIndex>
+          <children>
+            <ContentNode id='cf209fc1-bf7e-4e07-a7f1-80eef0d3d201'>
+              <title>Login to the Workstation</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='cf209fc1-bf7e-4e07-a7f1-80eef0d3d201'>
+                  <title>Login to the Workstation</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/47bb6331-1391-427a-be0a-8f7e2b0c46c3.png' filename='47bb6331-1391-427a-be0a-8f7e2b0c46c3.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;&lt;span style="font-size:12.0pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:&amp;quot;Calibri&amp;quot;,sans-serif"&gt;Login to the Workstation and open any browser of your choosing.&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;username:&amp;nbsp;&lt;strong&gt;xAdministrator&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;password:&amp;nbsp;&lt;strong&gt;M@rines1M@rines1&lt;/strong&gt;​​​​​​​&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/47bb6331-1391-427a-be0a-8f7e2b0c46c3.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='f4e0e613-83c8-4e96-9190-9a733f2230ca'>
+              <title>Accessing vSphere Webpage</title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='f4e0e613-83c8-4e96-9190-9a733f2230ca'>
+                  <title>Accessing vSphere Webpage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/749c5b65-cfad-487d-8878-6f75c34aac67.png' filename='749c5b65-cfad-487d-8878-6f75c34aac67.png' width='' height='' />
+                    <img src='./images/a3ddce05-deca-4571-b2b1-e977513e681a.png' filename='a3ddce05-deca-4571-b2b1-e977513e681a.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;To access the vSphere webpage you will need to use the IPv4 address you assigned in the beggining of this lab. In this case you assigned one unique IP to each ESXi servers:&lt;/p&gt;
+
+&lt;p&gt;Type the IPs below, into your&amp;nbsp;&lt;strong&gt;search bar&lt;/strong&gt;​​​​​​​:&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NDSACESXI01&lt;/td&gt;
+			&lt;td&gt;192.168.10.11&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NDSACESXI02&lt;/td&gt;
+			&lt;td&gt;192.168.10.12&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NDSACESXI03&lt;/td&gt;
+			&lt;td&gt;192.168.10.13&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Because this is not ready for production your browse will alert you that the page you are about to enter is a &amp;quot;&lt;em&gt;potential security risk&lt;/em&gt;&amp;quot;, this is normal, its your first time logging into this server. so it&amp;nbsp;does not have any security measures configured yet, besides a login and password.&lt;/p&gt;
+
+&lt;p&gt;You will click on &lt;strong&gt;Advanced...&lt;/strong&gt;&amp;nbsp;and them&amp;nbsp;&lt;strong&gt;Accept the Risk and Continue&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/749c5b65-cfad-487d-8878-6f75c34aac67.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/a3ddce05-deca-4571-b2b1-e977513e681a.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='90fdede7-c72d-4dc6-ab5b-acc7a5c20fcd'>
+              <title>Login </title>
+              <orderIndex>2</orderIndex>
+              <localizations>
+                <LocaleContent id='90fdede7-c72d-4dc6-ab5b-acc7a5c20fcd'>
+                  <title>Login </title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/78fad5c4-cd4b-4b3a-88e3-87b407b906c2.png' filename='78fad5c4-cd4b-4b3a-88e3-87b407b906c2.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;You will use the exact same credentials you used on the DCUI.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;username:&amp;nbsp;&lt;strong&gt;root&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;password:&amp;nbsp;&lt;strong&gt;M@rines1M@rines1&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/78fad5c4-cd4b-4b3a-88e3-87b407b906c2.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='63d38402-8fa5-4009-8793-a08cbaa337f5'>
+              <title>VmMware Customer Experience Improvement Program</title>
+              <orderIndex>3</orderIndex>
+              <localizations>
+                <LocaleContent id='63d38402-8fa5-4009-8793-a08cbaa337f5'>
+                  <title>VmMware Customer Experience Improvement Program</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/8a2deb20-e969-47a2-a46c-c191b6143423.png' filename='8a2deb20-e969-47a2-a46c-c191b6143423.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;When you login to a brand new VMware server it will ask if you would like to participate on their automatic telemetry system, because we are part of the government and work with sensitive data,&lt;/p&gt;
+
+&lt;p&gt;we have to&amp;nbsp;&lt;strong&gt;un-check&lt;/strong&gt; this option.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/8a2deb20-e969-47a2-a46c-c191b6143423.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='aa85a994-a5a5-4b0d-aba4-4f34dc2faf97'>
+              <title>Homepage of vSphere</title>
+              <orderIndex>4</orderIndex>
+              <localizations>
+                <LocaleContent id='aa85a994-a5a5-4b0d-aba4-4f34dc2faf97'>
+                  <title>Homepage of vSphere</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/cf3833fd-7a41-4adc-b7cd-fa7c83aa94cc.png' filename='cf3833fd-7a41-4adc-b7cd-fa7c83aa94cc.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This is the homepage of vSphere, on the left side you can see the navigation panel, at the bottom you will be able to see what task are running or have ran, and in the center of the page it will show you the information of what menu you are accessing.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Click on the&amp;nbsp;&lt;strong&gt;House&lt;strong&gt;&amp;nbsp;icon&lt;/strong&gt;&lt;/strong&gt;​​​​​​​ to expand the Navigation panel.&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/cf3833fd-7a41-4adc-b7cd-fa7c83aa94cc.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='050c9f29-3d6a-44c8-9525-67501562a492'>
+              <title>Setting up NTP</title>
+              <orderIndex>5</orderIndex>
+              <localizations>
+                <LocaleContent id='050c9f29-3d6a-44c8-9525-67501562a492'>
+                  <title>Setting up NTP</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/7cffa8d9-2652-4ec7-a6ea-a1878d4abcbd.png' filename='7cffa8d9-2652-4ec7-a6ea-a1878d4abcbd.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;All devices connected to a network requires some sort of time and date sync to properly maintain security and authentication with each other, in this case we will use our &lt;strong&gt;Domain controller IPv4&amp;nbsp;&lt;/strong&gt;​​​​​​​as the NTP server.&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;Manage&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/7cffa8d9-2652-4ec7-a6ea-a1878d4abcbd.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='63826384-e0ae-469b-95ff-c5c2b898de37'>
+              <title>Setting up NTP</title>
+              <orderIndex>6</orderIndex>
+              <localizations>
+                <LocaleContent id='63826384-e0ae-469b-95ff-c5c2b898de37'>
+                  <title>Setting up NTP</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/1914271d-55b1-40af-9b4b-adf5598d5f80.png' filename='1914271d-55b1-40af-9b4b-adf5598d5f80.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Highlight&amp;nbsp;&lt;strong&gt;Time and date&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Then select&amp;nbsp;&lt;strong&gt;Edit NTP Settings&lt;strong&gt;&lt;strong&gt;​​​​​​​&amp;nbsp;&lt;/strong&gt;&lt;/strong&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;strong&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/strong&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/1914271d-55b1-40af-9b4b-adf5598d5f80.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='1ff90e85-c2a2-4c67-a236-27f0f4dc6902'>
+              <title>Setting up NTP</title>
+              <orderIndex>7</orderIndex>
+              <localizations>
+                <LocaleContent id='1ff90e85-c2a2-4c67-a236-27f0f4dc6902'>
+                  <title>Setting up NTP</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/063b0d34-4f9b-44e6-b3d5-f2ffc80dfd9e.png' filename='063b0d34-4f9b-44e6-b3d5-f2ffc80dfd9e.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;A pop-up will appear,&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;Use Network Time Protocol &lt;/strong&gt;bubble&lt;/p&gt;
+
+&lt;p&gt;fill out the following:&amp;nbsp;&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="width:300px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NTP service startup policy&lt;/td&gt;
+			&lt;td&gt;Start and stop with host&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NTP servers&lt;/td&gt;
+			&lt;td&gt;192.168.40.2&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;Press&amp;nbsp;&lt;strong&gt;save&lt;strong&gt;&lt;strong&gt;​​​​​​​&amp;nbsp;&lt;/strong&gt;&lt;/strong&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/063b0d34-4f9b-44e6-b3d5-f2ffc80dfd9e.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='660c9d22-bfd7-41f1-9ad8-bae430b2d4a9'>
+              <title>Setting up NTP</title>
+              <orderIndex>8</orderIndex>
+              <localizations>
+                <LocaleContent id='660c9d22-bfd7-41f1-9ad8-bae430b2d4a9'>
+                  <title>Setting up NTP</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/336984da-4531-484d-aa5e-22c45e6af83e.png' filename='336984da-4531-484d-aa5e-22c45e6af83e.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;You have added the NTP configuration but you may have noticed that it says &amp;quot;&lt;strong&gt;Stopped&lt;/strong&gt;&amp;quot; for NTP service. Following the next steps we will activate this service.&lt;/p&gt;
+
+&lt;p&gt;Click on the &amp;quot;&lt;strong&gt;Services&lt;/strong&gt;​​​​​​​&amp;quot; tab&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/336984da-4531-484d-aa5e-22c45e6af83e.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='3898bc89-7f22-4030-ae6e-2df1ca322947'>
+              <title>Setting up NTP</title>
+              <orderIndex>9</orderIndex>
+              <localizations>
+                <LocaleContent id='3898bc89-7f22-4030-ae6e-2df1ca322947'>
+                  <title>Setting up NTP</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/9cc03146-c1b0-4f14-a2b6-bc40ec2db4dd.png' filename='9cc03146-c1b0-4f14-a2b6-bc40ec2db4dd.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Scroll down and until you find &amp;quot;&lt;strong&gt;ntpd&lt;/strong&gt;&amp;quot;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Highlight that service and click on &amp;quot;&lt;strong&gt;Start&lt;/strong&gt;​​​​​​​&amp;quot;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/9cc03146-c1b0-4f14-a2b6-bc40ec2db4dd.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='36bd948d-df71-4b67-8216-020af947d46d'>
+              <title>Setting up NTP</title>
+              <orderIndex>10</orderIndex>
+              <localizations>
+                <LocaleContent id='36bd948d-df71-4b67-8216-020af947d46d'>
+                  <title>Setting up NTP</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/05ca2569-908c-4192-9303-b5751cea8211.png' filename='05ca2569-908c-4192-9303-b5751cea8211.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;If everything was setup correctly it should look like the image below.&lt;/p&gt;
+
+&lt;p&gt;Remember, NTP is very important for 2 or more computers to communicate with each other. there are countless of check and balances that have to precisely match up and if the devices are set to different times it will error out.&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&lt;img alt="" src="./images/05ca2569-908c-4192-9303-b5751cea8211.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='04270904-8da7-41d3-b34e-4915ffd21e81'>
+              <title>Licensing ESXi</title>
+              <orderIndex>11</orderIndex>
+              <localizations>
+                <LocaleContent id='04270904-8da7-41d3-b34e-4915ffd21e81'>
+                  <title>Licensing ESXi</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/58fb0aab-d3dc-4abb-b449-e04dd8f14048.png' filename='58fb0aab-d3dc-4abb-b449-e04dd8f14048.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;After you setup your NTP, your very next step should be licensing. Not having a licensed server may &lt;strong&gt;stop&lt;/strong&gt; you from completing certain tasks and sometimes even deploying other appliances such as vCenter and vSan.&lt;/p&gt;
+
+&lt;p&gt;Click on&amp;nbsp;&lt;strong&gt;Licensing tab&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/58fb0aab-d3dc-4abb-b449-e04dd8f14048.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='931b4d9a-293c-4c26-9dd4-57ce7eff30ab'>
+              <title>Licensing ESXi</title>
+              <orderIndex>12</orderIndex>
+              <localizations>
+                <LocaleContent id='931b4d9a-293c-4c26-9dd4-57ce7eff30ab'>
+                  <title>Licensing ESXi</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/b31c3916-741b-4c27-b6ea-d24df887abaf.png' filename='b31c3916-741b-4c27-b6ea-d24df887abaf.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This is the licensing menu, here it will list what features your server can use with this license.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Click&amp;nbsp;&lt;strong&gt;Assign License&amp;nbsp;&lt;/strong&gt;​​​​​​​&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/b31c3916-741b-4c27-b6ea-d24df887abaf.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='d8c47eab-2ad1-47f6-a998-144b505aeff0'>
+              <title>Licensing ESXi</title>
+              <orderIndex>13</orderIndex>
+              <localizations>
+                <LocaleContent id='d8c47eab-2ad1-47f6-a998-144b505aeff0'>
+                  <title>Licensing ESXi</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/28bb69e4-bfcb-4f13-8f68-ca301ec5b46c.png' filename='28bb69e4-bfcb-4f13-8f68-ca301ec5b46c.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;A pop-up will appear, for you to fill in the license.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;!! BE ADVISED THIS LICENSE IS ACTIVELY MONITORED. YOU CAN REQUEST LICENSES FROM YOUR &lt;strong&gt;&lt;u&gt;DATA SYSTEMS CHIEF&lt;/u&gt;&lt;/strong&gt;. IF USED IMPROPERLY, WILL RESULT IN PUNITIVE ACTIONS !!&lt;/p&gt;
+
+&lt;p&gt;Key:&amp;nbsp;&lt;strong&gt;F10C9-FQ086-D8NC1-LK10H-8HW1J&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table border="1" cellpadding="1" cellspacing="1" style="width:500px"&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;ESXi Hosts&lt;/td&gt;
+			&lt;td&gt;Licenses&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NDSACESXi01&lt;/td&gt;
+			&lt;td&gt;7N4GX-2DJ00-28UN0-L09AP-994QG&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NDSACESXi02&lt;/td&gt;
+			&lt;td&gt;6M6FG-4D20L-P8VN8-L9CU4-2ED4G&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;NDSACESXi03&lt;/td&gt;
+			&lt;td&gt;K06FG-8DL85-28PN0-L19UK-386LE&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;strong&gt;&amp;nbsp;&lt;/strong&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/28bb69e4-bfcb-4f13-8f68-ca301ec5b46c.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='56e5a884-b4a8-464c-bbaa-25a9138bcffa'>
+              <title>Licensing ESXi</title>
+              <orderIndex>14</orderIndex>
+              <localizations>
+                <LocaleContent id='56e5a884-b4a8-464c-bbaa-25a9138bcffa'>
+                  <title>Licensing ESXi</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/36109a10-42d3-4e16-bafa-952b908b299d.png' filename='36109a10-42d3-4e16-bafa-952b908b299d.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;If you used the correct license it will display what type of license it is and if its valid. You should see the following:&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Press&amp;nbsp;&lt;strong&gt;Assign license&lt;/strong&gt;​​​​​​​ if its all correct.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/36109a10-42d3-4e16-bafa-952b908b299d.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='0daa3416-d3c0-4967-b07b-8a35553d639c'>
+              <title>Licensing ESXi</title>
+              <orderIndex>15</orderIndex>
+              <localizations>
+                <LocaleContent id='0daa3416-d3c0-4967-b07b-8a35553d639c'>
+                  <title>Licensing ESXi</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/83463b42-69c8-41a7-ac79-4e96bc247f5b.png' filename='83463b42-69c8-41a7-ac79-4e96bc247f5b.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;If you require keys ask your chain of command for license keys, each unit have them allocated to them. Reach out to your Data Systems Chief for more information.&lt;/p&gt;
+
+&lt;p&gt;The menu should look like this:&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/83463b42-69c8-41a7-ac79-4e96bc247f5b.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='3363971f-93ab-4840-a1d2-36d9f869c17f'>
+              <title>Initial Setup of vSphere</title>
+              <languageCode>en</languageCode>
+              <content>&lt;p&gt;On the previous step you were physically connect to the server through a VGA cable and a keyboard, now you will be using a computer that is connect to the same network as your ESXi servers to manage them through a GUI, in this case called vSphere webpage. You will use the IPs you configured on the DCUI as your web address&amp;nbsp;&lt;em&gt;ex.: https://192.168.10.11&lt;/em&gt;​​​​​​​ once logged in we will setup the NTP, licensing, Datastores, Port Groups.&amp;nbsp;&amp;nbsp;&lt;/p&gt;
+</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+        <ContentNode id='898a7f83-8378-48d9-b1ff-0b45be5ab883'>
+          <title>Setting up Storage</title>
+          <orderIndex>2</orderIndex>
+          <children>
+            <ContentNode id='5015d8d6-8f99-4459-9bf8-be649f848223'>
+              <title>Setting up storage</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='5015d8d6-8f99-4459-9bf8-be649f848223'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/cf2d9a68-e799-4a85-a4fb-90380feff817.png' filename='cf2d9a68-e799-4a85-a4fb-90380feff817.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;On the navigation pane, click on the &lt;strong&gt;House Icon&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Then highlight &lt;strong&gt;Storage.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;New Datastore&lt;/strong&gt;​​​​​​​&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/cf2d9a68-e799-4a85-a4fb-90380feff817.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='d85f2465-5e02-4c43-9378-b4fed6eed66a'>
+              <title>Setting up storage</title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='d85f2465-5e02-4c43-9378-b4fed6eed66a'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/bddc6e02-db39-40fb-be43-73ed4c6e65cf.png' filename='bddc6e02-db39-40fb-be43-73ed4c6e65cf.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;A pop-up will appear, select what are you intentions.&lt;/p&gt;
+
+&lt;p&gt;In this case we want to &lt;strong&gt;create a new datastore&lt;/strong&gt;.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/bddc6e02-db39-40fb-be43-73ed4c6e65cf.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='b64f684f-4450-4b67-9b45-097eb6d498c0'>
+              <title>Setting up storage</title>
+              <orderIndex>2</orderIndex>
+              <localizations>
+                <LocaleContent id='b64f684f-4450-4b67-9b45-097eb6d498c0'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/4aa053c7-c8bb-4d12-931d-7be2dc55b385.png' filename='4aa053c7-c8bb-4d12-931d-7be2dc55b385.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;On this step you will be asked to Name this datastore, good practice is ensure its one word no spaces between names. After you name the datastore you want to choose which Disk Drive you want to use.&lt;/p&gt;
+
+&lt;p&gt;Name:&amp;nbsp;&lt;strong&gt;Storage_pool&lt;strong&gt;&lt;strong&gt;&amp;nbsp;&lt;/strong&gt;&lt;/strong&gt;&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Disk Drive:&amp;nbsp;&lt;strong&gt;500gb disk&lt;/strong&gt;​​​​​​​&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/4aa053c7-c8bb-4d12-931d-7be2dc55b385.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='f7fa243d-7ad3-4f30-93cb-58e2a0dba660'>
+              <title>Setting up storage</title>
+              <orderIndex>3</orderIndex>
+              <localizations>
+                <LocaleContent id='f7fa243d-7ad3-4f30-93cb-58e2a0dba660'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/05ed3d07-95a3-48d2-801c-6725a13388f9.png' filename='05ed3d07-95a3-48d2-801c-6725a13388f9.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;On the third step if is asking if you would like to partition the disk you selected, you may want to do this in a different scenario where you have a small or limited amount of disk on your server, but for this instance we will claim the entire disk for this job.&lt;/p&gt;
+
+&lt;p&gt;Keep everything as default and select&amp;nbsp;&lt;strong&gt;NEXT&amp;nbsp;&lt;/strong&gt;​​​​​​​&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/05ed3d07-95a3-48d2-801c-6725a13388f9.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='5e71e49d-30d6-4150-9973-c0798758c022'>
+              <title>Setting up storage</title>
+              <orderIndex>4</orderIndex>
+              <localizations>
+                <LocaleContent id='5e71e49d-30d6-4150-9973-c0798758c022'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/c0356cfc-f66b-435c-9274-dbff8227c0ac.png' filename='c0356cfc-f66b-435c-9274-dbff8227c0ac.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This is the summary page, this is where you verify that you selected the correct disk and named the datastore properly.&lt;/p&gt;
+
+&lt;p&gt;if everything looks correct press&amp;nbsp;&lt;strong&gt;Finish&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/c0356cfc-f66b-435c-9274-dbff8227c0ac.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='f299bb21-5234-4b86-9cbc-6b3eb7d08909'>
+              <title>Setting up storage</title>
+              <orderIndex>5</orderIndex>
+              <localizations>
+                <LocaleContent id='f299bb21-5234-4b86-9cbc-6b3eb7d08909'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/2fe17f79-3cd1-4345-b9e6-08ebe5b9fa89.png' filename='2fe17f79-3cd1-4345-b9e6-08ebe5b9fa89.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;A final warning will appear asking for your permission to delete and format all the data that was previously on that disk. This is not a concern for us because its the first time anyone is using this disk, no data will be lost.&lt;/p&gt;
+
+&lt;p&gt;Press&amp;nbsp;&lt;strong&gt;YES&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/2fe17f79-3cd1-4345-b9e6-08ebe5b9fa89.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='f7bc892f-8f2a-4c8c-a101-60a853c7506d'>
+              <title>Setting up storage</title>
+              <orderIndex>6</orderIndex>
+              <localizations>
+                <LocaleContent id='f7bc892f-8f2a-4c8c-a101-60a853c7506d'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/f1ec39dc-8c66-4bb3-8229-6ea60c079f2b.png' filename='f1ec39dc-8c66-4bb3-8229-6ea60c079f2b.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Congratulations you created your first VMFS datastore, of &lt;strong&gt;500gb&lt;/strong&gt;.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/f1ec39dc-8c66-4bb3-8229-6ea60c079f2b.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='27ad8570-e64e-4a86-9cc3-492938d86a3c'>
+              <title>Setting up storage</title>
+              <orderIndex>7</orderIndex>
+              <localizations>
+                <LocaleContent id='27ad8570-e64e-4a86-9cc3-492938d86a3c'>
+                  <title>Setting up storage</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/e3dee2bb-a83c-446e-bd8c-eabae2268f0a.png' filename='e3dee2bb-a83c-446e-bd8c-eabae2268f0a.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;To finish setting up the storage for your server you will need to have &lt;strong&gt;500gb of disk space&lt;/strong&gt; on your datastore. Repeat the previous steps until you reach 500gb, which is required for LAB02.&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/e3dee2bb-a83c-446e-bd8c-eabae2268f0a.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='898a7f83-8378-48d9-b1ff-0b45be5ab883'>
+              <title>Setting up Storage</title>
+              <languageCode>en</languageCode>
+              <content>&lt;p&gt;For setting up storage for your server, you can take two main routes. The first one and most rudimentary, is creating a &lt;strong&gt;VMFS (Virtual Machine File System) Datastore&lt;/strong&gt;, this will allow you to pool/ connect all the different hard drives in a server to make one big &lt;u&gt;virtual hard drive&lt;/u&gt;, but it is restrained to that specific host meaning if those &lt;em&gt;hard disk drives&lt;/em&gt; are not physically attached to that server, you will not be able to add it to the VMFS Datastore. (ex.: 100gb HDD + 100gb HDD + 100gb HDD = 300gb virtual HDD).&lt;/p&gt;
+
+&lt;p&gt;What happens if you have multiple servers? Well you would need to create something called&amp;nbsp;&lt;strong&gt;vSAN (Storage Area Network)&lt;/strong&gt;&amp;nbsp;this datastore allows you to connect multiple disk from different servers into one big virtual Hard Disk. (ex.: server1 300gb + server2 300gb + server3 570gb = 1.07Tb vSAN)&lt;/p&gt;
+
+&lt;table align="center" border="1" cellpadding="1" cellspacing="1" style="width:300px"&gt;
+	&lt;thead&gt;
+		&lt;tr&gt;
+			&lt;th scope="col"&gt;Capabilities&lt;/th&gt;
+			&lt;th scope="col"&gt;VMFS&lt;/th&gt;
+			&lt;th scope="col"&gt;vSAN&lt;/th&gt;
+		&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+		&lt;tr&gt;
+			&lt;td&gt;
+			&lt;p&gt;Allow user to connect individual HDDs together&lt;/p&gt;
+
+			&lt;p&gt;(isolated to one ESXi host)&lt;/p&gt;
+			&lt;/td&gt;
+			&lt;td&gt;YES&lt;/td&gt;
+			&lt;td&gt;YES&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;
+			&lt;p&gt;Allow user to connect individual HDDs over multiple ESXi host&lt;/p&gt;
+
+			&lt;p&gt;(can connect up to 64 ESXi host together)&amp;nbsp;&lt;/p&gt;
+			&lt;/td&gt;
+			&lt;td&gt;NO&lt;/td&gt;
+			&lt;td&gt;YES&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Allow user to migrate powered on Virtual Machines&lt;/td&gt;
+			&lt;td&gt;NO&lt;/td&gt;
+			&lt;td&gt;YES&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;
+			&lt;p&gt;Fault tolerance&lt;/p&gt;
+
+			&lt;p&gt;(one or more servers can be damaged without losing data)&lt;/p&gt;
+			&lt;/td&gt;
+			&lt;td&gt;NO&lt;/td&gt;
+			&lt;td&gt;YES&lt;/td&gt;
+		&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td&gt;Difficulty level to deploy&lt;/td&gt;
+			&lt;td&gt;easy&lt;/td&gt;
+			&lt;td&gt;hard&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;/p&gt;
+</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+        <ContentNode id='529b848f-4f28-42fb-ba6e-3769f2b6dde1'>
+          <title>Configuring Networking</title>
+          <orderIndex>3</orderIndex>
+          <children>
+            <ContentNode id='426f0cf6-3e8b-4449-bcc3-e85793fd30da'>
+              <title>Configuring Networking</title>
+              <orderIndex>0</orderIndex>
+              <localizations>
+                <LocaleContent id='426f0cf6-3e8b-4449-bcc3-e85793fd30da'>
+                  <title>Configuring Networking</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/8bb638b3-c966-4168-ad13-d173ec510a61.png' filename='8bb638b3-c966-4168-ad13-d173ec510a61.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Under the navigation panel Select&amp;nbsp;&lt;strong&gt;Networking&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/8bb638b3-c966-4168-ad13-d173ec510a61.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='87703602-1af7-4228-bcf9-96afbfe9dbe7'>
+              <title>Configuring Networking</title>
+              <orderIndex>1</orderIndex>
+              <localizations>
+                <LocaleContent id='87703602-1af7-4228-bcf9-96afbfe9dbe7'>
+                  <title>Configuring Networking</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/5cd78133-8c44-4b68-8ad6-05ef69a401c4.png' filename='5cd78133-8c44-4b68-8ad6-05ef69a401c4.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;We could approach this in two ways. you could create a new Port Group or modify the already existing one.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;For this lab we will modify the&amp;nbsp;&lt;strong&gt;VM Network&lt;/strong&gt;&amp;nbsp;port group&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;VM Network&amp;nbsp;&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Click&amp;nbsp;&lt;strong&gt;Edit settings&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/5cd78133-8c44-4b68-8ad6-05ef69a401c4.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='5890ee99-da4b-4e9e-864e-af9072b2fe3c'>
+              <title>Configuring Networking</title>
+              <orderIndex>2</orderIndex>
+              <localizations>
+                <LocaleContent id='5890ee99-da4b-4e9e-864e-af9072b2fe3c'>
+                  <title>Configuring Networking</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/eace411f-191b-412f-9b4a-21a640009359.png' filename='eace411f-191b-412f-9b4a-21a640009359.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Here you will modify the name to reflect what the Marine Corps uses which is Prod for the virtual machines.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Name:&amp;nbsp;&lt;strong&gt;Prod&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;VLAN ID:&amp;nbsp;&lt;strong&gt;40&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Press&amp;nbsp;&lt;strong&gt;Save&lt;/strong&gt;​​​​​​​&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/eace411f-191b-412f-9b4a-21a640009359.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='99fd7512-bc1a-4ac0-8b8c-981c09e5963e'>
+              <title>Configuring Networking</title>
+              <orderIndex>3</orderIndex>
+              <localizations>
+                <LocaleContent id='99fd7512-bc1a-4ac0-8b8c-981c09e5963e'>
+                  <title>Configuring Networking</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/b48f6254-9abe-41cb-b2f1-3bf980c4bdf5.png' filename='b48f6254-9abe-41cb-b2f1-3bf980c4bdf5.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Now we will modify the name of the management port group.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Select&amp;nbsp;&lt;strong&gt;Management Network&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Click&amp;nbsp;&lt;strong&gt;Edit settings&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/b48f6254-9abe-41cb-b2f1-3bf980c4bdf5.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='f833d91b-a086-484c-8b85-2393f27a64c0'>
+              <title>Configuring Networking</title>
+              <orderIndex>4</orderIndex>
+              <localizations>
+                <LocaleContent id='f833d91b-a086-484c-8b85-2393f27a64c0'>
+                  <title>Configuring Networking</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/fe50d25a-bb79-42fe-886a-c8ecbe29dcac.png' filename='fe50d25a-bb79-42fe-886a-c8ecbe29dcac.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;Change the name to:&lt;/p&gt;
+
+&lt;p&gt;Name:&amp;nbsp;&lt;strong&gt;Mgmt&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;VLAN ID:&amp;nbsp;&lt;strong&gt;10&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;​​​​​​​&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/fe50d25a-bb79-42fe-886a-c8ecbe29dcac.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+            <ContentNode id='f5b280e3-3de4-4432-9d7e-f7498ca3c910'>
+              <title>Configuring Networking</title>
+              <orderIndex>5</orderIndex>
+              <localizations>
+                <LocaleContent id='f5b280e3-3de4-4432-9d7e-f7498ca3c910'>
+                  <title>Configuring Networking</title>
+                  <languageCode>en</languageCode>
+                  <images>
+                    <img src='./images/e1d30fc2-d20e-45ac-801b-60f4dd45b90a.png' filename='e1d30fc2-d20e-45ac-801b-60f4dd45b90a.png' width='' height='' />
+                  </images>
+                  <content>&lt;p&gt;This is how your&amp;nbsp;&lt;strong&gt;Networking&lt;/strong&gt; menu should look.&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p style="text-align:center"&gt;&lt;img alt="" src="./images/e1d30fc2-d20e-45ac-801b-60f4dd45b90a.png" /&gt;&lt;/p&gt;
+</content>
+                </LocaleContent>
+              </localizations>
+            </ContentNode>
+          </children>
+          <localizations>
+            <LocaleContent id='529b848f-4f28-42fb-ba6e-3769f2b6dde1'>
+              <title>Configuring Networking</title>
+              <languageCode>en</languageCode>
+              <content>&lt;p&gt;You have already started this process at the beginning of the this lab when you were configuring the DCUI, but that only configured the management portion of the server, now we will create additional &lt;strong&gt;Port Groups&lt;/strong&gt; to allow the VMs (Virtual Machines) you create inside vSphere to have network connectivity.&amp;nbsp;&lt;/p&gt;
+</content>
+            </LocaleContent>
+          </localizations>
+        </ContentNode>
+      </children>
+      <localizations>
+        <LocaleContent id='75d2c974-5e39-486f-b71a-41751901421e'>
+          <title>Annex C LAB 01</title>
+          <languageCode>en</languageCode>
+          <images>
+            <img src='./images/0724f1d5-b871-4e30-a5b3-d67df6d4b00c.png' filename='0724f1d5-b871-4e30-a5b3-d67df6d4b00c.png' width='' height='' />
+          </images>
+          <content>&lt;p&gt;&lt;span style="font-size:12pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;&lt;strong&gt;Introduction:&lt;/strong&gt; This course will go over how the Marine Corps creates virtual environment that hosts multiple servers into one device. This is called &lt;em&gt;Virtualization.&lt;/em&gt;&amp;nbsp;Using VMware, a type-1 hypervisor, to utilize one powerful computer that can be split into tiny sections that can run &lt;strong&gt;Active Directory&lt;/strong&gt; (the service that you used to login to this laptop) or &lt;strong&gt;CUCM&lt;/strong&gt; (Cisco Unified Call Manager, the server that host all of your IP Phones and phone numbers) and many others apps or appliances. In the past each of those servers or applications used to be ran by individual bare metal server, imagine a room with one laptop for each of the applications, you soon would notice that you have a very tall tower of laptops generating heat spending energy and occupying the room. Hence the Marine Corps transitioned to a virtual environment using VMware. This allowed marines to package all of the required capabilities into one green transit case permitting marines to take their servers out of the Data Centers and big building, straight into the field with them.&amp;nbsp;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;span style="font-size:12pt"&gt;&lt;span style="line-height:115%"&gt;&lt;span style="font-family:Calibri,sans-serif"&gt;​​​​​​​&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;img alt="" src="./images/0724f1d5-b871-4e30-a5b3-d67df6d4b00c.png" /&gt;&lt;/p&gt;
+</content>
+        </LocaleContent>
+      </localizations>
+    </ContentNode>
+  </contentNodes>
+</Manual>

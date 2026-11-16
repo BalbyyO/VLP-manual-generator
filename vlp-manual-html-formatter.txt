@@ -1,0 +1,365 @@
+vlp-manual-html-formatter
+Convert raw text, draft notes, or existing HTML snippets into standardized, light-and-dark-mode compatible HTML5 for VMware Lab Platform (VLP) manuals. Use when the user asks to format, standardize, or convert lab manual overviews, VM credentials, or step-by-step procedures into HTML for VLP.
+
+Instructions
+VLP Manual HTML Formatter
+Convert raw instructional text, draft notes, or unstyled HTML into self-contained, theme-adaptive HTML5 snippets designed for the VMware Lab Platform (VLP) CKEditor (</> Source view).
+
+When to Use
+The user provides raw text, draft notes, or existing HTML for a lab manual and wants it converted or standardized into HTML5.
+The user wants to format a course overview, instructional purpose section, VM credential callout, or numbered procedural steps for VLP.
+The user asks to fix light mode or dark mode rendering issues (such as washed-out text, white table rows, or white code boxes) in VLP manual pages.
+Workflow and Formatting Rules
+1. Choose the Page Layout
+Every output must be a self-contained snippet starting with a <style> block followed by the HTML container so it can be pasted directly into VLP's </> Source editor.
+
+Course Overview / Introduction Pages: Use the .course-overview container when formatting front-page introductions, conceptual overviews, or standalone VM transition announcements.
+Procedural Step Pages: Use the .lab-wrapper container with a .lab-header title bar and a .lab-table table when formatting numbered student exercises.
+2. Preserve Step Text and Map Images Inline
+Overview Polish: You may clean up and organize conceptual overviews so they read like an enterprise technical manual.
+Strict Step Fidelity: Do not rewrite, combine, or alter the wording or sequence of numbered procedural steps. Keep the user's exact step instructions intact.
+Inline Image Mapping: Place screenshots directly inside the table cell (<td>) of the step they correspond to, right below the instruction text, using .step-inline-img. Do not leave a stack of images at the bottom of the page. When the user provides one image per step, map them 1-to-1 in order.
+Step Context Blocks: If a step includes "What you are doing" and "Why this matters" explanations, nest them inside <div class="step-context"> beneath the main action inside the same table cell.
+3. Follow the Strict Red Box Rule
+Reserve the translucent red callout box (.purpose-card or .lab-note) exclusively for two cases:
+
+Instructional Purpose: Placed at the beginning of a manual (<h2>INSTRUCTIONAL PURPOSE</h2>).
+Target VM Credentials: Placed only when first introducing a virtual machine or switching to a new target VM (<h2>Target VM Credentials</h2>). Omit the credentials box on subsequent pages that continue using the same VM.
+4. Apply Semantic Inline Tags
+UI Targets and Main Actions: Wrap buttons, icons, menus, window names, and VM names in <span class="ui-target"> (renders in bold high-contrast red).
+Commands and Credentials: Wrap CLI commands, tools (such as gpedit.msc, whoami, sudo), usernames, and passwords in <code class="cmd-inline">.
+Keyboard Keys: Wrap keystrokes (such as Enter or Windows Key + R) in <kbd class="key-press">.
+Terminal Verification Output: Wrap expected command-line output in <div class="term-box"> and highlight the shell prompt with <span class="term-prompt">.
+Standard CSS and HTML Templates
+Master <style> Block
+Include this CSS block at the top of generated snippets. It includes overrides for VLP and VMware Clarity dark mode themes so VLP does not inject white table rows, black list backgrounds, or white boxes behind <code> elements.
+
+<style>
+  :root {
+    --vlp-border: rgba(128, 128, 128, 0.3);
+    --vlp-accent-red: #dc2626;
+    --vlp-card-bg: rgba(220, 38, 38, 0.08);
+    --vlp-card-border: rgba(239, 68, 68, 0.4);
+    --vlp-th-bg: rgba(128, 128, 128, 0.15);
+    --vlp-row-even: rgba(128, 128, 128, 0.06);
+    --vlp-kbd-bg: rgba(128, 128, 128, 0.15);
+    --vlp-kbd-border: rgba(128, 128, 128, 0.35);
+    --vlp-context-bg: rgba(128, 128, 128, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --vlp-accent-red: #ef4444;
+      --vlp-card-bg: rgba(239, 68, 68, 0.14);
+      --vlp-card-border: rgba(239, 68, 68, 0.45);
+    }
+  }
+
+  .dark,
+  [data-theme="dark"],
+  [clr-theme="dark"],
+  [cds-theme="dark"],
+  .theme-dark,
+  .dark-theme,
+  .clr-theme-dark,
+  body.theme-dark {
+    --vlp-accent-red: #ef4444;
+    --vlp-card-bg: rgba(239, 68, 68, 0.14);
+    --vlp-card-border: rgba(239, 68, 68, 0.45);
+  }
+
+  .course-overview,
+  .lab-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: inherit !important;
+    line-height: 1.65;
+    font-size: 15px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .course-overview p,
+  .lab-wrapper p {
+    color: inherit !important;
+  }
+
+  .course-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .course-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--vlp-accent-red) !important;
+    margin: 0 0 1rem 0;
+    letter-spacing: -0.025em;
+  }
+
+  .banner-container {
+    text-align: center;
+    margin: 1.25rem 0 1.75rem 0;
+  }
+
+  .banner-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--vlp-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .section-divider {
+    border: 0;
+    height: 1px;
+    background-color: var(--vlp-border);
+    margin: 2rem 0 1.5rem 0;
+  }
+
+  .lab-header {
+    border-left: 4px solid var(--vlp-accent-red);
+    padding-left: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .lab-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+  }
+
+  /* Red Box Callouts: Only for Instructional Purpose and Initial/Switched Target VM Credentials */
+  .purpose-card,
+  .lab-note {
+    background-color: var(--vlp-card-bg) !important;
+    border: 1px solid var(--vlp-card-border) !important;
+    border-left: 5px solid var(--vlp-accent-red) !important;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+    color: inherit !important;
+  }
+
+  .purpose-card h2,
+  .lab-note h2,
+  .lab-note > strong {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+    margin: 0 0 0.75rem 0;
+    display: block;
+  }
+
+  .purpose-card p,
+  .lab-note p,
+  .lab-note ul,
+  .lab-note li {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+
+  .lab-note ul {
+    margin: 0 !important;
+    padding-left: 20px !important;
+  }
+
+  .lab-note li {
+    margin-bottom: 6px !important;
+  }
+
+  .lab-note li:last-child,
+  .purpose-card p:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Responsive Step Table with Dark Mode Transparency Overrides */
+  .lab-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--vlp-border) !important;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 16px;
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  .lab-table thead,
+  .lab-table tbody,
+  .lab-table tr,
+  .lab-table td {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+
+  .lab-table tbody tr:nth-child(even),
+  .lab-table tbody tr:nth-child(even) td {
+    background-color: var(--vlp-row-even) !important;
+  }
+
+  .lab-table th {
+    background-color: var(--vlp-th-bg) !important;
+    color: inherit !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--vlp-border) !important;
+  }
+
+  .lab-table td {
+    padding: 12px 14px;
+    border-top: 1px solid var(--vlp-border) !important;
+    vertical-align: top;
+  }
+
+  .lab-table tbody tr:first-child td {
+    border-top: none !important;
+  }
+
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background-color: var(--vlp-accent-red) !important;
+    color: #ffffff !important;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: bold;
+  }
+
+  .ui-target {
+    font-weight: 700;
+    color: var(--vlp-accent-red) !important;
+  }
+
+  .course-overview code,
+  .lab-wrapper code,
+  code.cmd-inline {
+    display: inline-block !important;
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+    border: 1px solid #334155 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 0.88em !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+  }
+
+  .key-press {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 0.8em;
+    font-weight: 700;
+    color: inherit !important;
+    background-color: var(--vlp-kbd-bg) !important;
+    border: 1px solid var(--vlp-kbd-border) !important;
+    border-radius: 4px;
+    box-shadow: 0 1px 0 var(--vlp-kbd-border);
+  }
+
+  .term-box {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #1e293b !important;
+    border-radius: 6px;
+    font-family: ui-monospace, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  .term-prompt {
+    color: #4ade80 !important;
+    font-weight: 600;
+  }
+
+  .step-context {
+    background-color: var(--vlp-context-bg) !important;
+    border-left: 3px solid var(--vlp-border) !important;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    border-radius: 0 4px 4px 0;
+    color: inherit !important;
+  }
+
+  .lab-table td img,
+  .step-inline-img {
+    max-width: 100%;
+    height: auto;
+    margin-top: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--vlp-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    display: block;
+  }
+</style>
+Example 1: Course Overview & Instructional Purpose
+<div class="course-overview">
+  <div class="course-header">
+    <h1>COURSE TITLE</h1>
+  </div>
+
+  <div class="banner-container">
+    <img class="banner-img" src="https://example.com/banner.png" alt="Course Banner" />
+  </div>
+
+  <p>Overview paragraph introducing key tools like <span class="ui-target">Server Manager</span> and commands like <code class="cmd-inline">sudo</code>.</p>
+
+  <hr class="section-divider" />
+
+  <div class="purpose-card">
+    <h2>INSTRUCTIONAL PURPOSE</h2>
+    <p>Purpose details for the course annex.</p>
+  </div>
+</div>
+Example 2: Procedural Steps with Inline Images & Terminal Output
+<div class="lab-wrapper">
+  <div class="lab-header">
+    <h3>Section Title</h3>
+  </div>
+
+  <p>Introductory context explaining the task and operational importance.</p>
+
+  <table class="lab-table">
+    <thead>
+      <tr>
+        <th style="width: 8%; text-align: center;">Step</th>
+        <th style="width: 92%;">Action &amp; Verification</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align: center;"><span class="step-badge">1</span></td>
+        <td>
+          Click <span class="ui-target">Start</span>, type <code class="cmd-inline">gpedit.msc</code>, and press <kbd class="key-press">Enter</kbd>.
+          <img class="step-inline-img" src="https://example.com/step1.png" alt="Step 1 Screenshot" />
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center;"><span class="step-badge">2</span></td>
+        <td>
+          Verify the active account by typing <code class="cmd-inline">whoami</code> and pressing <kbd class="key-press">Enter</kbd>.
+          <div class="term-box">
+            <span class="term-prompt">[admin@host ~]$</span> whoami<br />
+            admin
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+Gotchas
+Never Use Opaque Light Backgrounds on Callout Cards: VLP forces light/white text in dark mode. Opaque light backgrounds (#fef2f2) make white text invisible. Always use translucent rgba(...) backgrounds with color: inherit !important;.
+Strip VLP Table & List Backgrounds: VLP applies white backgrounds to odd table rows and black backgrounds to <ul> elements in dark mode. Always include background-color: transparent !important; on table elements and list items.
+CKEditor Class Stripping on Images: VLP's rich-text editor sometimes strips classes from <img> tags when resizing. Always include .lab-table td img alongside .step-inline-img in the CSS so images inside table cells stay properly styled.
