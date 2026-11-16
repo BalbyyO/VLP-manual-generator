@@ -1,9 +1,6 @@
 services:
   vlp-manual-generator:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: vlp-manual-generator:latest
+    image: ghcr.io/balbyyo/vlp-manual-generator:latest
     container_name: vlp-manual-generator
     ports:
       - "8080:8080"

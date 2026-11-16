@@ -4,6 +4,7 @@ A completely self-contained, air-gapped web application for authoring, standardi
 
 ## Release & Pre-Packaged Docker Image (`beta 0.1.0`)
 
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.1.0-beta`)
 - **GitHub Release (`beta 0.1.0`)**: [v0.1.0-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.1.0-beta)
 - **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.1.0-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.1.0-beta/vlp-manual-generator-0.1.0-beta.tar)
 
@@ -121,14 +122,12 @@ Click **Replace Steps** or **Append Steps**—exact step wording is preserved, a
 
 ### Option 1: Docker Compose (`docker-compose.yaml` Example)
 
-Save this `docker-compose.yaml` on your system (after loading the `beta 0.1.0` `.tar` archive or cloning this repository) to start the container immediately:
+Save this `docker-compose.yaml` anywhere on your system to pull and run the pre-packaged image directly from GitHub Container Registry without cloning the repository:
 
 ```yaml
 services:
   vlp-manual-generator:
-    image: vlp-manual-generator:0.1.0-beta
-    # Optional: comment out if running purely from the pre-packaged .tar image
-    build: .
+    image: ghcr.io/balbyyo/vlp-manual-generator:latest
     container_name: vlp-manual-generator
     ports:
       - "8080:8080"
