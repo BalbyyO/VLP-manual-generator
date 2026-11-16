@@ -3,6 +3,10 @@
 
   const VLP = window.VLPFormatter;
 
+  const HIDE_GUIDE_KEY = 'vlp_hide_guide_on_startup';
+  const MAX_UNDO_HISTORY = 40;
+  const TYPING_BURST_MS = 900;
+
   // =========================================================================
   // Application State
   // =========================================================================
@@ -16,6 +20,7 @@
     outTab: 'preview',     // 'preview' | 'html' | 'xml'
     copyImageMode: 'vlp',  // 'vlp' | 'base64'
     undoStack: [],
+    redoStack: [],
     hasPendingSave: false,
     lastFocusedEl: null,
     lastSelection: { start: 0, end: 0 }
@@ -25,6 +30,11 @@
   let autosaveServerTimer = null;
   let pendingStepFileTargetIdx = null;
   let toastTimer = null;
+  let typingUndoTarget = null;
+  let typingUndoTimer = null;
+  let lastPreviewedNodeId = null;
+  let previewDocInitialized = false;
+  let previewScrollRafId = null;
 
   // =========================================================================
   // DOM Helpers
@@ -173,29 +183,110 @@
   // =========================================================================
   // Tree Traversal & Undo History
   // =========================================================================
-  function pushUndo() {
-    if (!state.manual) return;
-    state.undoStack.push({
+  function shouldHideGuideOnStartup() {
+    try {
+      return localStorage.getItem(HIDE_GUIDE_KEY) === 'true';
+    } catch (_ignore) {
+      return false;
+    }
+  }
+
+  function syncStartupGuideCheckbox() {
+    const chk = $('chkHideGuideStartup');
+    if (chk) chk.checked = shouldHideGuideOnStartup();
+  }
+
+  function resetTypingBurst() {
+    clearTimeout(typingUndoTimer);
+    typingUndoTimer = null;
+    typingUndoTarget = null;
+  }
+
+  function updateUndoRedoButtons() {
+    const btnUndo = $('btnUndo');
+    const btnRedo = $('btnRedo');
+    if (btnUndo) btnUndo.disabled = state.undoStack.length === 0;
+    if (btnRedo) btnRedo.disabled = state.redoStack.length === 0;
+  }
+
+  function captureSnapshot() {
+    return {
       manual: JSON.parse(JSON.stringify(state.manual)),
       activeNodeId: state.activeNodeId,
+      activeStepIndex: state.activeStepIndex,
       imageMap: JSON.parse(JSON.stringify(state.imageMap)),
       sampleSource: state.sampleSource
-    });
-    if (state.undoStack.length > 15) state.undoStack.shift();
-    $('btnUndo').disabled = state.undoStack.length === 0;
+    };
+  }
+
+  function applySnapshot(snap) {
+    state.manual = normalizeManualData(snap.manual);
+    state.activeNodeId = snap.activeNodeId;
+    state.activeStepIndex = typeof snap.activeStepIndex === 'number' ? snap.activeStepIndex : 0;
+    state.imageMap = snap.imageMap || {};
+    state.sampleSource = snap.sampleSource || '';
+    applyColorTheme(state.manual.colorTheme);
+    updateUndoRedoButtons();
+    renderAll();
+  }
+
+  function isManualTextField(target) {
+    if (!target) return false;
+    if (target.id === 'manualNameInput' || target.id === 'manualLangInput') return true;
+    if (target.id === 'quickPasteInput') return false;
+    const editorBody = $('editorBody');
+    if (!editorBody || !editorBody.contains(target)) return false;
+    if (target.tagName === 'TEXTAREA') return !target.readOnly && !target.disabled;
+    if (target.tagName === 'INPUT') {
+      const t = (target.type || 'text').toLowerCase();
+      return t !== 'checkbox' && t !== 'radio' && t !== 'file' && t !== 'button' && t !== 'submit' && t !== 'reset' && !target.readOnly && !target.disabled;
+    }
+    return false;
+  }
+
+  function armTypingUndo(target) {
+    if (!state.manual || !target) return;
+    if (typingUndoTarget !== target) {
+      resetTypingBurst();
+      pushUndo();
+      typingUndoTarget = target;
+    }
+    clearTimeout(typingUndoTimer);
+    typingUndoTimer = setTimeout(function () {
+      typingUndoTarget = null;
+      typingUndoTimer = null;
+    }, TYPING_BURST_MS);
+  }
+
+  function pushUndo() {
+    if (!state.manual) return;
+    resetTypingBurst();
+    state.undoStack.push(captureSnapshot());
+    if (state.undoStack.length > MAX_UNDO_HISTORY) state.undoStack.shift();
+    state.redoStack = [];
+    updateUndoRedoButtons();
   }
 
   function performUndo() {
-    if (state.undoStack.length === 0) return;
+    if (state.undoStack.length === 0 || !state.manual) return;
+    resetTypingBurst();
+    state.redoStack.push(captureSnapshot());
+    if (state.redoStack.length > MAX_UNDO_HISTORY) state.redoStack.shift();
     const snap = state.undoStack.pop();
-    state.manual = snap.manual;
-    state.activeNodeId = snap.activeNodeId;
-    state.imageMap = snap.imageMap;
-    state.sampleSource = snap.sampleSource;
-    $('btnUndo').disabled = state.undoStack.length === 0;
-    renderAll();
+    applySnapshot(snap);
     scheduleAutosave();
     showToast('Undid last change');
+  }
+
+  function performRedo() {
+    if (state.redoStack.length === 0 || !state.manual) return;
+    resetTypingBurst();
+    state.undoStack.push(captureSnapshot());
+    if (state.undoStack.length > MAX_UNDO_HISTORY) state.undoStack.shift();
+    const snap = state.redoStack.pop();
+    applySnapshot(snap);
+    scheduleAutosave();
+    showToast('Redid change');
   }
 
   function findNodeAndParent(nodes, targetId, parent) {
@@ -743,6 +834,7 @@
       hdr.className = 'cred-entry-header';
       hdr.innerHTML = '<span>VM System #' + (idx + 1) + '</span>';
       const delBtn = makeTinyBtn('Remove', function () {
+        pushUndo();
         listRef.splice(idx, 1);
         renderCredentialsEditor(containerEl, listRef, onMutate);
         onMutate();
@@ -853,6 +945,7 @@
       hdrChk.type = 'checkbox';
       hdrChk.checked = tbl.hasHeader !== false;
       hdrChk.addEventListener('change', function () {
+        pushUndo();
         tbl.hasHeader = hdrChk.checked;
         renderTablesEditor(containerEl, tablesRef, onMutate);
         onMutate();
@@ -869,6 +962,7 @@
       right.style.flexWrap = 'wrap';
 
       const addRowBtn = makeTinyBtn('+ Row', function () {
+        pushUndo();
         const cols = tbl.rows[0] ? tbl.rows[0].length : 2;
         tbl.rows.push(new Array(cols).fill(''));
         renderTablesEditor(containerEl, tablesRef, onMutate);
@@ -876,12 +970,14 @@
       });
       const delRowBtn = makeTinyBtn('- Row', function () {
         if (tbl.rows.length > 1) {
+          pushUndo();
           tbl.rows.pop();
           renderTablesEditor(containerEl, tablesRef, onMutate);
           onMutate();
         }
       });
       const addColBtn = makeTinyBtn('+ Col', function () {
+        pushUndo();
         tbl.rows.forEach(function (r, rIdx) {
           r.push(rIdx === 0 && tbl.hasHeader !== false ? 'Column ' + (r.length + 1) : '');
         });
@@ -890,12 +986,14 @@
       });
       const delColBtn = makeTinyBtn('- Col', function () {
         if (tbl.rows[0] && tbl.rows[0].length > 1) {
+          pushUndo();
           tbl.rows.forEach(function (r) { r.pop(); });
           renderTablesEditor(containerEl, tablesRef, onMutate);
           onMutate();
         }
       });
       const rmTblBtn = makeTinyBtn('Delete Table', function () {
+        pushUndo();
         tablesRef.splice(tIdx, 1);
         renderTablesEditor(containerEl, tablesRef, onMutate);
         onMutate();
@@ -1085,6 +1183,7 @@
       const hasTerm = Boolean(step.termPrompt || step.termCommand || step.termOutput || step._showTerminal);
 
       const btnCtx = makeTinyBtn(hasCtx ? 'Hide Context' : '+ Context', function () {
+        pushUndo();
         step._showContext = !hasCtx;
         if (!step._showContext) {
           step.contextText = '';
@@ -1095,6 +1194,7 @@
       });
 
       const btnTbl = makeTinyBtn('+ Table', function () {
+        pushUndo();
         step.tables = step.tables || [];
         step.tables.push(VLP.createDefaultTable());
         step._showTables = true;
@@ -1104,6 +1204,7 @@
       });
 
       const btnCred = makeTinyBtn('+ VM Creds', function () {
+        pushUndo();
         step.credentialsList = step.credentialsList || [];
         step.credentialsList.push(VLP.createDefaultCredentialEntry());
         step._showCreds = true;
@@ -1113,6 +1214,7 @@
       });
 
       const btnTerm = makeTinyBtn(hasTerm ? 'Hide Terminal' : '+ Terminal', function () {
+        pushUndo();
         step._showTerminal = !hasTerm;
         if (!step._showTerminal) {
           step.termPrompt = '';
@@ -1131,6 +1233,7 @@
 
       const btnUp = makeTinyBtn('↑', function () {
         if (idx === 0) return;
+        pushUndo();
         const item = steps.splice(idx, 1)[0];
         steps.splice(idx - 1, 0, item);
         state.activeStepIndex = idx - 1;
@@ -1142,6 +1245,7 @@
 
       const btnDown = makeTinyBtn('↓', function () {
         if (idx >= steps.length - 1) return;
+        pushUndo();
         const item = steps.splice(idx, 1)[0];
         steps.splice(idx + 1, 0, item);
         state.activeStepIndex = idx + 1;
@@ -1152,6 +1256,7 @@
       btnDown.disabled = idx >= steps.length - 1;
 
       const btnInsertAfter = makeTinyBtn('+ Below', function () {
+        pushUndo();
         steps.splice(idx + 1, 0, VLP.createDefaultStep());
         state.activeStepIndex = idx + 1;
         renderStepsList(stData);
@@ -1160,6 +1265,7 @@
       });
 
       const btnDel = makeTinyBtn('Delete', function () {
+        pushUndo();
         if (steps.length <= 1) {
           step.instruction = '';
           step.contextText = '';
@@ -1219,13 +1325,17 @@
         const imgItems = items.filter(function (it) { return it.type && it.type.startsWith('image/'); });
         if (!imgItems.length) return;
         e.preventDefault();
-        step.images = step.images || [];
+        const entries = [];
         for (let i = 0; i < imgItems.length; i++) {
           const entry = await ingestImageFile(imgItems[i].getAsFile());
-          if (entry) {
-            step.images.push({ src: entry.src, alt: 'Step ' + (idx + 1) + ' Screenshot', width: entry.width, height: entry.height });
-          }
+          if (entry) entries.push(entry);
         }
+        if (!entries.length) return;
+        pushUndo();
+        step.images = step.images || [];
+        entries.forEach(function (entry) {
+          step.images.push({ src: entry.src, alt: 'Step ' + (idx + 1) + ' Screenshot', width: entry.width, height: entry.height });
+        });
         renderStepsList(stData);
         updateOutputs();
         scheduleAutosave();
@@ -1265,6 +1375,7 @@
         credHdr.className = 'sub-panel-header';
         credHdr.innerHTML = '<span>Step VM Credentials (.lab-note)</span>';
         const addSysBtn = makeTinyBtn('+ Add VM System', function () {
+          pushUndo();
           step.credentialsList.push(VLP.createDefaultCredentialEntry());
           renderStepsList(stData);
           updateOutputs();
@@ -1294,6 +1405,7 @@
         tblHdr.className = 'sub-panel-header';
         tblHdr.innerHTML = '<span>Step Data Tables (.vlp-data-table)</span>';
         const addAnotherTblBtn = makeTinyBtn('+ Add Table', function () {
+          pushUndo();
           step.tables.push(VLP.createDefaultTable());
           renderStepsList(stData);
           updateOutputs();
@@ -1388,6 +1500,7 @@
       imgHeader.className = 'sub-panel-header';
       imgHeader.innerHTML = '<span>Inline Step Screenshots (.step-inline-img)</span>';
       const urlAddBtn = makeTinyBtn('+ Add URL / Path', function () {
+        pushUndo();
         step.images = step.images || [];
         step.images.push({ src: './images/', alt: 'Step ' + (idx + 1) + ' Screenshot' });
         renderStepsList(stData);
@@ -1406,6 +1519,8 @@
         $('stepImageFileInput').click();
       });
       bindDropzone(dz, function (entries) {
+        if (!entries || !entries.length) return;
+        pushUndo();
         step.images = step.images || [];
         entries.forEach(function (en) {
           step.images.push({ src: en.src, alt: 'Step ' + (idx + 1) + ' Screenshot', width: en.width, height: en.height });
@@ -1467,6 +1582,7 @@
           fields.appendChild(altIn);
 
           const rmBtn = makeTinyBtn('×', function () {
+            pushUndo();
             imgs.splice(imIdx, 1);
             renderStepsList(stData);
             updateOutputs();
@@ -1522,28 +1638,112 @@
     // Update iframe preview with realistic VLP Light / Clarity Dark host simulation
     const isDark = state.previewTheme === 'dark';
     $('previewPane').classList.toggle('dark-sim', isDark);
-    const frameDoc =
-      '<!DOCTYPE html>\n' +
-      '<html lang="en"' + (isDark ? ' class="clr-theme-dark theme-dark dark" data-theme="dark" clr-theme="dark"' : '') + '>\n' +
-      '<head>\n' +
-      '  <meta charset="UTF-8" />\n' +
-      '  <base href="' + window.location.origin + '/" />\n' +
-      '  <style>\n' +
+
+    const hostCss =
       '    body {\n' +
       '      margin: 0;\n' +
       '      padding: 22px;\n' +
       '      background: ' + (isDark ? '#1b2129' : '#ffffff') + ';\n' +
       '      color: ' + (isDark ? '#e5edf7' : '#1f2937') + ';\n' +
       '      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;\n' +
-      '    }\n' +
-      '  </style>\n' +
-      '</head>\n' +
-      '<body' + (isDark ? ' class="theme-dark"' : '') + '>\n' +
-      previewHtmlSnippet + '\n' +
-      '</body>\n' +
-      '</html>';
+      '    }\n';
 
-    $('vlpPreviewFrame').srcdoc = frameDoc;
+    const frame = $('vlpPreviewFrame');
+    const isSameNode = lastPreviewedNodeId === node.id;
+    let doc = null;
+    let win = null;
+    try {
+      doc = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
+      win = frame.contentWindow;
+    } catch (_ignore) {
+      doc = null;
+      win = null;
+    }
+
+    let prevScrollX = 0;
+    let prevScrollY = 0;
+    if (isSameNode && previewDocInitialized && doc) {
+      const se = doc.scrollingElement || doc.documentElement || doc.body;
+      prevScrollX = (win && typeof win.scrollX === 'number') ? win.scrollX : ((se && se.scrollLeft) || 0);
+      prevScrollY = (win && typeof win.scrollY === 'number') ? win.scrollY : ((se && se.scrollTop) || 0);
+    }
+
+    if (!previewDocInitialized || !doc || !doc.head || !doc.body) {
+      const frameDoc =
+        '<!DOCTYPE html>\n' +
+        '<html lang="en"' + (isDark ? ' class="clr-theme-dark theme-dark dark" data-theme="dark" clr-theme="dark"' : '') + '>\n' +
+        '<head>\n' +
+        '  <meta charset="UTF-8" />\n' +
+        '  <base href="' + window.location.origin + '/" />\n' +
+        '  <style id="vlp-host-style">\n' +
+        hostCss +
+        '  </style>\n' +
+        '</head>\n' +
+        '<body' + (isDark ? ' class="theme-dark"' : '') + '>\n' +
+        previewHtmlSnippet + '\n' +
+        '</body>\n' +
+        '</html>';
+
+      if (doc) {
+        doc.open();
+        doc.write(frameDoc);
+        doc.close();
+        previewDocInitialized = true;
+        win = frame.contentWindow;
+      } else {
+        frame.srcdoc = frameDoc;
+        previewDocInitialized = true;
+      }
+    } else {
+      const htmlEl = doc.documentElement;
+      if (isDark) {
+        htmlEl.className = 'clr-theme-dark theme-dark dark';
+        htmlEl.setAttribute('data-theme', 'dark');
+        htmlEl.setAttribute('clr-theme', 'dark');
+        doc.body.className = 'theme-dark';
+      } else {
+        htmlEl.className = '';
+        htmlEl.removeAttribute('data-theme');
+        htmlEl.removeAttribute('clr-theme');
+        doc.body.className = '';
+      }
+
+      let baseStyle = doc.getElementById('vlp-host-style');
+      if (!baseStyle) {
+        baseStyle = doc.createElement('style');
+        baseStyle.id = 'vlp-host-style';
+        doc.head.appendChild(baseStyle);
+      }
+      baseStyle.textContent = hostCss;
+      doc.body.innerHTML = previewHtmlSnippet;
+    }
+
+    lastPreviewedNodeId = node.id;
+
+    if (doc && win) {
+      const targetX = isSameNode ? prevScrollX : 0;
+      const targetY = isSameNode ? prevScrollY : 0;
+      const applyScroll = function () {
+        try { win.scrollTo(targetX, targetY); } catch (_ignore) {}
+      };
+      if (previewScrollRafId !== null) {
+        cancelAnimationFrame(previewScrollRafId);
+        previewScrollRafId = null;
+      }
+      applyScroll();
+      if (isSameNode && (targetX > 0 || targetY > 0)) {
+        previewScrollRafId = requestAnimationFrame(function () {
+          previewScrollRafId = null;
+          applyScroll();
+        });
+        doc.body.querySelectorAll('img').forEach(function (imgEl) {
+          if (!imgEl.complete) {
+            imgEl.addEventListener('load', applyScroll, { once: true });
+          }
+        });
+      }
+    }
+
     $('htmlOutputText').value = copyHtmlSnippet;
     $('htmlStatsLabel').textContent = copyHtmlSnippet.length.toLocaleString() + ' chars';
 
@@ -1628,6 +1828,7 @@
     const target = resolveActiveTextTarget();
     if (!target) return;
 
+    pushUndo();
     const val = target.value || '';
     const start = typeof target.selectionStart === 'number' ? target.selectionStart : state.lastSelection.start;
     const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : state.lastSelection.end;
@@ -1646,6 +1847,7 @@
   function applyListWrap(listTag) {
     const target = resolveActiveTextTarget();
     if (!target) return;
+    pushUndo();
     const tag = listTag === 'ol' ? 'ol' : 'ul';
     const val = target.value || '';
     const start = typeof target.selectionStart === 'number' ? target.selectionStart : state.lastSelection.start;
@@ -1689,23 +1891,27 @@
     } else if (action === 'focus-banner') {
       $('ovBannerSrc').focus();
     } else if (action === 'add-table') {
+      pushUndo();
       ov.tables = ov.tables || [];
       ov.tables.push(VLP.createDefaultTable());
       renderEditor();
       updateOutputs();
       scheduleAutosave();
     } else if (action === 'toggle-divider') {
+      pushUndo();
       ov.showDivider = !ov.showDivider;
       renderEditor();
       updateOutputs();
       scheduleAutosave();
     } else if (action === 'toggle-purpose') {
+      pushUndo();
       ov.purposeEnabled = !ov.purposeEnabled;
       renderEditor();
       updateOutputs();
       scheduleAutosave();
       if (ov.purposeEnabled) $('ovPurposeText').focus();
     } else if (action === 'toggle-credentials') {
+      pushUndo();
       ov.credentialsEnabled = !ov.credentialsEnabled;
       if (ov.credentialsEnabled && (!ov.credentialsList || ov.credentialsList.length === 0)) {
         ov.credentialsList = [VLP.createDefaultCredentialEntry()];
@@ -1726,6 +1932,7 @@
     if (action === 'focus-header') {
       $('stSectionTitle').focus();
     } else if (action === 'add-step') {
+      pushUndo();
       steps.push(VLP.createDefaultStep());
       state.activeStepIndex = steps.length - 1;
       renderStepsList(stData);
@@ -1735,12 +1942,14 @@
       if (areas[state.activeStepIndex]) areas[state.activeStepIndex].focus();
     } else if (action === 'add-context') {
       if (!steps[idx]) return;
+      if (!steps[idx]._showContext) pushUndo();
       steps[idx]._showContext = true;
       renderStepsList(stData);
       updateOutputs();
       scheduleAutosave();
     } else if (action === 'add-table') {
       if (!steps[idx]) return;
+      pushUndo();
       steps[idx].tables = steps[idx].tables || [];
       steps[idx].tables.push(VLP.createDefaultTable());
       steps[idx]._showTables = true;
@@ -1749,6 +1958,7 @@
       scheduleAutosave();
     } else if (action === 'add-vm-creds') {
       if (!steps[idx]) return;
+      pushUndo();
       steps[idx].credentialsList = steps[idx].credentialsList || [];
       steps[idx].credentialsList.push(VLP.createDefaultCredentialEntry());
       steps[idx]._showCreds = true;
@@ -1757,6 +1967,7 @@
       scheduleAutosave();
     } else if (action === 'add-terminal') {
       if (!steps[idx]) return;
+      if (!steps[idx]._showTerminal) pushUndo();
       steps[idx]._showTerminal = true;
       renderStepsList(stData);
       updateOutputs();
@@ -1774,6 +1985,7 @@
 
   function openTemplatesModal(tab, focusGuideId) {
     currentModalTab = tab || 'templates';
+    syncStartupGuideCheckbox();
     $('templatesModal').classList.add('open');
     renderTemplatesModalBody(focusGuideId);
   }
@@ -2153,6 +2365,7 @@
     if (saved.previewTheme) state.previewTheme = saved.previewTheme;
     if (saved.copyImageMode) state.copyImageMode = saved.copyImageMode;
     applyColorTheme(state.manual.colorTheme);
+    updateUndoRedoButtons();
     renderAll();
     return true;
   }
@@ -2164,15 +2377,68 @@
     populateColorThemeDropdown();
 
     $('colorThemeSelect').addEventListener('change', function () {
-      applyColorTheme($('colorThemeSelect').value);
+      const nextTheme = $('colorThemeSelect').value;
+      if (state.manual && state.manual.colorTheme !== nextTheme) {
+        pushUndo();
+      }
+      applyColorTheme(nextTheme);
       updateOutputs();
       scheduleAutosave();
     });
 
-    // Topbar buttons
+    // Topbar buttons & startup guide preference
     $('btnUndo').addEventListener('click', performUndo);
+    $('btnRedo').addEventListener('click', performRedo);
     $('btnOpenTemplates').addEventListener('click', function () { openTemplatesModal('templates'); });
     $('btnShowGuideModal').addEventListener('click', function () { openTemplatesModal('guide'); });
+
+    const chkHideGuide = $('chkHideGuideStartup');
+    if (chkHideGuide) {
+      syncStartupGuideCheckbox();
+      chkHideGuide.addEventListener('change', function () {
+        try {
+          if (chkHideGuide.checked) {
+            localStorage.setItem(HIDE_GUIDE_KEY, 'true');
+          } else {
+            localStorage.removeItem(HIDE_GUIDE_KEY);
+          }
+        } catch (_ignore) {}
+      });
+    }
+
+    // Typing-burst undo capture & global Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+    document.addEventListener('beforeinput', function (e) {
+      if (e.inputType === 'historyUndo' || e.inputType === 'historyRedo') return;
+      if (isManualTextField(e.target)) {
+        armTypingUndo(e.target);
+      }
+    });
+
+    document.addEventListener('focusout', function (e) {
+      if (typingUndoTarget && e.target === typingUndoTarget) {
+        resetTypingBurst();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const target = e.target;
+      if (target && target.closest && target.closest('.modal-backdrop.open')) return;
+      if (target && target.id === 'quickPasteInput') return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'z' && !e.shiftKey) {
+        if (isManualTextField(target) || state.undoStack.length > 0) {
+          e.preventDefault();
+          performUndo();
+        }
+      } else if ((key === 'y' && !e.shiftKey) || (key === 'z' && e.shiftKey)) {
+        if (isManualTextField(target) || state.redoStack.length > 0) {
+          e.preventDefault();
+          performRedo();
+        }
+      }
+    });
     $('btnLoadAnnexB').addEventListener('click', function () { loadSampleManual('annexb'); });
     $('btnLoadAnnexC').addEventListener('click', function () { loadSampleManual('annexc'); });
     $('btnOpenSessions').addEventListener('click', function () {
@@ -2353,6 +2619,8 @@
     $('ovBannerClearBtn').addEventListener('click', function () {
       const info = getActiveInfo();
       if (!info) return;
+      if (!info.node.overview.bannerSrc && !$('ovBannerSrc').value) return;
+      pushUndo();
       info.node.overview.bannerSrc = '';
       $('ovBannerSrc').value = '';
       updateOutputs();
@@ -2365,6 +2633,7 @@
       const entry = await ingestImageFile(file);
       const info = getActiveInfo();
       if (entry && info) {
+        pushUndo();
         info.node.overview.bannerSrc = entry.src;
         $('ovBannerSrc').value = entry.src;
         updateOutputs();
@@ -2375,6 +2644,7 @@
     bindDropzone($('ovBannerDropzone'), function (entries) {
       const info = getActiveInfo();
       if (!info || !entries.length) return;
+      pushUndo();
       info.node.overview.bannerSrc = entries[0].src;
       $('ovBannerSrc').value = entries[0].src;
       updateOutputs();
@@ -2392,6 +2662,7 @@
     $('ovShowDivider').addEventListener('change', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.overview.showDivider = $('ovShowDivider').checked;
       updateOutputs();
       scheduleAutosave();
@@ -2399,6 +2670,7 @@
     $('ovPurposeEnabled').addEventListener('change', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.overview.purposeEnabled = $('ovPurposeEnabled').checked;
       $('ovPurposeFields').classList.toggle('hidden', !info.node.overview.purposeEnabled);
       updateOutputs();
@@ -2422,6 +2694,7 @@
     $('btnAddOverviewTable').addEventListener('click', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.overview.tables = info.node.overview.tables || [];
       info.node.overview.tables.push(VLP.createDefaultTable());
       renderEditor();
@@ -2432,6 +2705,7 @@
     $('ovCredEnabled').addEventListener('change', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.overview.credentialsEnabled = $('ovCredEnabled').checked;
       if (info.node.overview.credentialsEnabled && (!info.node.overview.credentialsList || info.node.overview.credentialsList.length === 0)) {
         info.node.overview.credentialsList = [VLP.createDefaultCredentialEntry()];
@@ -2450,6 +2724,7 @@
     $('btnAddOverviewCred').addEventListener('click', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.overview.credentialsEnabled = true;
       info.node.overview.credentialsList = info.node.overview.credentialsList || [];
       info.node.overview.credentialsList.push(VLP.createDefaultCredentialEntry());
@@ -2476,6 +2751,7 @@
     $('btnAddStepsIntroTable').addEventListener('click', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.stepsData.tables = info.node.stepsData.tables || [];
       info.node.stepsData.tables.push(VLP.createDefaultTable());
       renderEditor();
@@ -2485,6 +2761,7 @@
     $('stCredEnabled').addEventListener('change', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.stepsData.credentialsEnabled = $('stCredEnabled').checked;
       if (info.node.stepsData.credentialsEnabled && (!info.node.stepsData.credentialsList || info.node.stepsData.credentialsList.length === 0)) {
         info.node.stepsData.credentialsList = [VLP.createDefaultCredentialEntry()];
@@ -2503,6 +2780,7 @@
     $('btnAddStepsCred').addEventListener('click', function () {
       const info = getActiveInfo();
       if (!info) return;
+      pushUndo();
       info.node.stepsData.credentialsEnabled = true;
       info.node.stepsData.credentialsList = info.node.stepsData.credentialsList || [];
       info.node.stepsData.credentialsList.push(VLP.createDefaultCredentialEntry());
@@ -2552,27 +2830,32 @@
       const files = Array.from(e.target.files || []);
       e.target.value = '';
       if (!files.length || pendingStepFileTargetIdx === null) return;
+      const targetStepIdx = pendingStepFileTargetIdx;
+      pendingStepFileTargetIdx = null;
       const info = getActiveInfo();
       if (!info || info.node.mode !== 'steps') return;
-      const step = info.node.stepsData.steps[pendingStepFileTargetIdx];
+      const step = info.node.stepsData.steps[targetStepIdx];
       if (!step) return;
-      step.images = step.images || [];
+      const entries = [];
       for (let i = 0; i < files.length; i++) {
         const entry = await ingestImageFile(files[i]);
-        if (entry) {
-          step.images.push({
-            src: entry.src,
-            alt: 'Step ' + (pendingStepFileTargetIdx + 1) + ' Screenshot',
-            width: entry.width,
-            height: entry.height
-          });
-        }
+        if (entry) entries.push(entry);
       }
-      pendingStepFileTargetIdx = null;
+      if (!entries.length) return;
+      pushUndo();
+      step.images = step.images || [];
+      entries.forEach(function (entry) {
+        step.images.push({
+          src: entry.src,
+          alt: 'Step ' + (targetStepIdx + 1) + ' Screenshot',
+          width: entry.width,
+          height: entry.height
+        });
+      });
       renderStepsList(info.node.stepsData);
       updateOutputs();
       scheduleAutosave();
-      showToast('Attached ' + files.length + ' inline step image(s)');
+      showToast('Attached ' + entries.length + ' inline step image(s)');
     });
 
     // Preview & Output Controls
@@ -2738,8 +3021,13 @@
       state.manual = normalizeManualData(createStarterManual());
       state.activeNodeId = state.manual.contentNodes[0].id;
       applyColorTheme(state.manual.colorTheme);
+      updateUndoRedoButtons();
       renderAll();
       setSaveStatus('ok', 'Starter Templates Loaded');
+    }
+
+    if (!shouldHideGuideOnStartup()) {
+      openTemplatesModal('guide');
     }
   }
 

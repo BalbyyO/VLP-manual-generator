@@ -11,7 +11,7 @@
     <div class="topbar-left">
       <div class="brand-mark" aria-hidden="true">VLP</div>
       <span class="brand-title">VLP Manual HTML Formatter</span>
-      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • v0.2.0-beta</span>
+      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • v0.2.1-beta</span>
       <span id="saveStatusBadge" class="badge status-ok" title="Dual Auto-Save (Browser IndexedDB + Server Disk)">
         <span class="status-dot"></span>
         <span id="saveStatusText">Ready</span>
@@ -23,7 +23,8 @@
         <span id="colorThemeSwatch" class="theme-swatch-dot" aria-hidden="true"></span>
         <select id="colorThemeSelect" class="theme-select" aria-label="Color Theme Palette"></select>
       </div>
-      <button id="btnUndo" class="btn btn-sm" title="Undo last structural/template change" disabled>Undo</button>
+      <button id="btnUndo" class="btn btn-sm" title="Undo last edit (Ctrl+Z)" disabled>Undo</button>
+      <button id="btnRedo" class="btn btn-sm" title="Redo last undone edit (Ctrl+Y)" disabled>Redo</button>
       <button id="btnOpenTemplates" class="btn btn-sm btn-blue">Templates &amp; Button Guide</button>
       <button id="btnLoadAnnexB" class="btn btn-sm" title="Load dsac.annexb.lab01-en reference manual">Load Annex B</button>
       <button id="btnLoadAnnexC" class="btn btn-sm" title="Load dsac.annexc.lab01-en multi-chapter XML example">Load Annex C</button>
@@ -445,6 +446,13 @@
         <button type="button" class="btn btn-sm" data-close-modal="templatesModal">Close</button>
       </div>
       <div id="templatesModalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <label class="checkbox-inline" style="cursor:pointer;">
+          <input id="chkHideGuideStartup" type="checkbox" />
+          <span>Do not show this guide automatically on startup</span>
+        </label>
+        <button type="button" class="btn btn-sm btn-primary" data-close-modal="templatesModal">Got It</button>
+      </div>
     </div>
   </div>
 

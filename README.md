@@ -6,11 +6,11 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.2.0`)
+## Release & Pre-Packaged Docker Image (`beta 0.2.1`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.2.0-beta`)
-- **GitHub Release (`beta 0.2.0`)**: [v0.2.0-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.0-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.2.0-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.2.0-beta/vlp-manual-generator-0.2.0-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.2.1-beta`)
+- **GitHub Release (`beta 0.2.1`)**: [v0.2.1-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.1-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.2.1-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.2.1-beta/vlp-manual-generator-0.2.1-beta.tar)
 
 ---
 
@@ -50,8 +50,8 @@ flowchart LR
 | Control | What It Does |
 | --- | --- |
 | **Saved (Browser & Disk)** badge | Confirms dual auto-save status (`IndexedDB` + server `/data/sessions/autosave.json`). |
-| **Undo** | Reverts structural changes (adding/deleting nodes, applying templates, consolidating chapters). |
-| **Templates & Button Guide** | Opens the 3-tab modal: **Pre-Made Templates**, **What Every Button Does**, and **Reference Manuals**. |
+| **Undo** / **Redo** | Full edit history (`Ctrl+Z`, `Ctrl+Y` / `Ctrl+Shift+Z`) covering typing bursts, toolbar formatting, tables, credentials, steps, themes, and structural changes. |
+| **Templates & Button Guide** | Opens the 3-tab modal (**Pre-Made Templates**, **What Every Button Does**, and **Reference Manuals**). Shows the **Button Demo Guide** automatically on startup unless **Do not show this guide automatically on startup** is checked. |
 | **Load Annex B** / **Load Annex C** | Loads the bundled reference manuals (`dsac.annexb.lab01-en` end-goal example and `dsac.annexc.lab01-en` multi-chapter XML example). |
 | **Sessions** | Save/restore named server snapshots or download/restore portable `.json` project backups. |
 | **Import XML / ZIP** | Imports an existing VLP `content.xml` or `.zip` manual package (including `./images/*`). |
@@ -78,7 +78,7 @@ Mirrors the hierarchical `content.xml` structure (`Manual` → `Chapters` → `S
 #### Switch Page Layout Mode
 Use the segmented control next to the node title:
 - **Course Overview**: Structured builder for Course Title (`<h1>`), Banner Image, Overview paragraphs, optional `<hr class="section-divider" />`, **Instructional Purpose Card** (`.purpose-card`), and **Target VM Credentials Card** (`.lab-note`).
-- **Procedural Steps**: Visual step-row builder (`.lab-table` with circular red `.step-badge` counters), optional **Step Context** (`What you are doing:` / `Why this matters:`), **Terminal Verification Output** (`.term-box`), and inline screenshots.
+- **Procedural Steps**: Visual step-row builder (`.lab-table` with themed `.step-badge` counters), optional single merged indented **Step Context** (`.step-context`), **Data Tables** (`.vlp-data-table`), **Multi-System VM Credentials** (`.lab-note`), **Terminal Verification Output** (`.term-box`), and inline screenshots.
 - **Raw / Imported**: Preserves imported/custom HTML verbatim until you click **Convert Page to Procedural Steps** or **Convert Page to Course Overview**.
 
 #### Apply Rich Text & Semantic Formatting (Toolbar, Shortcuts, or Markup)
@@ -120,7 +120,7 @@ Click **Replace Steps** or **Append Steps**—exact step wording is preserved, a
 
 ### 4. Right Pane — Live VLP Preview & Export
 
-1. Toggle **Live VLP Preview**, **HTML (`</>` Source)**, or **Node XML** tabs.
+1. Toggle **Live VLP Preview** (updates in-place without jumping back to the top while typing), **HTML (`</>` Source)**, or **Node XML** tabs.
 2. Switch **Light Mode** ↔ **VLP Dark Mode** to verify contrast against VMware Clarity dark selectors.
 3. Choose how images appear in copied HTML via **Copied HTML Images**:
    - `./images/<uuid>.png (VLP Standard)` — for VLP XML/ZIP manual packages
@@ -158,20 +158,20 @@ docker compose up -d
 
 Open **`http://localhost:8080`** in your browser. Sessions and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`beta 0.2.0` Tarball)
+### Option 2: Air-Gapped Transfer (`beta 0.2.1` Tarball)
 
-Download `vlp-manual-generator-0.2.0-beta.tar` from the [**beta 0.2.0** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.0-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+Download `vlp-manual-generator-0.2.1-beta.tar` from the [**beta 0.2.1** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.1-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
 
 ```bash
-docker load -i vlp-manual-generator-0.2.0-beta.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.2.0-beta
+docker load -i vlp-manual-generator-0.2.1-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.2.1-beta
 ```
 
 To build and export the tarball yourself from source:
 
 ```bash
-docker build -t vlp-manual-generator:0.2.0-beta .
-docker save -o vlp-manual-generator-0.2.0-beta.tar vlp-manual-generator:0.2.0-beta
+docker build -t vlp-manual-generator:0.2.1-beta .
+docker save -o vlp-manual-generator-0.2.1-beta.tar vlp-manual-generator:0.2.1-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests

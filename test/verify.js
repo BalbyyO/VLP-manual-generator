@@ -189,6 +189,22 @@ async function main() {
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
   });
 
+  await check('4c. v0.2.1-beta UX: Startup Guide Checkbox, Full Undo/Redo & Scroll-Preserving Preview', () => {
+    const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
+    const appJs = fs.readFileSync(path.join(rootDir, 'public', 'app.js'), 'utf8');
+
+    assert(indexHtml.includes('v0.2.1-beta'), 'index.html badge should display v0.2.1-beta');
+    assert(indexHtml.includes('id="btnUndo"'), 'index.html should contain Undo button');
+    assert(indexHtml.includes('id="btnRedo"'), 'index.html should contain Redo button');
+    assert(indexHtml.includes('id="chkHideGuideStartup"'), 'index.html should contain startup guide opt-out checkbox');
+
+    assert(!/https?:\/\//i.test(appJs), 'app.js must not reference external URLs');
+    assert(appJs.includes('vlp_hide_guide_on_startup'), 'app.js should persist startup guide preference in localStorage');
+    assert(appJs.includes('function performRedo()'), 'app.js should define performRedo()');
+    assert(appJs.includes('function armTypingUndo('), 'app.js should define armTypingUndo()');
+    assert(appJs.includes('doc.body.innerHTML = previewHtmlSnippet'), 'app.js should update preview iframe DOM in-place to preserve scroll');
+  });
+
   await check('4b. v0.2.0-beta Features: Color Themes, Rich Text, Multi-VM Creds, Nested Tables & Round-Trip', () => {
     const themes = VLP.getColorThemes();
     assert.strictEqual(themes.length, 8);

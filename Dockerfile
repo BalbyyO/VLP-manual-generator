@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 LABEL org.opencontainers.image.source="https://github.com/BalbyyO/VLP-manual-generator"
 LABEL org.opencontainers.image.description="Self-contained air-gapped VLP Manual HTML Formatter & XML Builder"
-LABEL org.opencontainers.image.version="0.2.0-beta"
+LABEL org.opencontainers.image.version="0.2.1-beta"
 
 WORKDIR /app
 

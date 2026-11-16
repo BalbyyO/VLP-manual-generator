@@ -810,6 +810,17 @@ button, input, textarea, select {
   flex: 1;
 }
 
+.modal-footer {
+  padding: 10px 16px;
+  background: var(--app-surface-2);
+  border-top: 1px solid var(--app-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
