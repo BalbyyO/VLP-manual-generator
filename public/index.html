@@ -11,7 +11,7 @@
     <div class="topbar-left">
       <div class="brand-mark" aria-hidden="true">VLP</div>
       <span class="brand-title">VLP Manual HTML Formatter</span>
-      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • Native</span>
+      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • v0.2.0-beta</span>
       <span id="saveStatusBadge" class="badge status-ok" title="Dual Auto-Save (Browser IndexedDB + Server Disk)">
         <span class="status-dot"></span>
         <span id="saveStatusText">Ready</span>
@@ -19,6 +19,10 @@
     </div>
 
     <div class="topbar-actions">
+      <div class="theme-picker-wrap" title="Color Theme Palette (Figma Color Combinations)">
+        <span id="colorThemeSwatch" class="theme-swatch-dot" aria-hidden="true"></span>
+        <select id="colorThemeSelect" class="theme-select" aria-label="Color Theme Palette"></select>
+      </div>
       <button id="btnUndo" class="btn btn-sm" title="Undo last structural/template change" disabled>Undo</button>
       <button id="btnOpenTemplates" class="btn btn-sm btn-blue">Templates &amp; Button Guide</button>
       <button id="btnLoadAnnexB" class="btn btn-sm" title="Load dsac.annexb.lab01-en reference manual">Load Annex B</button>
@@ -100,8 +104,42 @@
           </div>
         </div>
 
+        <div class="toolbar-group">
+          <span class="toolbar-label">Text</span>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+            <button type="button" class="tb-btn-help" data-guide-id="bold" title="Show Bold example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+            <button type="button" class="tb-btn-help" data-guide-id="italic" title="Show Italic example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+            <button type="button" class="tb-btn-help" data-guide-id="underline" title="Show Underline example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="strike" title="Strikethrough (Ctrl+Shift+S)"><s>S</s></button>
+            <button type="button" class="tb-btn-help" data-guide-id="strike" title="Show Strikethrough example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-inline-tag="highlight" title="Highlight Text">
+              <span class="swatch-hl">Mark</span>
+            </button>
+            <button type="button" class="tb-btn-help" data-guide-id="highlight" title="Show Highlight example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-list-type="ul" title="Convert selected lines to Bullet List">&bull; List</button>
+            <button type="button" class="tb-btn-help" data-guide-id="ul-list" title="Show Bullet List example">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-list-type="ol" title="Convert selected lines to Numbered List">1. List</button>
+            <button type="button" class="tb-btn-help" data-guide-id="ol-list" title="Show Numbered List example">?</button>
+          </div>
+        </div>
+
         <div id="overviewToolbarGroup" class="toolbar-group">
-          <span class="toolbar-label">Overview Blocks</span>
+          <span class="toolbar-label">Overview</span>
           <div class="tb-btn-wrap">
             <button type="button" class="tb-btn-main" data-overview-action="focus-title">Course H1</button>
             <button type="button" class="tb-btn-help" data-guide-id="course-header">?</button>
@@ -111,21 +149,25 @@
             <button type="button" class="tb-btn-help" data-guide-id="banner-img">?</button>
           </div>
           <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-overview-action="add-table">+ Table</button>
+            <button type="button" class="tb-btn-help" data-guide-id="data-table">?</button>
+          </div>
+          <div class="tb-btn-wrap">
             <button type="button" class="tb-btn-main" data-overview-action="toggle-divider">Divider</button>
             <button type="button" class="tb-btn-help" data-guide-id="section-divider">?</button>
           </div>
           <div class="tb-btn-wrap">
-            <button type="button" class="tb-btn-main" data-overview-action="toggle-purpose">Purpose Box</button>
+            <button type="button" class="tb-btn-main" data-overview-action="toggle-purpose">Purpose</button>
             <button type="button" class="tb-btn-help" data-guide-id="purpose-card">?</button>
           </div>
           <div class="tb-btn-wrap">
-            <button type="button" class="tb-btn-main" data-overview-action="toggle-credentials">VM Creds Box</button>
+            <button type="button" class="tb-btn-main" data-overview-action="toggle-credentials">VM Creds</button>
             <button type="button" class="tb-btn-help" data-guide-id="lab-note">?</button>
           </div>
         </div>
 
         <div id="stepsToolbarGroup" class="toolbar-group hidden">
-          <span class="toolbar-label">Step Blocks</span>
+          <span class="toolbar-label">Steps</span>
           <div class="tb-btn-wrap">
             <button type="button" class="tb-btn-main" data-steps-action="focus-header">Section H3</button>
             <button type="button" class="tb-btn-help" data-guide-id="lab-header">?</button>
@@ -137,6 +179,14 @@
           <div class="tb-btn-wrap">
             <button type="button" class="tb-btn-main" data-steps-action="add-context">+ Context</button>
             <button type="button" class="tb-btn-help" data-guide-id="step-context">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-steps-action="add-table">+ Table</button>
+            <button type="button" class="tb-btn-help" data-guide-id="data-table">?</button>
+          </div>
+          <div class="tb-btn-wrap">
+            <button type="button" class="tb-btn-main" data-steps-action="add-vm-creds">+ VM Creds</button>
+            <button type="button" class="tb-btn-help" data-guide-id="lab-note">?</button>
           </div>
           <div class="tb-btn-wrap">
             <button type="button" class="tb-btn-main" data-steps-action="add-terminal">+ Terminal</button>
@@ -215,11 +265,19 @@
             </div>
           </div>
 
+          <div id="ovTablesCard" class="card">
+            <div class="card-header">
+              <span class="card-title">Overview / Chapter Data Tables (.vlp-data-table)</span>
+              <button type="button" id="btnAddOverviewTable" class="btn btn-xs btn-blue">+ Add Table</button>
+            </div>
+            <div id="ovTablesContainer"></div>
+          </div>
+
           <div class="card card-red">
             <div class="card-header">
               <label class="card-title" style="cursor:pointer;">
                 <input id="ovPurposeEnabled" type="checkbox" />
-                <span>Red Box #1: Instructional Purpose Card (.purpose-card)</span>
+                <span>Callout #1: Instructional Purpose Card (.purpose-card)</span>
               </label>
               <span class="badge">Manual Start Only</span>
             </div>
@@ -235,31 +293,14 @@
             <div class="card-header">
               <label class="card-title" style="cursor:pointer;">
                 <input id="ovCredEnabled" type="checkbox" />
-                <span>Red Box #2: Target VM Credentials Card (.lab-note)</span>
+                <span>Callout #2: Target VM Credentials Card (.lab-note)</span>
               </label>
-              <span class="badge">New / Switched VM Only</span>
+              <button type="button" id="btnAddOverviewCred" class="btn btn-xs">+ Add VM System</button>
             </div>
             <div id="ovCredFields" class="hidden">
-              <div class="grid-2">
-                <div>
-                  <label class="field-label" for="ovCredTitle">Card Heading</label>
-                  <input id="ovCredTitle" class="input" type="text" value="Target VM Credentials" />
-                </div>
-                <div>
-                  <label class="field-label" for="ovCredTarget">Target System (.ui-target)</label>
-                  <input id="ovCredTarget" class="input" type="text" placeholder="e.g. NDSACDC01" />
-                </div>
-              </div>
-              <div class="grid-2" style="margin-top:8px;">
-                <div>
-                  <label class="field-label" for="ovCredUser">Username (.cmd-inline)</label>
-                  <input id="ovCredUser" class="input" type="text" placeholder="e.g. xadministrator" />
-                </div>
-                <div>
-                  <label class="field-label" for="ovCredPass">Password (.cmd-inline)</label>
-                  <input id="ovCredPass" class="input" type="text" placeholder="e.g. M@rines1M@rines1" />
-                </div>
-              </div>
+              <label class="field-label" for="ovCredTitle">Card Heading</label>
+              <input id="ovCredTitle" class="input" type="text" value="Target VM Credentials" />
+              <div id="ovCredListContainer" style="margin-top:8px;"></div>
             </div>
           </div>
         </div>
@@ -273,9 +314,9 @@
               <button type="button" id="btnToggleQuickPaste" class="btn btn-xs">Hide / Show</button>
             </div>
             <div id="quickPastePanel">
-              <textarea id="quickPasteInput" class="textarea" rows="5" placeholder="Paste raw numbered steps or lines here (preserves exact wording):&#10;1. Click **Start**, type `gpedit.msc`, and press [[Enter]].&#10;What you are doing: Opening Local Group Policy Editor.&#10;Why this matters: Controls Windows Server security settings.&#10;2. Run `whoami` to verify your account."></textarea>
+              <textarea id="quickPasteInput" class="textarea" rows="5" placeholder="Paste raw numbered steps or lines here (preserves exact wording):&#10;1. Click **Start**, type `gpedit.msc`, and press [[Enter]].&#10;Context: Opening Local Group Policy Editor for baseline firewall setup.&#10;2. Run `whoami` to verify your account."></textarea>
               <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:8px;">
-                <span class="muted-hint">Supports numbered steps (<code>1.</code>, <code>Step 1:</code>), <code>What you are doing:</code>, <code>Why this matters:</code>, <code>**UI**</code>, <code>`cmd`</code>, <code>[[Key]]</code>, and <code>```term</code> blocks.</span>
+                <span class="muted-hint">Supports numbered steps (<code>1.</code>, <code>Step 1:</code>), <code>Context:</code>, <code>**UI**</code>, <code>`cmd`</code>, <code>[[Key]]</code>, and <code>```term</code> blocks.</span>
                 <div style="display:flex; gap:6px;">
                   <button type="button" id="btnQuickPasteAppend" class="btn btn-sm">Append Steps</button>
                   <button type="button" id="btnQuickPasteReplace" class="btn btn-sm btn-primary">Replace Steps</button>
@@ -286,13 +327,31 @@
 
           <div class="card">
             <div class="card-header">
-              <span class="card-title">Section Header &amp; Context</span>
-              <span class="muted-hint">.lab-wrapper</span>
+              <span class="card-title">Section Header, Intro Tables &amp; Page VM Credentials</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button type="button" id="btnAddStepsIntroTable" class="btn btn-xs btn-blue">+ Intro Table</button>
+                <span class="muted-hint">.lab-wrapper</span>
+              </div>
             </div>
             <label class="field-label" for="stSectionTitle">Section Header (&lt;h3&gt; inside .lab-header)</label>
             <input id="stSectionTitle" class="input" type="text" placeholder="e.g. Access Server Manager and Configure System Time" />
             <label class="field-label" for="stIntroText" style="margin-top:8px;">Introductory Context Paragraphs (optional)</label>
             <textarea id="stIntroText" class="textarea" rows="3" data-track-selection="true" placeholder="Explain the task and operational importance..."></textarea>
+            <div id="stTablesContainer" style="margin-top:10px;"></div>
+            <div class="card card-red" style="margin-top:10px; margin-bottom:0;">
+              <div class="card-header">
+                <label class="card-title" style="cursor:pointer;">
+                  <input id="stCredEnabled" type="checkbox" />
+                  <span>Page-Level VM Credentials (.lab-note above Step Table)</span>
+                </label>
+                <button type="button" id="btnAddStepsCred" class="btn btn-xs">+ Add VM System</button>
+              </div>
+              <div id="stCredFields" class="hidden">
+                <label class="field-label" for="stCredTitle">Card Heading</label>
+                <input id="stCredTitle" class="input" type="text" value="Target VM Credentials" />
+                <div id="stCredListContainer" style="margin-top:8px;"></div>
+              </div>
+            </div>
           </div>
 
           <div id="stepsContainer"></div>

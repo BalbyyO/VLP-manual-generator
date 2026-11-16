@@ -267,6 +267,7 @@
       name: 'vlp.lab01.starter',
       defaultLanguageCode: 'en',
       dataFormat: 'default',
+      colorTheme: 'crimson-slate',
       contentNodes: [
         {
           id: rootId,
@@ -319,6 +320,7 @@
       name: 'new.vlp.manual',
       defaultLanguageCode: 'en',
       dataFormat: 'default',
+      colorTheme: 'crimson-slate',
       contentNodes: [
         {
           id: rootId,
@@ -672,6 +674,301 @@
   }
 
   // =========================================================================
+  // Color Themes, Shared Credentials & Table Grid Builders
+  // =========================================================================
+  function populateColorThemeDropdown() {
+    const sel = $('colorThemeSelect');
+    if (!sel) return;
+    sel.innerHTML = '';
+    VLP.getColorThemes().forEach(function (t) {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function applyColorTheme(themeId) {
+    const t = VLP.getColorTheme(themeId || (state.manual && state.manual.colorTheme) || 'crimson-slate');
+    if (state.manual) {
+      state.manual.colorTheme = t.id;
+    }
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--app-accent', t.light.accent);
+    rootStyle.setProperty('--app-accent-hover', t.light.accentHover);
+    rootStyle.setProperty('--app-accent-soft', t.light.appSoft);
+
+    const swatch = $('colorThemeSwatch');
+    if (swatch) swatch.style.background = t.swatch;
+    const sel = $('colorThemeSelect');
+    if (sel) sel.value = t.id;
+  }
+
+  function normalizeManualData(manual) {
+    if (!manual) return manual;
+    if (!manual.colorTheme) manual.colorTheme = 'crimson-slate';
+    function walk(nodes) {
+      (nodes || []).forEach(function (n) {
+        n.overview = Object.assign(VLP.createDefaultOverviewData(), n.overview || {});
+        n.overview.credentialsList = VLP.normalizeCredentialsList(n.overview);
+        if (!Array.isArray(n.overview.tables)) n.overview.tables = [];
+
+        n.stepsData = Object.assign(VLP.createDefaultStepsData(), n.stepsData || {});
+        n.stepsData.credentialsList = VLP.normalizeCredentialsList(n.stepsData);
+        if (!Array.isArray(n.stepsData.tables)) n.stepsData.tables = [];
+        n.stepsData.steps = (n.stepsData.steps || []).map(VLP.migrateStepData);
+        walk(n.children || []);
+      });
+    }
+    walk(manual.contentNodes || []);
+    return manual;
+  }
+
+  function renderCredentialsEditor(containerEl, listRef, onMutate) {
+    if (!containerEl) return;
+    containerEl.innerHTML = '';
+    if (!listRef || listRef.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'muted-hint';
+      empty.textContent = 'No VM systems added yet. Click "+ Add VM System" to add one or more target machines.';
+      containerEl.appendChild(empty);
+      return;
+    }
+
+    listRef.forEach(function (entry, idx) {
+      const card = document.createElement('div');
+      card.className = 'cred-entry-card';
+
+      const hdr = document.createElement('div');
+      hdr.className = 'cred-entry-header';
+      hdr.innerHTML = '<span>VM System #' + (idx + 1) + '</span>';
+      const delBtn = makeTinyBtn('Remove', function () {
+        listRef.splice(idx, 1);
+        renderCredentialsEditor(containerEl, listRef, onMutate);
+        onMutate();
+      });
+      hdr.appendChild(delBtn);
+      card.appendChild(hdr);
+
+      const g2 = document.createElement('div');
+      g2.className = 'grid-2';
+
+      const sysWrap = document.createElement('div');
+      sysWrap.innerHTML = '<label class="field-label">Target System (.ui-target)</label>';
+      const sysIn = document.createElement('input');
+      sysIn.className = 'input';
+      sysIn.type = 'text';
+      sysIn.placeholder = 'e.g. NDSACDC01';
+      sysIn.value = entry.targetSystem || '';
+      sysIn.addEventListener('input', function () { entry.targetSystem = sysIn.value; onMutate(); });
+      sysWrap.appendChild(sysIn);
+
+      const noteWrap = document.createElement('div');
+      noteWrap.innerHTML = '<label class="field-label">Role / IP Note (optional)</label>';
+      const noteIn = document.createElement('input');
+      noteIn.className = 'input';
+      noteIn.type = 'text';
+      noteIn.placeholder = 'e.g. 192.168.40.2 (Primary DC)';
+      noteIn.dataset.trackSelection = 'true';
+      noteIn.value = entry.note || '';
+      noteIn.addEventListener('input', function () { entry.note = noteIn.value; onMutate(); });
+      noteWrap.appendChild(noteIn);
+
+      g2.appendChild(sysWrap);
+      g2.appendChild(noteWrap);
+      card.appendChild(g2);
+
+      const g2b = document.createElement('div');
+      g2b.className = 'grid-2';
+      g2b.style.marginTop = '6px';
+
+      const usrWrap = document.createElement('div');
+      usrWrap.innerHTML = '<label class="field-label">Username (.cmd-inline)</label>';
+      const usrIn = document.createElement('input');
+      usrIn.className = 'input';
+      usrIn.type = 'text';
+      usrIn.placeholder = 'e.g. xadministrator';
+      usrIn.value = entry.username || '';
+      usrIn.addEventListener('input', function () { entry.username = usrIn.value; onMutate(); });
+      usrWrap.appendChild(usrIn);
+
+      const pwdWrap = document.createElement('div');
+      pwdWrap.innerHTML = '<label class="field-label">Password (.cmd-inline)</label>';
+      const pwdIn = document.createElement('input');
+      pwdIn.className = 'input';
+      pwdIn.type = 'text';
+      pwdIn.placeholder = 'e.g. M@rines1M@rines1';
+      pwdIn.value = entry.password || '';
+      pwdIn.addEventListener('input', function () { entry.password = pwdIn.value; onMutate(); });
+      pwdWrap.appendChild(pwdIn);
+
+      g2b.appendChild(usrWrap);
+      g2b.appendChild(pwdWrap);
+      card.appendChild(g2b);
+
+      containerEl.appendChild(card);
+    });
+  }
+
+  function renderTablesEditor(containerEl, tablesRef, onMutate) {
+    if (!containerEl) return;
+    containerEl.innerHTML = '';
+    if (!tablesRef || tablesRef.length === 0) return;
+
+    tablesRef.forEach(function (tbl, tIdx) {
+      if (!Array.isArray(tbl.rows) || tbl.rows.length === 0) {
+        tbl.rows = [['Column 1', 'Column 2'], ['', '']];
+      }
+      const card = document.createElement('div');
+      card.className = 'tbl-builder-card';
+
+      const ctrlBar = document.createElement('div');
+      ctrlBar.className = 'tbl-controls-bar';
+
+      const left = document.createElement('div');
+      left.style.display = 'flex';
+      left.style.alignItems = 'center';
+      left.style.gap = '8px';
+      left.style.flex = '1';
+
+      const titleIn = document.createElement('input');
+      titleIn.className = 'input';
+      titleIn.type = 'text';
+      titleIn.style.maxWidth = '230px';
+      titleIn.placeholder = 'Table Title (optional, e.g. NDSACESXI01)';
+      titleIn.dataset.trackSelection = 'true';
+      titleIn.value = tbl.title || '';
+      titleIn.addEventListener('input', function () {
+        tbl.title = titleIn.value;
+        onMutate();
+      });
+
+      const hdrLbl = document.createElement('label');
+      hdrLbl.style.display = 'inline-flex';
+      hdrLbl.style.alignItems = 'center';
+      hdrLbl.style.gap = '4px';
+      hdrLbl.style.fontSize = '11.5px';
+      hdrLbl.style.cursor = 'pointer';
+      const hdrChk = document.createElement('input');
+      hdrChk.type = 'checkbox';
+      hdrChk.checked = tbl.hasHeader !== false;
+      hdrChk.addEventListener('change', function () {
+        tbl.hasHeader = hdrChk.checked;
+        renderTablesEditor(containerEl, tablesRef, onMutate);
+        onMutate();
+      });
+      hdrLbl.appendChild(hdrChk);
+      hdrLbl.appendChild(document.createTextNode('Header Row'));
+
+      left.appendChild(titleIn);
+      left.appendChild(hdrLbl);
+
+      const right = document.createElement('div');
+      right.style.display = 'flex';
+      right.style.gap = '4px';
+      right.style.flexWrap = 'wrap';
+
+      const addRowBtn = makeTinyBtn('+ Row', function () {
+        const cols = tbl.rows[0] ? tbl.rows[0].length : 2;
+        tbl.rows.push(new Array(cols).fill(''));
+        renderTablesEditor(containerEl, tablesRef, onMutate);
+        onMutate();
+      });
+      const delRowBtn = makeTinyBtn('- Row', function () {
+        if (tbl.rows.length > 1) {
+          tbl.rows.pop();
+          renderTablesEditor(containerEl, tablesRef, onMutate);
+          onMutate();
+        }
+      });
+      const addColBtn = makeTinyBtn('+ Col', function () {
+        tbl.rows.forEach(function (r, rIdx) {
+          r.push(rIdx === 0 && tbl.hasHeader !== false ? 'Column ' + (r.length + 1) : '');
+        });
+        renderTablesEditor(containerEl, tablesRef, onMutate);
+        onMutate();
+      });
+      const delColBtn = makeTinyBtn('- Col', function () {
+        if (tbl.rows[0] && tbl.rows[0].length > 1) {
+          tbl.rows.forEach(function (r) { r.pop(); });
+          renderTablesEditor(containerEl, tablesRef, onMutate);
+          onMutate();
+        }
+      });
+      const rmTblBtn = makeTinyBtn('Delete Table', function () {
+        tablesRef.splice(tIdx, 1);
+        renderTablesEditor(containerEl, tablesRef, onMutate);
+        onMutate();
+      });
+
+      right.appendChild(addRowBtn);
+      right.appendChild(delRowBtn);
+      right.appendChild(addColBtn);
+      right.appendChild(delColBtn);
+      right.appendChild(rmTblBtn);
+
+      ctrlBar.appendChild(left);
+      ctrlBar.appendChild(right);
+      card.appendChild(ctrlBar);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'tbl-grid-wrap';
+      const tableEl = document.createElement('table');
+      tableEl.className = 'tbl-grid';
+
+      const useHdr = tbl.hasHeader !== false && tbl.rows.length > 1;
+      if (useHdr) {
+        const thead = document.createElement('thead');
+        const tr = document.createElement('tr');
+        tbl.rows[0].forEach(function (cellVal, cIdx) {
+          const th = document.createElement('th');
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.className = 'tbl-cell-input';
+          inp.style.fontWeight = '700';
+          inp.dataset.trackSelection = 'true';
+          inp.value = cellVal || '';
+          inp.placeholder = 'Header ' + (cIdx + 1);
+          inp.addEventListener('input', function () {
+            tbl.rows[0][cIdx] = inp.value;
+            onMutate();
+          });
+          th.appendChild(inp);
+          tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+        tableEl.appendChild(thead);
+      }
+
+      const tbody = document.createElement('tbody');
+      const startRow = useHdr ? 1 : 0;
+      for (let rIdx = startRow; rIdx < tbl.rows.length; rIdx++) {
+        const tr = document.createElement('tr');
+        tbl.rows[rIdx].forEach(function (cellVal, cIdx) {
+          const td = document.createElement('td');
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.className = 'tbl-cell-input';
+          inp.dataset.trackSelection = 'true';
+          inp.value = cellVal || '';
+          inp.placeholder = 'Value';
+          inp.addEventListener('input', function () {
+            tbl.rows[rIdx][cIdx] = inp.value;
+            onMutate();
+          });
+          td.appendChild(inp);
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      }
+      tableEl.appendChild(tbody);
+      wrap.appendChild(tableEl);
+      card.appendChild(wrap);
+      containerEl.appendChild(card);
+    });
+  }
+
+  // =========================================================================
   // Rendering: Editor Pane
   // =========================================================================
   function renderEditor() {
@@ -700,25 +997,51 @@
 
     if (node.mode === 'overview') {
       const ov = node.overview || (node.overview = VLP.createDefaultOverviewData());
+      ov.credentialsList = VLP.normalizeCredentialsList(ov);
+      if (!Array.isArray(ov.tables)) ov.tables = [];
+
       $('ovCourseTitle').value = ov.courseTitle || '';
       $('ovBannerAlt').value = ov.bannerAlt || '';
       $('ovBannerSrc').value = ov.bannerSrc || '';
       $('ovOverviewText').value = ov.overviewText || '';
       $('ovShowDivider').checked = ov.showDivider !== false;
+      renderTablesEditor($('ovTablesContainer'), ov.tables, function () {
+        updateOutputs();
+        scheduleAutosave();
+      });
+
       $('ovPurposeEnabled').checked = Boolean(ov.purposeEnabled);
       $('ovPurposeFields').classList.toggle('hidden', !ov.purposeEnabled);
       $('ovPurposeTitle').value = ov.purposeTitle || 'INSTRUCTIONAL PURPOSE';
       $('ovPurposeText').value = ov.purposeText || '';
+
       $('ovCredEnabled').checked = Boolean(ov.credentialsEnabled);
       $('ovCredFields').classList.toggle('hidden', !ov.credentialsEnabled);
       $('ovCredTitle').value = ov.credentialsTitle || 'Target VM Credentials';
-      $('ovCredTarget').value = ov.credentialsTarget || '';
-      $('ovCredUser').value = ov.credentialsUsername || '';
-      $('ovCredPass').value = ov.credentialsPassword || '';
+      renderCredentialsEditor($('ovCredListContainer'), ov.credentialsList, function () {
+        updateOutputs();
+        scheduleAutosave();
+      });
     } else if (node.mode === 'steps') {
       const stData = node.stepsData || (node.stepsData = VLP.createDefaultStepsData());
+      stData.credentialsList = VLP.normalizeCredentialsList(stData);
+      if (!Array.isArray(stData.tables)) stData.tables = [];
+
       $('stSectionTitle').value = stData.sectionTitle || '';
       $('stIntroText').value = stData.introText || '';
+      renderTablesEditor($('stTablesContainer'), stData.tables, function () {
+        updateOutputs();
+        scheduleAutosave();
+      });
+
+      $('stCredEnabled').checked = Boolean(stData.credentialsEnabled);
+      $('stCredFields').classList.toggle('hidden', !stData.credentialsEnabled);
+      $('stCredTitle').value = stData.credentialsTitle || 'Target VM Credentials';
+      renderCredentialsEditor($('stCredListContainer'), stData.credentialsList, function () {
+        updateOutputs();
+        scheduleAutosave();
+      });
+
       renderStepsList(stData);
     } else {
       $('rawHtmlTextarea').value = node.rawHtml || '';
@@ -728,7 +1051,8 @@
   function renderStepsList(stData) {
     const container = $('stepsContainer');
     container.innerHTML = '';
-    const steps = stData.steps || [];
+    const steps = (stData.steps || []).map(VLP.migrateStepData);
+    stData.steps = steps;
 
     steps.forEach(function (step, idx) {
       const card = document.createElement('div');
@@ -755,15 +1079,34 @@
       controls.style.gap = '4px';
       controls.style.flexWrap = 'wrap';
 
-      const hasCtx = Boolean(step.whatDoing || step.whyMatters || step._showContext);
+      const hasCtx = Boolean(step.contextText || step._showContext);
+      const hasCreds = Boolean((step.credentialsList && step.credentialsList.length > 0) || step._showCreds);
+      const hasTables = Boolean((step.tables && step.tables.length > 0) || step._showTables);
       const hasTerm = Boolean(step.termPrompt || step.termCommand || step.termOutput || step._showTerminal);
 
       const btnCtx = makeTinyBtn(hasCtx ? 'Hide Context' : '+ Context', function () {
         step._showContext = !hasCtx;
         if (!step._showContext) {
-          step.whatDoing = '';
-          step.whyMatters = '';
+          step.contextText = '';
         }
+        renderStepsList(stData);
+        updateOutputs();
+        scheduleAutosave();
+      });
+
+      const btnTbl = makeTinyBtn('+ Table', function () {
+        step.tables = step.tables || [];
+        step.tables.push(VLP.createDefaultTable());
+        step._showTables = true;
+        renderStepsList(stData);
+        updateOutputs();
+        scheduleAutosave();
+      });
+
+      const btnCred = makeTinyBtn('+ VM Creds', function () {
+        step.credentialsList = step.credentialsList || [];
+        step.credentialsList.push(VLP.createDefaultCredentialEntry());
+        step._showCreds = true;
         renderStepsList(stData);
         updateOutputs();
         scheduleAutosave();
@@ -819,11 +1162,12 @@
       const btnDel = makeTinyBtn('Delete', function () {
         if (steps.length <= 1) {
           step.instruction = '';
-          step.whatDoing = '';
-          step.whyMatters = '';
+          step.contextText = '';
           step.termPrompt = '';
           step.termCommand = '';
           step.termOutput = '';
+          step.credentialsList = [];
+          step.tables = [];
           step.images = [];
         } else {
           steps.splice(idx, 1);
@@ -834,6 +1178,8 @@
       });
 
       controls.appendChild(btnCtx);
+      controls.appendChild(btnTbl);
+      controls.appendChild(btnCred);
       controls.appendChild(btnTerm);
       controls.appendChild(btnImg);
       controls.appendChild(btnUp);
@@ -851,7 +1197,7 @@
       // Instruction Field
       const instLabel = document.createElement('label');
       instLabel.className = 'field-label';
-      instLabel.textContent = 'Step Action & Verification Text (Highlight text & click toolbar buttons, or paste screenshot with Ctrl+V)';
+      instLabel.textContent = 'Step Action & Verification Text (Highlight text & use toolbar buttons / Ctrl+B, Ctrl+I, Ctrl+U, or paste screenshot with Ctrl+V)';
       const instArea = document.createElement('textarea');
       instArea.className = 'textarea';
       instArea.rows = 3;
@@ -888,54 +1234,85 @@
       body.appendChild(instLabel);
       body.appendChild(instArea);
 
-      // Step Context Sub-panel
+      // Single Merged Highlighted Context Sub-panel (no auto-filled prefixes)
       if (hasCtx) {
         const ctxBox = document.createElement('div');
-        ctxBox.className = 'sub-panel';
-        ctxBox.innerHTML = '<div class="sub-panel-header"><span>Step Context Block (.step-context)</span></div>';
-        const g2 = document.createElement('div');
-        g2.className = 'grid-2';
-
-        const whatWrap = document.createElement('div');
-        const whatLbl = document.createElement('label');
-        whatLbl.className = 'field-label';
-        whatLbl.textContent = 'What you are doing:';
-        const whatArea = document.createElement('textarea');
-        whatArea.className = 'textarea';
-        whatArea.rows = 2;
-        whatArea.dataset.trackSelection = 'true';
-        whatArea.value = step.whatDoing || '';
-        whatArea.addEventListener('focus', function () { state.activeStepIndex = idx; });
-        whatArea.addEventListener('input', function () {
-          step.whatDoing = whatArea.value;
+        ctxBox.className = 'sub-panel sub-panel-context';
+        ctxBox.innerHTML = '<div class="sub-panel-header"><span>Indented Highlighted Context (.step-context)</span></div>';
+        const ctxArea = document.createElement('textarea');
+        ctxArea.className = 'textarea';
+        ctxArea.rows = 2;
+        ctxArea.dataset.trackSelection = 'true';
+        ctxArea.dataset.stepField = 'context';
+        ctxArea.dataset.stepIdx = String(idx);
+        ctxArea.placeholder = 'Enter highlighted context, rationale, or callout note (no auto-filled labels)...';
+        ctxArea.value = step.contextText || '';
+        ctxArea.addEventListener('focus', function () { state.activeStepIndex = idx; });
+        ctxArea.addEventListener('input', function () {
+          step.contextText = ctxArea.value;
           updateOutputs();
           scheduleAutosave();
         });
-        whatWrap.appendChild(whatLbl);
-        whatWrap.appendChild(whatArea);
-
-        const whyWrap = document.createElement('div');
-        const whyLbl = document.createElement('label');
-        whyLbl.className = 'field-label';
-        whyLbl.textContent = 'Why this matters:';
-        const whyArea = document.createElement('textarea');
-        whyArea.className = 'textarea';
-        whyArea.rows = 2;
-        whyArea.dataset.trackSelection = 'true';
-        whyArea.value = step.whyMatters || '';
-        whyArea.addEventListener('focus', function () { state.activeStepIndex = idx; });
-        whyArea.addEventListener('input', function () {
-          step.whyMatters = whyArea.value;
-          updateOutputs();
-          scheduleAutosave();
-        });
-        whyWrap.appendChild(whyLbl);
-        whyWrap.appendChild(whyArea);
-
-        g2.appendChild(whatWrap);
-        g2.appendChild(whyWrap);
-        ctxBox.appendChild(g2);
+        ctxBox.appendChild(ctxArea);
         body.appendChild(ctxBox);
+      }
+
+      // Step VM Credentials Sub-panel (Multi-System)
+      if (hasCreds && step.credentialsList.length > 0) {
+        const credPanel = document.createElement('div');
+        credPanel.className = 'sub-panel';
+        const credHdr = document.createElement('div');
+        credHdr.className = 'sub-panel-header';
+        credHdr.innerHTML = '<span>Step VM Credentials (.lab-note)</span>';
+        const addSysBtn = makeTinyBtn('+ Add VM System', function () {
+          step.credentialsList.push(VLP.createDefaultCredentialEntry());
+          renderStepsList(stData);
+          updateOutputs();
+          scheduleAutosave();
+        });
+        credHdr.appendChild(addSysBtn);
+        credPanel.appendChild(credHdr);
+
+        const credListHost = document.createElement('div');
+        renderCredentialsEditor(credListHost, step.credentialsList, function () {
+          if (step.credentialsList.length === 0) {
+            step._showCreds = false;
+            renderStepsList(stData);
+          }
+          updateOutputs();
+          scheduleAutosave();
+        });
+        credPanel.appendChild(credListHost);
+        body.appendChild(credPanel);
+      }
+
+      // Step Data Tables Sub-panel
+      if (hasTables && step.tables.length > 0) {
+        const tblPanel = document.createElement('div');
+        tblPanel.className = 'sub-panel';
+        const tblHdr = document.createElement('div');
+        tblHdr.className = 'sub-panel-header';
+        tblHdr.innerHTML = '<span>Step Data Tables (.vlp-data-table)</span>';
+        const addAnotherTblBtn = makeTinyBtn('+ Add Table', function () {
+          step.tables.push(VLP.createDefaultTable());
+          renderStepsList(stData);
+          updateOutputs();
+          scheduleAutosave();
+        });
+        tblHdr.appendChild(addAnotherTblBtn);
+        tblPanel.appendChild(tblHdr);
+
+        const tblHost = document.createElement('div');
+        renderTablesEditor(tblHost, step.tables, function () {
+          if (step.tables.length === 0) {
+            step._showTables = false;
+            renderStepsList(stData);
+          }
+          updateOutputs();
+          scheduleAutosave();
+        });
+        tblPanel.appendChild(tblHost);
+        body.appendChild(tblPanel);
       }
 
       // Terminal Verification Output Sub-panel
@@ -1128,15 +1505,18 @@
     const node = info.node;
 
     const samplePrefix = state.sampleSource ? '/samples/' + state.sampleSource + '/images' : '';
+    const colorTheme = (state.manual && state.manual.colorTheme) || 'crimson-slate';
     const previewHtmlSnippet = VLP.generateNodeHtml(node, {
       imageMode: 'preview',
       imageMap: state.imageMap,
-      samplePrefix: samplePrefix
+      samplePrefix: samplePrefix,
+      colorTheme: colorTheme
     });
 
     const copyHtmlSnippet = VLP.generateNodeHtml(node, {
       imageMode: state.copyImageMode,
-      imageMap: state.imageMap
+      imageMap: state.imageMap,
+      colorTheme: colorTheme
     });
 
     // Update iframe preview with realistic VLP Light / Clarity Dark host simulation
@@ -1225,16 +1605,11 @@
     });
   });
 
-  function applyInlineWrap(tagId) {
-    const catalog = VLP.getToolbarCatalog();
-    const item = catalog.find(function (c) { return c.id === tagId; });
-    if (!item || !item.insertWrap) return;
-
+  function resolveActiveTextTarget() {
     let target = state.lastFocusedEl;
     if (!target || !document.body.contains(target) || target.offsetParent === null) {
-      // Fall back to visible primary textarea in active mode
       const info = getActiveInfo();
-      if (!info) return;
+      if (!info) return null;
       if (info.node.mode === 'overview') target = $('ovOverviewText');
       else if (info.node.mode === 'raw') target = $('rawHtmlTextarea');
       else {
@@ -1242,6 +1617,15 @@
         target = areas[state.activeStepIndex] || areas[0];
       }
     }
+    return target;
+  }
+
+  function applyInlineWrap(tagId) {
+    const catalog = VLP.getToolbarCatalog();
+    const item = catalog.find(function (c) { return c.id === tagId; });
+    if (!item || !item.insertWrap) return;
+
+    const target = resolveActiveTextTarget();
     if (!target) return;
 
     const val = target.value || '';
@@ -1259,6 +1643,43 @@
     target.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
+  function applyListWrap(listTag) {
+    const target = resolveActiveTextTarget();
+    if (!target) return;
+    const tag = listTag === 'ol' ? 'ol' : 'ul';
+    const val = target.value || '';
+    const start = typeof target.selectionStart === 'number' ? target.selectionStart : state.lastSelection.start;
+    const end = typeof target.selectionEnd === 'number' ? target.selectionEnd : state.lastSelection.end;
+    const selected = val.slice(start, end).trim();
+    const rawLines = selected ? selected.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean) : ['List item 1', 'List item 2'];
+    const listHtml = '<' + tag + '>\n' + rawLines.map(function (l) { return '  <li>' + l + '</li>'; }).join('\n') + '\n</' + tag + '>';
+
+    target.value = val.slice(0, start) + listHtml + val.slice(end);
+    target.focus();
+    target.setSelectionRange(start, start + listHtml.length);
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  document.addEventListener('keydown', function (e) {
+    const target = e.target;
+    if (!target || !target.dataset || target.dataset.trackSelection !== 'true') return;
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const key = e.key.toLowerCase();
+    if (key === 'b' && !e.shiftKey) {
+      e.preventDefault();
+      applyInlineWrap('bold');
+    } else if (key === 'i' && !e.shiftKey) {
+      e.preventDefault();
+      applyInlineWrap('italic');
+    } else if (key === 'u' && !e.shiftKey) {
+      e.preventDefault();
+      applyInlineWrap('underline');
+    } else if (key === 's' && e.shiftKey) {
+      e.preventDefault();
+      applyInlineWrap('strike');
+    }
+  });
+
   function handleOverviewToolbarAction(action) {
     const info = getActiveInfo();
     if (!info || info.node.mode !== 'overview') return;
@@ -1267,6 +1688,12 @@
       $('ovCourseTitle').focus();
     } else if (action === 'focus-banner') {
       $('ovBannerSrc').focus();
+    } else if (action === 'add-table') {
+      ov.tables = ov.tables || [];
+      ov.tables.push(VLP.createDefaultTable());
+      renderEditor();
+      updateOutputs();
+      scheduleAutosave();
     } else if (action === 'toggle-divider') {
       ov.showDivider = !ov.showDivider;
       renderEditor();
@@ -1280,10 +1707,12 @@
       if (ov.purposeEnabled) $('ovPurposeText').focus();
     } else if (action === 'toggle-credentials') {
       ov.credentialsEnabled = !ov.credentialsEnabled;
+      if (ov.credentialsEnabled && (!ov.credentialsList || ov.credentialsList.length === 0)) {
+        ov.credentialsList = [VLP.createDefaultCredentialEntry()];
+      }
       renderEditor();
       updateOutputs();
       scheduleAutosave();
-      if (ov.credentialsEnabled) $('ovCredTarget').focus();
     }
   }
 
@@ -1307,6 +1736,22 @@
     } else if (action === 'add-context') {
       if (!steps[idx]) return;
       steps[idx]._showContext = true;
+      renderStepsList(stData);
+      updateOutputs();
+      scheduleAutosave();
+    } else if (action === 'add-table') {
+      if (!steps[idx]) return;
+      steps[idx].tables = steps[idx].tables || [];
+      steps[idx].tables.push(VLP.createDefaultTable());
+      steps[idx]._showTables = true;
+      renderStepsList(stData);
+      updateOutputs();
+      scheduleAutosave();
+    } else if (action === 'add-vm-creds') {
+      if (!steps[idx]) return;
+      steps[idx].credentialsList = steps[idx].credentialsList || [];
+      steps[idx].credentialsList.push(VLP.createDefaultCredentialEntry());
+      steps[idx]._showCreds = true;
       renderStepsList(stData);
       updateOutputs();
       scheduleAutosave();
@@ -1470,6 +1915,7 @@
       body.appendChild(topControls);
 
       const isDark = state.previewTheme === 'dark';
+      const activeStyleBlock = VLP.getMasterStyleBlock((state.manual && state.manual.colorTheme) || 'crimson-slate');
       VLP.getToolbarCatalog().forEach(function (item) {
         const card = document.createElement('div');
         card.className = 'guide-card';
@@ -1486,7 +1932,7 @@
           '<p style="margin:6px 0 4px;">' + VLP.escapeHtml(item.summary) + '</p>' +
           '<div class="muted-hint"><strong>When to use:</strong> ' + VLP.escapeHtml(item.whenToUse) + ' &bull; <strong>Shortcut:</strong> <code>' + VLP.escapeHtml(item.shortcut) + '</code></div>' +
           '<div class="guide-preview-box' + (isDark ? ' dark-sim clr-theme-dark theme-dark' : '') + '">' +
-          '  <div class="lab-wrapper" style="max-width:100%;">' + VLP.MASTER_STYLE_BLOCK + item.demoHtml + '</div>' +
+          '  <div class="lab-wrapper" style="max-width:100%;">' + activeStyleBlock + item.demoHtml + '</div>' +
           '</div>';
 
         body.appendChild(card);
@@ -1537,11 +1983,12 @@
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load sample');
       pushUndo();
-      state.manual = data.manual;
+      state.manual = normalizeManualData(data.manual);
       state.sampleSource = data.sampleKey;
       state.imageMap = Object.assign({}, state.imageMap, data.imageMap || {});
       state.activeNodeId = state.manual.contentNodes[0] ? state.manual.contentNodes[0].id : null;
       state.activeStepIndex = 0;
+      applyColorTheme(state.manual.colorTheme);
       renderAll();
       scheduleAutosave();
       showToast('Loaded ' + (sampleKey === 'annexb' ? 'Annex B' : 'Annex C') + ' reference manual');
@@ -1556,11 +2003,12 @@
       const lower = file.name.toLowerCase();
       if (lower.endsWith('.xml')) {
         const xmlText = await file.text();
-        const manual = VLP.parseXmlToManual(xmlText);
+        const manual = normalizeManualData(VLP.parseXmlToManual(xmlText));
         pushUndo();
         state.manual = manual;
         state.sampleSource = '';
         state.activeNodeId = manual.contentNodes[0] ? manual.contentNodes[0].id : null;
+        applyColorTheme(state.manual.colorTheme);
         renderAll();
         scheduleAutosave();
         showToast('Imported content.xml: ' + manual.name);
@@ -1574,10 +2022,11 @@
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'ZIP import failed');
         pushUndo();
-        state.manual = data.manual;
+        state.manual = normalizeManualData(data.manual);
         state.sampleSource = '';
         state.imageMap = Object.assign({}, state.imageMap, data.imageMap || {});
         state.activeNodeId = data.manual.contentNodes[0] ? data.manual.contentNodes[0].id : null;
+        applyColorTheme(state.manual.colorTheme);
         renderAll();
         scheduleAutosave();
         showToast('Imported VLP ZIP package: ' + data.manual.name);
@@ -1697,12 +2146,13 @@
 
   function restoreSerializedState(saved) {
     if (!saved || !saved.manual) return false;
-    state.manual = saved.manual;
+    state.manual = normalizeManualData(saved.manual);
     state.activeNodeId = saved.activeNodeId || (saved.manual.contentNodes[0] && saved.manual.contentNodes[0].id);
     state.imageMap = Object.assign({}, state.imageMap, saved.imageMap || {});
     state.sampleSource = saved.sampleSource || '';
     if (saved.previewTheme) state.previewTheme = saved.previewTheme;
     if (saved.copyImageMode) state.copyImageMode = saved.copyImageMode;
+    applyColorTheme(state.manual.colorTheme);
     renderAll();
     return true;
   }
@@ -1711,6 +2161,14 @@
   // Event Wiring
   // =========================================================================
   function bindEvents() {
+    populateColorThemeDropdown();
+
+    $('colorThemeSelect').addEventListener('change', function () {
+      applyColorTheme($('colorThemeSelect').value);
+      updateOutputs();
+      scheduleAutosave();
+    });
+
     // Topbar buttons
     $('btnUndo').addEventListener('click', performUndo);
     $('btnOpenTemplates').addEventListener('click', function () { openTemplatesModal('templates'); });
@@ -1736,6 +2194,7 @@
       state.manual = createBlankManual();
       state.sampleSource = '';
       state.activeNodeId = state.manual.contentNodes[0].id;
+      applyColorTheme(state.manual.colorTheme);
       renderAll();
       scheduleAutosave();
       showToast('Started new blank manual');
@@ -1804,11 +2263,10 @@
       pushUndo();
       const converted = VLP.convertLegacyContentToStep(info.node.rawHtml || '', info.node.title, info.node.images);
       info.node.mode = 'steps';
-      info.node.stepsData = {
+      info.node.stepsData = Object.assign(VLP.createDefaultStepsData(), {
         sectionTitle: info.node.title || 'Lab Procedure',
-        introText: '',
         steps: [converted]
-      };
+      });
       renderAll();
       scheduleAutosave();
       showToast('Converted page to VLP Procedural Steps');
@@ -1843,6 +2301,12 @@
     $('editorToolbar').querySelectorAll('[data-inline-tag]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         applyInlineWrap(btn.dataset.inlineTag);
+      });
+    });
+
+    $('editorToolbar').querySelectorAll('[data-list-type]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyListWrap(btn.dataset.listType);
       });
     });
 
@@ -1955,11 +2419,24 @@
       scheduleAutosave();
     });
 
+    $('btnAddOverviewTable').addEventListener('click', function () {
+      const info = getActiveInfo();
+      if (!info) return;
+      info.node.overview.tables = info.node.overview.tables || [];
+      info.node.overview.tables.push(VLP.createDefaultTable());
+      renderEditor();
+      updateOutputs();
+      scheduleAutosave();
+    });
+
     $('ovCredEnabled').addEventListener('change', function () {
       const info = getActiveInfo();
       if (!info) return;
       info.node.overview.credentialsEnabled = $('ovCredEnabled').checked;
-      $('ovCredFields').classList.toggle('hidden', !info.node.overview.credentialsEnabled);
+      if (info.node.overview.credentialsEnabled && (!info.node.overview.credentialsList || info.node.overview.credentialsList.length === 0)) {
+        info.node.overview.credentialsList = [VLP.createDefaultCredentialEntry()];
+      }
+      renderEditor();
       updateOutputs();
       scheduleAutosave();
     });
@@ -1970,24 +2447,13 @@
       updateOutputs();
       scheduleAutosave();
     });
-    $('ovCredTarget').addEventListener('input', function () {
+    $('btnAddOverviewCred').addEventListener('click', function () {
       const info = getActiveInfo();
       if (!info) return;
-      info.node.overview.credentialsTarget = $('ovCredTarget').value;
-      updateOutputs();
-      scheduleAutosave();
-    });
-    $('ovCredUser').addEventListener('input', function () {
-      const info = getActiveInfo();
-      if (!info) return;
-      info.node.overview.credentialsUsername = $('ovCredUser').value;
-      updateOutputs();
-      scheduleAutosave();
-    });
-    $('ovCredPass').addEventListener('input', function () {
-      const info = getActiveInfo();
-      if (!info) return;
-      info.node.overview.credentialsPassword = $('ovCredPass').value;
+      info.node.overview.credentialsEnabled = true;
+      info.node.overview.credentialsList = info.node.overview.credentialsList || [];
+      info.node.overview.credentialsList.push(VLP.createDefaultCredentialEntry());
+      renderEditor();
       updateOutputs();
       scheduleAutosave();
     });
@@ -2004,6 +2470,43 @@
       const info = getActiveInfo();
       if (!info) return;
       info.node.stepsData.introText = $('stIntroText').value;
+      updateOutputs();
+      scheduleAutosave();
+    });
+    $('btnAddStepsIntroTable').addEventListener('click', function () {
+      const info = getActiveInfo();
+      if (!info) return;
+      info.node.stepsData.tables = info.node.stepsData.tables || [];
+      info.node.stepsData.tables.push(VLP.createDefaultTable());
+      renderEditor();
+      updateOutputs();
+      scheduleAutosave();
+    });
+    $('stCredEnabled').addEventListener('change', function () {
+      const info = getActiveInfo();
+      if (!info) return;
+      info.node.stepsData.credentialsEnabled = $('stCredEnabled').checked;
+      if (info.node.stepsData.credentialsEnabled && (!info.node.stepsData.credentialsList || info.node.stepsData.credentialsList.length === 0)) {
+        info.node.stepsData.credentialsList = [VLP.createDefaultCredentialEntry()];
+      }
+      renderEditor();
+      updateOutputs();
+      scheduleAutosave();
+    });
+    $('stCredTitle').addEventListener('input', function () {
+      const info = getActiveInfo();
+      if (!info) return;
+      info.node.stepsData.credentialsTitle = $('stCredTitle').value;
+      updateOutputs();
+      scheduleAutosave();
+    });
+    $('btnAddStepsCred').addEventListener('click', function () {
+      const info = getActiveInfo();
+      if (!info) return;
+      info.node.stepsData.credentialsEnabled = true;
+      info.node.stepsData.credentialsList = info.node.stepsData.credentialsList || [];
+      info.node.stepsData.credentialsList.push(VLP.createDefaultCredentialEntry());
+      renderEditor();
       updateOutputs();
       scheduleAutosave();
     });
@@ -2232,8 +2735,9 @@
       setSaveStatus('ok', 'Restored Session • ' + formatTime());
       showToast('Session auto-restored');
     } else {
-      state.manual = createStarterManual();
+      state.manual = normalizeManualData(createStarterManual());
       state.activeNodeId = state.manual.contentNodes[0].id;
+      applyColorTheme(state.manual.colorTheme);
       renderAll();
       setSaveStatus('ok', 'Starter Templates Loaded');
     }

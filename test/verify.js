@@ -82,8 +82,8 @@ async function main() {
     const ch0 = rootNode.children[0];
     assert.strictEqual(ch0.mode, 'overview');
     assert.strictEqual(ch0.overview.credentialsEnabled, true);
-    assert.strictEqual(ch0.overview.credentialsTarget, 'NDSACDC01');
-    assert.strictEqual(ch0.overview.credentialsUsername, 'xadministrator');
+    assert.strictEqual(ch0.overview.credentialsList[0].targetSystem, 'NDSACDC01');
+    assert.strictEqual(ch0.overview.credentialsList[0].username, 'xadministrator');
 
     const ch0Step1 = ch0.children[0];
     assert.strictEqual(ch0Step1.mode, 'steps');
@@ -129,14 +129,15 @@ async function main() {
     assert(!html.includes('Calibri'), 'Legacy Calibri font leaked');
     assert(!html.includes('\u200B'), 'Zero-width space leaked');
 
-    // Also test Annex B Chapter 2 (Configure network adapter settings) which has What you are doing / Why this matters
+    // Also test Annex B Chapter 2 (Configure network adapter settings) merges context text without auto-fill labels
     const annexB = VLP.parseXmlToManual(fs.readFileSync(path.join(rootDir, 'dsac.annexb.lab01-en', 'content.xml'), 'utf8'));
     const ch2 = annexB.contentNodes[0].children[2];
     const ch2Consolidated = VLP.consolidateChapterSteps(ch2);
     const ch2Html = VLP.generateNodeHtml(ch2Consolidated.children[0], { imageMode: 'vlp' });
     assert(ch2Html.includes('class="step-context"'));
-    assert(ch2Html.includes('What you are doing:'));
-    assert(ch2Html.includes('Why this matters:'));
+    assert(ch2Html.includes('This opens the network configuration for the server.'));
+    assert(!ch2Html.includes('What you are doing:'));
+    assert(!ch2Html.includes('Why this matters:'));
   });
 
   await check('3. Strict non-heuristic formatting & explicit markup shortcuts', () => {
@@ -149,8 +150,7 @@ async function main() {
 
     const parsed = VLP.parseRawTextToSteps(raw);
     assert.strictEqual(parsed.steps.length, 2);
-    assert.strictEqual(parsed.steps[0].whatDoing, 'Opening Local Group Policy Editor.');
-    assert.strictEqual(parsed.steps[0].whyMatters, 'Manages security controls.');
+    assert.strictEqual(parsed.steps[0].contextText, 'Opening Local Group Policy Editor.\nManages security controls.');
 
     const html = VLP.generateProceduralStepsHtml({
       sectionTitle: 'Test Section',
@@ -161,6 +161,8 @@ async function main() {
     assert(html.includes('<code class="cmd-inline">gpedit.msc</code>'));
     assert(html.includes('<kbd class="key-press">Enter</kbd>'));
     assert(html.includes('<span class="ui-target">Server Manager</span>'));
+    assert(!html.includes('What you are doing:'));
+    assert(!html.includes('Why this matters:'));
     // Step 2 had NO explicit markup or toolbar tags, so sudo / Enter must NOT be auto-tagged!
     assert(html.includes('Run sudo whoami and press Enter without markup.'));
     assert(!html.includes('<code class="cmd-inline">sudo'));
@@ -179,12 +181,129 @@ async function main() {
     });
 
     const catalog = VLP.getToolbarCatalog();
-    assert.strictEqual(catalog.length, 13);
+    assert.strictEqual(catalog.length, 21);
 
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const stylesCss = fs.readFileSync(path.join(rootDir, 'public', 'styles.css'), 'utf8');
     assert(!/https?:\/\//i.test(indexHtml), 'index.html must not reference external CDNs');
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
+  });
+
+  await check('4b. v0.2.0-beta Features: Color Themes, Rich Text, Multi-VM Creds, Nested Tables & Round-Trip', () => {
+    const themes = VLP.getColorThemes();
+    assert.strictEqual(themes.length, 8);
+
+    // Rich text, nested tables, multi-VM creds in overview & inside steps, single context block, and Cobalt theme
+    const manual = {
+      id: 'm-v2',
+      name: 'v2.feature.test',
+      defaultLanguageCode: 'en',
+      dataFormat: 'default',
+      colorTheme: 'cobalt-sky',
+      contentNodes: [
+        {
+          id: 'ov-1',
+          title: 'Overview',
+          mode: 'overview',
+          overview: {
+            courseTitle: 'NETWORK LAB',
+            overviewText: 'Text with <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <s>strike</s>, and <mark class="vlp-highlight">highlight</mark>.\n\n<ul>\n  <li>Item A</li>\n  <li>Item B</li>\n</ul>',
+            tables: [
+              VLP.createDefaultTable({
+                title: 'Subnet Matrix',
+                hasHeader: true,
+                rows: [['VLAN', 'Subnet'], ['10', '192.168.10.0/24'], ['40', '192.168.40.0/24']]
+              })
+            ],
+            showDivider: true,
+            purposeEnabled: false,
+            credentialsEnabled: true,
+            credentialsTitle: 'Target VM Credentials',
+            credentialsList: [
+              VLP.createDefaultCredentialEntry({ targetSystem: 'NDSACDC01', username: 'xadministrator', password: 'pw1' }),
+              VLP.createDefaultCredentialEntry({ targetSystem: 'NDSACESXI01', username: 'root', password: 'pw2' })
+            ]
+          },
+          stepsData: VLP.createDefaultStepsData(),
+          rawHtml: '',
+          images: [],
+          children: [
+            {
+              id: 'st-page-1',
+              title: 'Step 1',
+              mode: 'steps',
+              overview: VLP.createDefaultOverviewData(),
+              stepsData: {
+                sectionTitle: 'Configure Multiple Hosts',
+                introText: 'Verify host parameters.',
+                credentialsEnabled: true,
+                credentialsTitle: 'Page VM Creds',
+                credentialsList: [
+                  VLP.createDefaultCredentialEntry({ targetSystem: 'HOST-A', username: 'adminA', password: 'pA' })
+                ],
+                tables: [
+                  VLP.createDefaultTable({ title: 'Intro Matrix', hasHeader: true, rows: [['Key', 'Val'], ['DNS', '192.168.40.2']] })
+                ],
+                steps: [
+                  {
+                    id: 'row-1',
+                    instruction: 'Apply settings from the table below.',
+                    contextText: 'Highlighted context note with zero auto-filled labels.',
+                    credentialsList: [
+                      VLP.createDefaultCredentialEntry({ targetSystem: 'NDSACESXI02', username: 'root', password: 'pw3' }),
+                      VLP.createDefaultCredentialEntry({ targetSystem: 'NDSACESXI03', username: 'root', password: 'pw4' })
+                    ],
+                    tables: [
+                      VLP.createDefaultTable({ title: 'ESXi IPs', hasHeader: true, rows: [['Host', 'IP'], ['ESXI02', '192.168.10.12'], ['ESXI03', '192.168.10.13']] })
+                    ],
+                    termPrompt: '',
+                    termCommand: '',
+                    termOutput: '',
+                    images: []
+                  }
+                ]
+              },
+              rawHtml: '',
+              images: [],
+              children: []
+            }
+          ]
+        }
+      ]
+    };
+
+    const xmlOut = VLP.serializeManualToXml(manual);
+    const reparsed = VLP.parseXmlToManual(xmlOut);
+    assert.strictEqual(reparsed.colorTheme, 'cobalt-sky');
+
+    const ovNode = reparsed.contentNodes[0];
+    assert.strictEqual(ovNode.mode, 'overview');
+    assert.strictEqual(ovNode.overview.tables.length, 1);
+    assert.strictEqual(ovNode.overview.tables[0].title, 'Subnet Matrix');
+    assert.strictEqual(ovNode.overview.credentialsList.length, 2);
+    assert.strictEqual(ovNode.overview.credentialsList[1].targetSystem, 'NDSACESXI01');
+
+    const stNode = ovNode.children[0];
+    assert.strictEqual(stNode.mode, 'steps');
+    assert.strictEqual(stNode.stepsData.credentialsList.length, 1);
+    assert.strictEqual(stNode.stepsData.tables.length, 1);
+    assert.strictEqual(stNode.stepsData.steps.length, 1);
+    assert.strictEqual(stNode.stepsData.steps[0].contextText, 'Highlighted context note with zero auto-filled labels.');
+    assert.strictEqual(stNode.stepsData.steps[0].credentialsList.length, 2);
+    assert.strictEqual(stNode.stepsData.steps[0].tables.length, 1);
+    assert.strictEqual(stNode.stepsData.steps[0].tables[0].rows.length, 3);
+
+    const stepHtml = VLP.generateNodeHtml(stNode, { colorTheme: 'cobalt-sky' });
+    assert(stepHtml.includes('--vlp-accent-red: #2563eb;'));
+    assert(stepHtml.includes('class="vlp-data-table"'));
+    assert(stepHtml.includes('class="lab-note-entry"'));
+
+    // Verify Annex C IPv4 Configuration legacy <table> elements convert into step.tables[]
+    const annexC = VLP.parseXmlToManual(fs.readFileSync(path.join(rootDir, 'dsac.annexc.lab01-en', 'content.xml'), 'utf8'));
+    const dcuiConsolidated = VLP.consolidateChapterSteps(annexC.contentNodes[0].children[0]);
+    const ipv4Step = dcuiConsolidated.children[0].stepsData.steps[6]; // IPv4 Configuration
+    assert.strictEqual(ipv4Step.tables.length, 3);
+    assert.strictEqual(ipv4Step.tables[0].title, 'NDSACESXI01');
   });
 
   // Start server on ephemeral test port with temporary data directory

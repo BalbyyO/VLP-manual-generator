@@ -6,18 +6,23 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.1.0`)
+## Release & Pre-Packaged Docker Image (`beta 0.2.0`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.1.0-beta`)
-- **GitHub Release (`beta 0.1.0`)**: [v0.1.0-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.1.0-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.1.0-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.1.0-beta/vlp-manual-generator-0.1.0-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.2.0-beta`)
+- **GitHub Release (`beta 0.2.0`)**: [v0.2.0-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.0-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.2.0-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.2.0-beta/vlp-manual-generator-0.2.0-beta.tar)
 
 ---
 
 ## Key Features
 
 - **100% Native & Air-Gapped**: Deterministic formatting engine (`public/vlp-formatter.js`) with zero external CDNs, fonts, or AI dependencies.
-- **Strict VLP Spec Compliance**: Implements the Master `<style>` block and layout rules from `vlp-manual-html-formatter.txt` (Course Overview `.course-overview`, Procedural Steps `.lab-wrapper`, Red Box rules for `.purpose-card` & `.lab-note`, and semantic inline tags).
+- **Strict VLP Spec Compliance**: Implements the Master `<style>` block and layout rules from `vlp-manual-html-formatter.txt` (Course Overview `.course-overview`, Procedural Steps `.lab-wrapper`, `.purpose-card`, `.lab-note`, and semantic inline tags).
+- **Curated Color Themes (Figma Color Combinations)**: Top-bar theme dropdown with 8 pre-defined Light/Dark-compatible palettes (`Crimson & Slate`, `Cobalt & Electric Sky`, `Emerald & Mint`, `Royal Indigo & Violet`, `Amber Gold & Obsidian`, `Teal & Coral`, `Rose & Burgundy`, `Cyber Cyan & Neon Slate`) that restyle both the Editor UI and generated HTML `<style>` tokens.
+- **Rich Text & Semantic Toolbar**: Bold (`Ctrl+B`), Italic (`Ctrl+I`), Underline (`Ctrl+U`), Strikethrough (`Ctrl+Shift+S`), Text Highlight, Bullet/Numbered Lists, plus `UI Target`, `Command`, and `Key Press`.
+- **Interactive Data Tables Everywhere**: Add structured `.vlp-data-table` grids inside individual **Steps**, **Chapters**, or **Overviews** (with optional titles, header rows, `+Row/+Col`), plus automatic table extraction when consolidating legacy Annex C XML chapters.
+- **Multi-System VM Credentials Everywhere**: Add one or multiple Target VM credential blocks (`Target System`, `Username`, `Password`, `Role/IP`) on **Overviews**, **Step Page Headers**, and **inside individual Steps**.
+- **Indented Highlighted Context Box**: Single merged `.step-context` input with theme-matched shading and indentation without forced `"What you are doing:"` / `"Why this matters:"` labels.
 - **Multi-Node XML & ZIP Package Support**: Navigate `Course Overview` → `Chapters` → `Step Pages`, import/export VLP `content.xml` or `.zip` packages, and consolidate legacy Word/CKEditor chapters in one click.
 - **Pre-Made Templates & Live Button Guide**: Four ready-to-use templates plus a built-in **What Every Button Does** guide showing light/dark previews and HTML tags.
 - **Dual Session Persistence**: Resists accidental tab/app closure using instant browser `IndexedDB` auto-save, debounced server disk persistence (`/data/sessions/autosave.json`), `navigator.sendBeacon` on tab hide/close, `beforeunload` protection, named snapshots, and `.json` project backups.
@@ -76,28 +81,30 @@ Use the segmented control next to the node title:
 - **Procedural Steps**: Visual step-row builder (`.lab-table` with circular red `.step-badge` counters), optional **Step Context** (`What you are doing:` / `Why this matters:`), **Terminal Verification Output** (`.term-box`), and inline screenshots.
 - **Raw / Imported**: Preserves imported/custom HTML verbatim until you click **Convert Page to Procedural Steps** or **Convert Page to Course Overview**.
 
-#### Apply Semantic Tags (Toolbar or Explicit Markup)
-Highlight text inside any editor field and click an inline toolbar button (or type the shortcut directly). Clicking the **`?`** next to any button opens a live Light/Dark demonstration of that element:
+#### Apply Rich Text & Semantic Formatting (Toolbar, Shortcuts, or Markup)
+Highlight text inside any editor box (including table cells) and click a toolbar button or press a keyboard shortcut. Clicking **`?`** next to any button opens a live Light/Dark demonstration:
 
-| Toolbar Button | HTML Output | Explicit Shortcut | Use For |
+| Toolbar Button | HTML Output | Shortcut / Markup | Use For |
 | --- | --- | --- | --- |
 | **UI Target** | `<span class="ui-target">...</span>` | `**Text**` or `[ui]Text[/ui]` | Buttons, menus, window names, VM names |
 | **Command** | `<code class="cmd-inline">...</code>` | `` `command` `` | CLI commands, tools (`gpedit.msc`, `whoami`), usernames, passwords |
 | **Key Press** | `<kbd class="key-press">... </kbd>` | `[[Key]]` | Keyboard keys & shortcuts (`Enter`, `Windows Key + R`) |
+| **B / I / U / S** | `<strong>`, `<em>`, `<u>`, `<s>` | `Ctrl+B`, `Ctrl+I`, `Ctrl+U`, `Ctrl+Shift+S` | Bold, italic, underline, strikethrough formatting |
+| **Mark** | `<mark class="vlp-highlight">...</mark>` | Toolbar button | Theme-tinted inline text highlighting |
+| **• List / 1. List** | `<ul><li>...</li></ul>`, `<ol>...</ol>` | Toolbar button | Bullet and numbered lists with dark-mode transparency |
 
-> **Note:** Formatting is strictly deterministic—plain text is never auto-tagged unless you apply a toolbar button or explicit markup shortcut.
+> **Note:** Formatting is strictly deterministic—plain text is never auto-tagged unless you apply a toolbar button, keyboard shortcut, or explicit markup.
 
 #### Convert Raw Text into Steps
 In **Procedural Steps** mode, paste plain or numbered steps into **Raw Text → Procedural Steps Converter**:
 
 ```text
 1. Click **Start**, type `gpedit.msc`, and press [[Enter]].
-What you are doing: Opening the Local Group Policy Editor.
-Why this matters: Group Policy controls Windows Server firewall and security baselines.
+Context: Opening the Local Group Policy Editor for baseline firewall setup.
 2. Run `whoami` to confirm the active administrative account.
 ```
 
-Click **Replace Steps** or **Append Steps**—exact step wording is preserved, and `What you are doing:` / `Why this matters:` lines automatically populate `.step-context`.
+Click **Replace Steps** or **Append Steps**—exact step wording is preserved, and `Context:` lines automatically populate the indented shaded `.step-context` block.
 
 #### Consolidate Legacy XML Chapters (Annex C Demo)
 1. Click **Load Annex C** in the top bar.
@@ -151,20 +158,20 @@ docker compose up -d
 
 Open **`http://localhost:8080`** in your browser. Sessions and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`beta 0.1.0` Tarball)
+### Option 2: Air-Gapped Transfer (`beta 0.2.0` Tarball)
 
-Download `vlp-manual-generator-0.1.0-beta.tar` from the [**beta 0.1.0** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.1.0-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+Download `vlp-manual-generator-0.2.0-beta.tar` from the [**beta 0.2.0** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.2.0-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
 
 ```bash
-docker load -i vlp-manual-generator-0.1.0-beta.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.1.0-beta
+docker load -i vlp-manual-generator-0.2.0-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.2.0-beta
 ```
 
 To build and export the tarball yourself from source:
 
 ```bash
-docker build -t vlp-manual-generator:0.1.0-beta .
-docker save -o vlp-manual-generator-0.1.0-beta.tar vlp-manual-generator:0.1.0-beta
+docker build -t vlp-manual-generator:0.2.0-beta .
+docker save -o vlp-manual-generator-0.2.0-beta.tar vlp-manual-generator:0.2.0-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests
