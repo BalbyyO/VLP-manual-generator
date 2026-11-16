@@ -1,6 +1,6 @@
 # VLP Manual HTML Formatter & XML Builder
 
-## Abou
+## About
 
 **VLP Manual HTML Formatter & XML Builder** is a self-contained, air-gapped authoring studio built for **VMware Lab Platform (VLP)** instructors and technical manual developers. VLP's rich-text CKEditor frequently injects incompatible Word/Office inline styles, breaks dark-mode contrast with opaque table/list backgrounds, and scatters micro-steps across dozens of legacy XML nodes.
 
