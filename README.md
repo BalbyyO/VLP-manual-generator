@@ -2,6 +2,11 @@
 
 A completely self-contained, air-gapped web application for authoring, standardizing, and packaging **VMware Lab Platform (VLP)** lab manuals. Converts raw text, draft notes, and legacy `content.xml` chapters into light-and-dark-mode compatible HTML5 snippets ready for VLP CKEditor (`</> Source` view) or complete VLP `.zip` archives (`content.xml` + `images/`)—natively with zero AI tools or internet access.
 
+## Release & Pre-Packaged Docker Image (`beta 0.1.0`)
+
+- **GitHub Release (`beta 0.1.0`)**: [v0.1.0-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.1.0-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.1.0-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.1.0-beta/vlp-manual-generator-0.1.0-beta.tar)
+
 ---
 
 ## Key Features
@@ -114,26 +119,49 @@ Click **Replace Steps** or **Append Steps**—exact step wording is preserved, a
 
 ## Quick Start & Air-Gapped Docker Deployment
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: Docker Compose (`docker-compose.yaml` Example)
+
+Save this `docker-compose.yaml` on your system (after loading the `beta 0.1.0` `.tar` archive or cloning this repository) to start the container immediately:
+
+```yaml
+services:
+  vlp-manual-generator:
+    image: vlp-manual-generator:0.1.0-beta
+    # Optional: comment out if running purely from the pre-packaged .tar image
+    build: .
+    container_name: vlp-manual-generator
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DATA_DIR=/data
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+```
+
+Start the service:
 
 ```bash
 docker compose up -d
 ```
 
-Open **`http://localhost:8080`** in your browser. Sessions and uploaded images persist across container restarts in `./data` (mounted to `/data` inside the container).
+Open **`http://localhost:8080`** in your browser. Sessions and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`docker save` / `docker load`)
+### Option 2: Air-Gapped Transfer (`beta 0.1.0` Tarball)
 
-On a build machine:
+Download `vlp-manual-generator-0.1.0-beta.tar` from the [**beta 0.1.0** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.1.0-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+
 ```bash
-docker build -t vlp-manual-generator:latest .
-docker save -o vlp-manual-generator.tar vlp-manual-generator:latest
+docker load -i vlp-manual-generator-0.1.0-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.1.0-beta
 ```
 
-On the air-gapped host:
+To build and export the tarball yourself from source:
+
 ```bash
-docker load -i vlp-manual-generator.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:latest
+docker build -t vlp-manual-generator:0.1.0-beta .
+docker save -o vlp-manual-generator-0.1.0-beta.tar vlp-manual-generator:0.1.0-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests

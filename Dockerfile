@@ -1,5 +1,9 @@
 FROM node:20-alpine
 
+LABEL org.opencontainers.image.source="https://github.com/BalbyyO/VLP-manual-generator"
+LABEL org.opencontainers.image.description="Self-contained air-gapped VLP Manual HTML Formatter & XML Builder"
+LABEL org.opencontainers.image.version="0.1.0-beta"
+
 WORKDIR /app
 
 # Install production dependencies at image build time for air-gapped runtime
