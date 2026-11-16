@@ -1,6 +1,10 @@
 # VLP Manual HTML Formatter & XML Builder
 
-A completely self-contained, air-gapped web application for authoring, standardizing, and packaging **VMware Lab Platform (VLP)** lab manuals. Converts raw text, draft notes, and legacy `content.xml` chapters into light-and-dark-mode compatible HTML5 snippets ready for VLP CKEditor (`</> Source` view) or complete VLP `.zip` archives (`content.xml` + `images/`)—natively with zero AI tools or internet access.
+## About
+
+**VLP Manual HTML Formatter & XML Builder** is a self-contained, air-gapped authoring studio built for **VMware Lab Platform (VLP)** instructors and technical manual developers. VLP's rich-text CKEditor frequently injects incompatible Word/Office inline styles, breaks dark-mode contrast with opaque table/list backgrounds, and scatters micro-steps across dozens of legacy XML nodes.
+
+This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
 ## Release & Pre-Packaged Docker Image (`beta 0.1.0`)
 
@@ -170,3 +174,11 @@ npm install
 npm test
 npm start
 ```
+
+---
+
+## Contributing, Security & License
+
+- **Contributing**: See [CONTRIBUTING.md](./CONTRIBUTING.md) for local setup, air-gapped design rules, and test requirements.
+- **Security**: See [SECURITY.md](./SECURITY.md) for private vulnerability reporting and security architecture details.
+- **License**: Released under the [MIT License](./LICENSE).

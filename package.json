@@ -3,6 +3,16 @@
   "version": "1.0.0",
   "description": "Self-contained, air-gapped VMware Lab Platform (VLP) HTML Manual Formatter and XML Package Builder",
   "main": "server.js",
+  "license": "MIT",
+  "author": "BalbyyO",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BalbyyO/VLP-manual-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BalbyyO/VLP-manual-generator/issues"
+  },
+  "homepage": "https://github.com/BalbyyO/VLP-manual-generator#readme",
   "scripts": {
     "start": "node server.js",
     "test": "node test/verify.js"
