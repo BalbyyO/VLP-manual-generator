@@ -3645,15 +3645,62 @@
         if (!res.ok || !d.ok) return;
         mfaHost.innerHTML = '';
         const box = document.createElement('div');
-        box.style.background = 'var(--app-surface-2)';
-        box.style.border = '1px solid var(--app-border)';
-        box.style.padding = '10px 12px';
-        box.style.borderRadius = '8px';
-        box.innerHTML =
-          '<div class="owui-row-title">Authenticator Setup Key</div>' +
-          '<div class="owui-row-desc" style="margin-bottom:6px;">Add this Base32 key to any standard TOTP app: <code style="color:var(--app-blue);">' + VLP.escapeHtml(d.secret) + '</code></div>';
+        box.className = 'mfa-setup-card';
+
+        const hdr = document.createElement('div');
+        hdr.className = 'owui-row-title';
+        hdr.textContent = 'Authenticator Setup (Scan QR or Enter Manual Key)';
+        box.appendChild(hdr);
+
+        const grid = document.createElement('div');
+        grid.className = 'mfa-setup-grid';
+
+        if (d.qrDataUrl) {
+          const qrWrap = document.createElement('div');
+          qrWrap.className = 'mfa-qr-card';
+          const qrImg = document.createElement('img');
+          qrImg.className = 'mfa-qr-img';
+          qrImg.src = d.qrDataUrl;
+          qrImg.alt = 'TOTP Authenticator QR Code';
+          const qrCap = document.createElement('span');
+          qrCap.className = 'mfa-qr-caption';
+          qrCap.textContent = 'Scan in Authenticator App';
+          qrWrap.appendChild(qrImg);
+          qrWrap.appendChild(qrCap);
+          grid.appendChild(qrWrap);
+        }
+
+        const manualPanel = document.createElement('div');
+        manualPanel.className = 'mfa-manual-panel';
+        const formattedSecret = d.formattedSecret || String(d.secret || '').replace(/(.{4})/g, '$1 ').trim();
+        manualPanel.innerHTML =
+          '<div class="owui-row-desc" style="margin:0;">Cannot scan the QR code? Enter this setup key manually in your Authenticator app (Google / Microsoft / Authy / Bitwarden):</div>' +
+          '<div class="mfa-secret-row">' +
+          '  <code class="mfa-secret-code">' + VLP.escapeHtml(formattedSecret) + '</code>' +
+          '  <button type="button" id="btnCopyMfaSecret" class="btn btn-xs">Copy Key</button>' +
+          '</div>' +
+          '<div class="owui-row-desc">Type: <strong>Time-based (TOTP, 6 digits, 30s)</strong> &bull; Issuer: <strong>VLPManual</strong></div>';
+
+        const copyKeyBtn = manualPanel.querySelector('#btnCopyMfaSecret');
+        if (copyKeyBtn) {
+          copyKeyBtn.addEventListener('click', async function () {
+            try {
+              await navigator.clipboard.writeText(d.secret || '');
+              showToast('Copied Authenticator secret key');
+            } catch (_ignore) {
+              showToast('Secret: ' + d.secret);
+            }
+          });
+        }
+
+        grid.appendChild(manualPanel);
+        box.appendChild(grid);
+
         const codeInput = document.createElement('input');
         codeInput.className = 'owui-input textarea-mono';
+        codeInput.maxLength = 6;
+        codeInput.inputMode = 'numeric';
+        codeInput.autocomplete = 'one-time-code';
         codeInput.placeholder = 'Enter 6-digit verification code';
         codeInput.style.marginBottom = '8px';
         const verifyBtn = document.createElement('button');
@@ -3901,9 +3948,9 @@
       return;
     }
 
-    const title = '[v0.3.2-beta] Bug Report: ';
+    const title = '[v0.3.3-beta] Bug Report: ';
     const envLines = [
-      '**Version:** v0.3.2-beta',
+      '**Version:** v0.3.3-beta',
       '**Browser Viewport:** ' + window.innerWidth + 'x' + window.innerHeight,
       '**UI Theme:** ' + state.uiTheme + ' | **Preview Theme:** ' + state.previewTheme,
       '',
@@ -3925,7 +3972,7 @@
 
   function renderOwuiAboutTab(body) {
     body.innerHTML =
-      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.2-beta)</div>' +
+      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.3-beta)</div>' +
       '<p class="owui-row-desc" style="font-size:12.5px; line-height:1.55;">100% air-gapped, deterministic authoring studio supporting VLP HTML5/XML packages, Student Exports (.pdf, .html, .mdx, .rtf), and multi-user local accounts.</p>' +
       '<div style="margin:10px 0 6px;"><button type="button" id="btnAboutReportBug" class="btn btn-sm btn-blue">Report Bug on GitHub</button></div>' +
       '<div class="owui-section-title">PII &amp; Credential Security Architecture</div>' +

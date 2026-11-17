@@ -6,11 +6,11 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.3.2`)
+## Release & Pre-Packaged Docker Image (`beta 0.3.3`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.2-beta`)
-- **GitHub Release (`beta 0.3.2`)**: [v0.3.2-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.2-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.2-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.2-beta/vlp-manual-generator-0.3.2-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.3-beta`)
+- **GitHub Release (`beta 0.3.3`)**: [v0.3.3-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.3-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.3-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.3-beta/vlp-manual-generator-0.3.3-beta.tar)
 
 ---
 
@@ -22,7 +22,8 @@ This application converts raw text, draft notes, and legacy `content.xml` chapte
 - **Unified Export Submenu (`Export ▾`)**: Consolidates **Export VLP `content.xml`**, **Export VLP Package (`.zip`)**, **Scope** (`Full Manual` / `Current Page`), and student document exports—standalone **`.pdf`** (pure binary PDF with inline screenshots), **Standalone `.html`** (with offline dark/light toggle and embedded base64 screenshots), **`.mdx` Markdown**, **`.rtf` Rich Text**, or browser **Print / Save PDF...**.
 - **Multi-User Local Accounts, Sessions & Admin Panel (<30 Concurrent Users)**:
   - **First-User Admin Bootstrap**: The first registered account (or `ADMIN_EMAIL` + `ADMIN_PASSWORD` environment variables) automatically becomes Administrator; subsequent accounts sign in or register according to Admin settings.
-  - **Open WebUI-Style Settings & Admin Panel**: Manage **Account** (Profile, Password, Offline TOTP MFA, API Keys), **Sessions** (private snapshots, Shared Team Manuals, `.json` project backups), **Users** (create, approve pending accounts, assign roles/groups, reset passwords), **Groups**, **Authentication** (`User Access`, `Pending Accounts` custom overlay, `LDAP`, `OAuth / OIDC` config & claim mappings), and **Security Audit**.
+  - **Open WebUI-Style Settings & Admin Panel**: Manage **Account** (Profile, Password, Offline TOTP MFA with scannable QR code & copyable manual setup key, API Keys), **Sessions** (private snapshots, Shared Team Manuals, `.json` project backups), **Users** (create, approve pending accounts, assign roles/groups, reset passwords), **Groups**, **Authentication** (`User Access`, `Pending Accounts` custom overlay, `LDAP`, `OAuth / OIDC` config & claim mappings), and **Security Audit**.
+  - **Hardened Multi-Stage Container Image**: Built on `alpine:latest` (`apk upgrade --no-cache` patching `libcrypto3`, `libssl3`, `musl`, `zlib`) with `nodejs` runtime only and zero `npm`/`npx`/`corepack`/`yarn` CLI packages in the final image to eliminate base-image npm/tar CVEs.
   - **Encrypted PII & Hardened Sessions**: Passwords hashed via salted `scrypt` (`timingSafeEqual`), user PII & secrets encrypted at rest with `AES-256-GCM`, blind-indexed via `HMAC-SHA256`, and protected by signed `HttpOnly; SameSite=Strict` cookies and brute-force login throttling.
   - **Per-User Workspace Isolation + Shared Team Manuals**: Each user's autosave (`IndexedDB` + `/data/users/<id>/sessions/`) is isolated so up to 30 concurrent authors never overwrite each other, with optional publishing to **Shared Team Manuals**.
 - **Strict VLP Spec Compliance**: Implements the Master `<style>` block and layout rules from `vlp-manual-html-formatter.txt` (Course Overview `.course-overview`, Procedural Steps `.lab-wrapper`, `.purpose-card`, `.lab-note`, and semantic inline tags).
@@ -175,20 +176,20 @@ docker compose up -d
 
 Open **`http://localhost:8080`** in your browser. On first launch, create the Administrator account (or configure `ADMIN_EMAIL` / `ADMIN_PASSWORD`). User accounts, encrypted PII, sessions, and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`beta 0.3.2` Tarball)
+### Option 2: Air-Gapped Transfer (`beta 0.3.3` Tarball)
 
-Download `vlp-manual-generator-0.3.2-beta.tar` from the [**beta 0.3.2** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.2-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+Download `vlp-manual-generator-0.3.3-beta.tar` from the [**beta 0.3.3** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.3-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
 
 ```bash
-docker load -i vlp-manual-generator-0.3.2-beta.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.2-beta
+docker load -i vlp-manual-generator-0.3.3-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.3-beta
 ```
 
 To build and export the tarball yourself from source:
 
 ```bash
-docker build -t vlp-manual-generator:0.3.2-beta .
-docker save -o vlp-manual-generator-0.3.2-beta.tar vlp-manual-generator:0.3.2-beta
+docker build -t vlp-manual-generator:0.3.3-beta .
+docker save -o vlp-manual-generator-0.3.3-beta.tar vlp-manual-generator:0.3.3-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests

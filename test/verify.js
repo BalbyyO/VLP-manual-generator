@@ -1,4 +1,5 @@
 const assert = require('assert');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -189,11 +190,11 @@ async function main() {
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
   });
 
-  await check('4c. v0.3.2-beta UX: Streamlined Header, Bug Report, Dark-First Default, Custom Swatches, VLP Ratio & Responsive Panes', () => {
+  await check('4c. v0.3.3-beta UX: Streamlined Header, Bug Report, Dark-First Default, Custom Swatches, VLP Ratio, MFA QR & Panes', () => {
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const appJs = fs.readFileSync(path.join(rootDir, 'public', 'app.js'), 'utf8');
 
-    assert(indexHtml.includes('v0.3.2-beta'), 'index.html badge should display v0.3.2-beta');
+    assert(indexHtml.includes('v0.3.3-beta'), 'index.html badge should display v0.3.3-beta');
     assert(indexHtml.includes('id="btnUndo"'), 'index.html should contain Undo button');
     assert(indexHtml.includes('id="btnRedo"'), 'index.html should contain Redo button');
     assert(indexHtml.includes('id="chkHideGuideStartup"'), 'index.html should contain startup guide opt-out checkbox');
@@ -221,11 +222,12 @@ async function main() {
     assert(appJs.includes('doc.body.innerHTML = previewHtmlSnippet'), 'app.js should update preview iframe DOM in-place to preserve scroll');
     assert(appJs.includes('exportDocument('), 'app.js should define exportDocument()');
     assert(appJs.includes('openBugReport('), 'app.js should define openBugReport()');
+    assert(appJs.includes('mfa-qr-img') && appJs.includes('btnCopyMfaSecret'), 'app.js should render offline TOTP QR image and manual setup key copy button');
     assert(appJs.includes('renderOwuiAdminAuthTab'), 'app.js should include Open WebUI-style admin Authentication tab');
     assert(/previewTheme\s*:\s*['"]dark['"]/.test(appJs), 'app.js should default previewTheme to dark mode');
   });
 
-  await check('4d. v0.3.2-beta VLP Split-Screen Scaling, Step Header Alignment & Light/Dark Context CSS Isolation', () => {
+  await check('4d. v0.3.3-beta VLP Split-Screen Scaling, Step Header Alignment & Light/Dark Context CSS Isolation', () => {
     const cssBlock = VLP.getMasterStyleBlock('crimson-slate');
     assert(cssBlock.includes('table-layout: fixed'), 'Master style must enforce table-layout: fixed for VLP split-screen');
     assert(cssBlock.includes('max-width: 100% !important'), 'Master style must constrain wide images with max-width: 100% !important');
@@ -415,7 +417,7 @@ async function main() {
       assert.strictEqual(h.status, 200);
       const healthJson = JSON.parse(h.body.toString());
       assert.strictEqual(healthJson.ok, true);
-      assert.strictEqual(healthJson.version, '0.3.2-beta');
+      assert.strictEqual(healthJson.version, '0.3.3-beta');
       assert(String(healthJson.issueUrl || '').includes('/issues/new'), '/api/health should expose GitHub issueUrl');
 
       const idx = await httpRequest(testPort, 'GET', '/');
@@ -754,6 +756,50 @@ async function main() {
       const rawCfgDisk = fs.readFileSync(path.join(tmpDataDir, 'auth-config.json'), 'utf8');
       assert(!rawCfgDisk.includes('super-secret-oauth-99'), 'OAuth secret must be encrypted on disk');
       assert(!rawCfgDisk.includes('ldap-secret-77'), 'LDAP password must be encrypted on disk');
+
+      // 6. Verify Offline TOTP MFA Setup returns scannable QR PNG DataURL & formatted Manual Key + enforces 6-digit login
+      const mfaSetupRes = await httpRequest(testPort, 'POST', '/api/auth/mfa/setup', {}, { Cookie: bobActiveCookie });
+      assert.strictEqual(mfaSetupRes.status, 200);
+      const mfaSetup = JSON.parse(mfaSetupRes.body.toString());
+      assert(mfaSetup.secret && mfaSetup.secret.length >= 16, 'MFA setup must return Base32 secret');
+      assert(mfaSetup.formattedSecret && mfaSetup.formattedSecret.includes(' '), 'MFA setup must return grouped formattedSecret');
+      assert(String(mfaSetup.otpauthUri).startsWith('otpauth://totp/'), 'MFA setup must return otpauth URI');
+      assert(String(mfaSetup.qrDataUrl).startsWith('data:image/png;base64,'), 'MFA setup must return offline PNG QR DataURL');
+
+      function testTotp(secretB32) {
+        const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        let bits = 0, val = 0, bytes = [];
+        for (const ch of secretB32.toUpperCase()) {
+          const i = alpha.indexOf(ch);
+          if (i < 0) continue;
+          val = (val << 5) | i; bits += 5;
+          if (bits >= 8) { bytes.push((val >>> (bits - 8)) & 255); bits -= 8; }
+        }
+        const ctr = Math.floor(Date.now() / 30000);
+        const msg = Buffer.alloc(8);
+        msg.writeUInt32BE(Math.floor(ctr / 0x100000000), 0);
+        msg.writeUInt32BE(ctr >>> 0, 4);
+        const hmac = crypto.createHmac('sha1', Buffer.from(bytes)).update(msg).digest();
+        const off = hmac[hmac.length - 1] & 0x0f;
+        const bin = ((hmac[off] & 0x7f) << 24) | ((hmac[off + 1] & 0xff) << 16) | ((hmac[off + 2] & 0xff) << 8) | (hmac[off + 3] & 0xff);
+        return String(bin % 1000000).padStart(6, '0');
+      }
+
+      const validTotp = testTotp(mfaSetup.secret);
+      const mfaEnableRes = await httpRequest(testPort, 'POST', '/api/auth/mfa/enable', { code: validTotp }, { Cookie: bobActiveCookie });
+      assert.strictEqual(mfaEnableRes.status, 200);
+      assert.strictEqual(JSON.parse(mfaEnableRes.body.toString()).user.mfaEnabled, true);
+
+      const loginWithoutTotp = await httpRequest(testPort, 'POST', '/api/auth/login', { identifier: 'bobstu', password: 'StudentPw!234' });
+      assert.strictEqual(loginWithoutTotp.status, 403);
+      assert.strictEqual(JSON.parse(loginWithoutTotp.body.toString()).mfaRequired, true);
+
+      const loginWithTotp = await httpRequest(testPort, 'POST', '/api/auth/login', {
+        identifier: 'bobstu',
+        password: 'StudentPw!234',
+        totpCode: testTotp(mfaSetup.secret)
+      });
+      assert.strictEqual(loginWithTotp.status, 200);
     });
   } finally {
     serverProc.kill();

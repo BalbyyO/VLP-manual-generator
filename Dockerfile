@@ -1,14 +1,28 @@
-FROM node:20-alpine
+# Stage 1: Install vetted production Node dependencies cleanly
+FROM node:22-alpine AS builder
+
+WORKDIR /build
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+
+# Stage 2: Minimal hardened Alpine runtime (patched libcrypto3/libssl3/musl/zlib & zero npm/tar CLI CVEs)
+FROM alpine:latest
 
 LABEL org.opencontainers.image.source="https://github.com/BalbyyO/VLP-manual-generator"
 LABEL org.opencontainers.image.description="Self-contained air-gapped VLP Manual HTML Formatter & XML Builder"
-LABEL org.opencontainers.image.version="0.3.2-beta"
+LABEL org.opencontainers.image.version="0.3.3-beta"
+
+# Install latest Alpine OS security upgrades + Node.js runtime only (no npm/corepack/yarn CLI packages)
+RUN apk update \
+ && apk upgrade --no-cache \
+ && apk add --no-cache nodejs \
+ && rm -rf /var/cache/apk/* /tmp/*
 
 WORKDIR /app
 
-# Install production dependencies at image build time for air-gapped runtime
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund
+COPY --from=builder /build/package.json /build/package-lock.json ./
+COPY --from=builder /build/node_modules ./node_modules
 
 # Copy application source and offline reference manuals
 COPY server.js ./

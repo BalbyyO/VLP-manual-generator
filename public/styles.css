@@ -2033,3 +2033,73 @@ html[data-ui-theme="light"] .auth-field label {
 html[data-ui-theme="light"] .auth-error {
   color: #b91c1c;
 }
+
+/* v0.3.3-beta: Offline TOTP MFA QR & Manual Key Card */
+.mfa-setup-card {
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 8px;
+}
+
+.mfa-setup-grid {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin: 10px 0 12px;
+}
+
+.mfa-qr-card {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mfa-qr-img {
+  width: 172px;
+  height: 172px;
+  display: block;
+}
+
+.mfa-qr-caption {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.mfa-manual-panel {
+  flex: 1;
+  min-width: 220px;
+}
+
+.mfa-secret-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0 10px;
+}
+
+.mfa-secret-code {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #38bdf8;
+  border: 1px solid #334155;
+  font-family: var(--app-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  word-break: break-all;
+}

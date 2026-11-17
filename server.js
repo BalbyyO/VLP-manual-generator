@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const JSZip = require('jszip');
+const QRCode = require('qrcode');
 const VLPFormatter = require('./public/vlp-formatter.js');
 
 const app = express();
@@ -655,7 +656,7 @@ app.get('/api/health', function (_req, res) {
   const bugsUrl = (pkg.bugs && pkg.bugs.url) ? String(pkg.bugs.url).replace(/\/+$/, '') : '';
   res.json({
     ok: true,
-    version: '0.3.2-beta',
+    version: '0.3.3-beta',
     port: PORT,
     dataDir: DATA_DIR,
     airGapped: true,
@@ -869,19 +870,32 @@ app.put('/api/auth/profile', requireSignedInUser, function (req, res) {
   res.json({ ok: true, user: sanitizeUserView(user), token: token });
 });
 
-app.post('/api/auth/mfa/setup', requireSignedInUser, function (req, res) {
-  const secret = generateBase32Secret(20);
-  const users = loadUsers();
-  const idx = users.findIndex(function (u) { return u.id === req.user.id; });
-  if (idx === -1) return res.status(404).json({ ok: false, error: 'User not found' });
-  users[idx].pendingMfaSecretEnc = encryptPii(secret);
-  saveUsers(users);
-  const label = encodeURIComponent('VLPManual:' + decryptPii(users[idx].usernameEnc));
-  res.json({
-    ok: true,
-    secret: secret,
-    otpauthUri: 'otpauth://totp/' + label + '?secret=' + secret + '&issuer=VLPManual'
-  });
+app.post('/api/auth/mfa/setup', requireSignedInUser, async function (req, res) {
+  try {
+    const secret = generateBase32Secret(20);
+    const users = loadUsers();
+    const idx = users.findIndex(function (u) { return u.id === req.user.id; });
+    if (idx === -1) return res.status(404).json({ ok: false, error: 'User not found' });
+    users[idx].pendingMfaSecretEnc = encryptPii(secret);
+    saveUsers(users);
+    const label = encodeURIComponent('VLPManual:' + decryptPii(users[idx].usernameEnc));
+    const otpauthUri = 'otpauth://totp/' + label + '?secret=' + secret + '&issuer=VLPManual&algorithm=SHA1&digits=6&period=30';
+    const qrDataUrl = await QRCode.toDataURL(otpauthUri, {
+      errorCorrectionLevel: 'M',
+      width: 220,
+      margin: 2,
+      color: { dark: '#0f172a', light: '#ffffff' }
+    });
+    res.json({
+      ok: true,
+      secret: secret,
+      formattedSecret: secret.replace(/(.{4})/g, '$1 ').trim(),
+      otpauthUri: otpauthUri,
+      qrDataUrl: qrDataUrl
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 app.post('/api/auth/mfa/enable', requireSignedInUser, function (req, res) {

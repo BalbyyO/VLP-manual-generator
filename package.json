@@ -1,6 +1,6 @@
 {
   "name": "vlp-manual-generator",
-  "version": "0.3.2-beta",
+  "version": "0.3.3-beta",
   "description": "Self-contained, air-gapped VMware Lab Platform (VLP) HTML Manual Formatter and XML Package Builder",
   "main": "server.js",
   "license": "MIT",
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "express": "^4.21.2",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "qrcode": "^1.5.4"
   }
 }
