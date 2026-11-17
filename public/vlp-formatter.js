@@ -21,7 +21,7 @@
         cardBg: 'rgba(220, 38, 38, 0.08)',
         cardBorder: 'rgba(239, 68, 68, 0.4)',
         contextBg: 'rgba(220, 38, 38, 0.10)',
-        contextText: '#991b1b',
+        contextText: '#7f1d1d',
         thBg: 'rgba(128, 128, 128, 0.15)',
         rowEven: 'rgba(128, 128, 128, 0.06)',
         appSoft: 'rgba(220, 38, 38, 0.14)'
@@ -50,7 +50,7 @@
         cardBg: 'rgba(37, 99, 235, 0.08)',
         cardBorder: 'rgba(59, 130, 246, 0.42)',
         contextBg: 'rgba(37, 99, 235, 0.10)',
-        contextText: '#1e40af',
+        contextText: '#1e3a8a',
         thBg: 'rgba(37, 99, 235, 0.13)',
         rowEven: 'rgba(37, 99, 235, 0.05)',
         appSoft: 'rgba(37, 99, 235, 0.16)'
@@ -79,7 +79,7 @@
         cardBg: 'rgba(5, 150, 105, 0.08)',
         cardBorder: 'rgba(16, 185, 129, 0.42)',
         contextBg: 'rgba(5, 150, 105, 0.11)',
-        contextText: '#065f46',
+        contextText: '#064e3b',
         thBg: 'rgba(5, 150, 105, 0.13)',
         rowEven: 'rgba(5, 150, 105, 0.05)',
         appSoft: 'rgba(5, 150, 105, 0.16)'
@@ -108,7 +108,7 @@
         cardBg: 'rgba(124, 58, 237, 0.08)',
         cardBorder: 'rgba(139, 92, 246, 0.42)',
         contextBg: 'rgba(124, 58, 237, 0.11)',
-        contextText: '#5b21b6',
+        contextText: '#4c1d95',
         thBg: 'rgba(124, 58, 237, 0.13)',
         rowEven: 'rgba(124, 58, 237, 0.05)',
         appSoft: 'rgba(124, 58, 237, 0.16)'
@@ -137,7 +137,7 @@
         cardBg: 'rgba(217, 119, 6, 0.09)',
         cardBorder: 'rgba(245, 158, 11, 0.45)',
         contextBg: 'rgba(217, 119, 6, 0.12)',
-        contextText: '#92400e',
+        contextText: '#78350f',
         thBg: 'rgba(217, 119, 6, 0.13)',
         rowEven: 'rgba(217, 119, 6, 0.05)',
         appSoft: 'rgba(217, 119, 6, 0.16)'
@@ -166,7 +166,7 @@
         cardBg: 'rgba(13, 148, 136, 0.08)',
         cardBorder: 'rgba(20, 184, 166, 0.42)',
         contextBg: 'rgba(13, 148, 136, 0.11)',
-        contextText: '#115e59',
+        contextText: '#134e4a',
         thBg: 'rgba(13, 148, 136, 0.13)',
         rowEven: 'rgba(13, 148, 136, 0.05)',
         appSoft: 'rgba(13, 148, 136, 0.16)'
@@ -195,7 +195,7 @@
         cardBg: 'rgba(225, 29, 72, 0.08)',
         cardBorder: 'rgba(244, 63, 94, 0.42)',
         contextBg: 'rgba(225, 29, 72, 0.11)',
-        contextText: '#9f1239',
+        contextText: '#881337',
         thBg: 'rgba(225, 29, 72, 0.12)',
         rowEven: 'rgba(225, 29, 72, 0.05)',
         appSoft: 'rgba(225, 29, 72, 0.16)'
@@ -224,7 +224,7 @@
         cardBg: 'rgba(2, 132, 199, 0.08)',
         cardBorder: 'rgba(14, 165, 233, 0.42)',
         contextBg: 'rgba(2, 132, 199, 0.11)',
-        contextText: '#075985',
+        contextText: '#0c4a6e',
         thBg: 'rgba(2, 132, 199, 0.13)',
         rowEven: 'rgba(2, 132, 199, 0.05)',
         appSoft: 'rgba(2, 132, 199, 0.16)'
@@ -284,13 +284,25 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not(.theme-light):not(.light-theme):not([data-theme="light"]):not([clr-theme="light"]):not([cds-theme="light"]) {
       --vlp-accent-red: ${t.dark.accent};
       --vlp-card-bg: ${t.dark.cardBg};
       --vlp-card-border: ${t.dark.cardBorder};
       --vlp-context-bg: ${t.dark.contextBg};
       --vlp-context-text: ${t.dark.contextText};
     }
+  }
+
+  .theme-light,
+  .light-theme,
+  [data-theme="light"],
+  [clr-theme="light"],
+  [cds-theme="light"] {
+    --vlp-accent-red: ${t.light.accent};
+    --vlp-card-bg: ${t.light.cardBg};
+    --vlp-card-border: ${t.light.cardBorder};
+    --vlp-context-bg: ${t.light.contextBg};
+    --vlp-context-text: ${t.light.contextText};
   }
 
   .dark,
@@ -309,13 +321,25 @@
   }
 
   .course-overview,
+  .lab-wrapper,
+  .course-overview *,
+  .lab-wrapper * {
+    box-sizing: border-box;
+  }
+
+  .course-overview,
   .lab-wrapper {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: inherit !important;
     line-height: 1.65;
     font-size: 15px;
+    width: 100%;
     max-width: 900px;
     margin: 0 auto;
+    container-type: inline-size;
+    container-name: vlp-manual;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
   }
 
   .course-overview p,
@@ -361,8 +385,7 @@
   }
 
   .banner-img {
-    max-width: 100%;
-    height: auto;
+    margin: 0 auto;
     border-radius: 8px;
     border: 1px solid var(--vlp-border);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
@@ -454,6 +477,8 @@
   .lab-table,
   .vlp-data-table {
     width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
     border: 1px solid var(--vlp-border) !important;
@@ -462,6 +487,15 @@
     margin-top: 14px;
     background: transparent !important;
     background-color: transparent !important;
+  }
+
+  .lab-table th,
+  .lab-table td,
+  .vlp-data-table th,
+  .vlp-data-table td {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .vlp-table-title {
@@ -551,6 +585,10 @@
   .lab-wrapper code,
   code.cmd-inline {
     display: inline-block !important;
+    max-width: 100%;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     background-color: var(--vlp-cmd-bg) !important;
     color: var(--vlp-cmd-text) !important;
     border: 1px solid var(--vlp-cmd-border) !important;
@@ -583,6 +621,10 @@
   }
 
   .term-box {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
     background-color: var(--vlp-cmd-bg) !important;
     color: #e2e8f0 !important;
     border: 1px solid var(--vlp-cmd-border) !important;
@@ -611,14 +653,79 @@
   }
 
   .lab-table td img,
+  .step-inline-img,
+  .banner-img {
+    display: block;
+    width: auto;
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain;
+  }
+
+  .lab-table td img,
   .step-inline-img {
-    max-width: 100%;
-    height: auto;
     margin-top: 12px;
     border-radius: 6px;
     border: 1px solid var(--vlp-border);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-    display: block;
+  }
+
+  @container vlp-manual (max-width: 540px) {
+    .course-overview,
+    .lab-wrapper {
+      font-size: 14px;
+    }
+
+    .lab-table th,
+    .lab-table td,
+    .vlp-data-table th,
+    .vlp-data-table td {
+      padding: 8px 9px;
+    }
+
+    .col-step-num {
+      width: 42px !important;
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+    }
+
+    .lab-table > tbody > tr > td:first-child {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+
+    .step-context {
+      margin-left: 6px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .course-overview,
+    .lab-wrapper {
+      font-size: 14px;
+    }
+
+    .lab-table th,
+    .lab-table td,
+    .vlp-data-table th,
+    .vlp-data-table td {
+      padding: 8px 9px;
+    }
+
+    .col-step-num {
+      width: 42px !important;
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+    }
+
+    .lab-table > tbody > tr > td:first-child {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+
+    .step-context {
+      margin-left: 6px;
+    }
   }
 </style>`;
   }
@@ -1153,8 +1260,8 @@
     lines.push('  <table class="lab-table">');
     lines.push('    <thead>');
     lines.push('      <tr>');
-    lines.push('        <th style="width: 8%; text-align: center;">Step</th>');
-    lines.push('        <th style="width: 92%;">Action &amp; Verification</th>');
+    lines.push('        <th class="col-step-num" style="width: 52px; text-align: center;">Step</th>');
+    lines.push('        <th style="width: auto;">Action &amp; Verification</th>');
     lines.push('      </tr>');
     lines.push('    </thead>');
     lines.push('    <tbody>');
@@ -2882,7 +2989,7 @@
 
     return [
       '<!DOCTYPE html>',
-      '<html lang="' + escapeHtml((manual && manual.defaultLanguageCode) || 'en') + '">',
+      '<html lang="' + escapeHtml((manual && manual.defaultLanguageCode) || 'en') + '" class="theme-light">',
       '<head>',
       '  <meta charset="UTF-8" />',
       '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
@@ -2918,7 +3025,7 @@
       '  <header class="student-topbar">',
       '    <div class="student-topbar-title">' + escapeHtmlPreserveEntities(manualTitle) + '</div>',
       '    <div class="student-topbar-actions">',
-      '      <button type="button" class="student-btn" onclick="document.documentElement.classList.toggle(\'theme-dark\');document.documentElement.classList.toggle(\'clr-theme-dark\');">Toggle Dark Mode</button>',
+      '      <button type="button" class="student-btn" onclick="document.documentElement.classList.toggle(\'theme-light\');document.documentElement.classList.toggle(\'theme-dark\');document.documentElement.classList.toggle(\'clr-theme-dark\');">Toggle Dark Mode</button>',
       '      <button type="button" class="student-btn student-btn-accent" onclick="window.print();">Print / Save PDF</button>',
       '    </div>',
       '  </header>',

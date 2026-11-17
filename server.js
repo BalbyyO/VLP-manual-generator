@@ -653,7 +653,7 @@ function decodeDataUrl(dataUrl) {
 app.get('/api/health', function (_req, res) {
   res.json({
     ok: true,
-    version: '0.3.0-beta',
+    version: '0.3.1-beta',
     port: PORT,
     dataDir: DATA_DIR,
     airGapped: true,

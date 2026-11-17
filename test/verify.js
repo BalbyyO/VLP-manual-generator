@@ -189,27 +189,83 @@ async function main() {
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
   });
 
-  await check('4c. v0.3.0-beta UX: Startup Guide Checkbox, Full Undo/Redo, Scroll-Preserving Preview & Multi-User/Export UI', () => {
+  await check('4c. v0.3.1-beta UX: Streamlined Header, Dark-First Default, Custom Swatches, VLP Ratio & Responsive Panes', () => {
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const appJs = fs.readFileSync(path.join(rootDir, 'public', 'app.js'), 'utf8');
 
-    assert(indexHtml.includes('v0.3.0-beta'), 'index.html badge should display v0.3.0-beta');
+    assert(indexHtml.includes('v0.3.1-beta'), 'index.html badge should display v0.3.1-beta');
     assert(indexHtml.includes('id="btnUndo"'), 'index.html should contain Undo button');
     assert(indexHtml.includes('id="btnRedo"'), 'index.html should contain Redo button');
     assert(indexHtml.includes('id="chkHideGuideStartup"'), 'index.html should contain startup guide opt-out checkbox');
-    assert(indexHtml.includes('id="exportFormatSelect"'), 'index.html should contain Export format dropdown');
+    assert(indexHtml.includes('id="btnExportMenu"'), 'index.html should contain unified Export menu trigger');
+    assert(indexHtml.includes('id="exportMenuPopover"'), 'index.html should contain Export popover menu');
+    assert(indexHtml.includes('id="btnExportXml"'), 'index.html should contain Export XML button inside Export popover');
+    assert(indexHtml.includes('id="btnExportZip"'), 'index.html should contain Export ZIP button inside Export popover');
     assert(indexHtml.includes('id="exportScopeSelect"'), 'index.html should contain Export scope dropdown');
-    assert(indexHtml.includes('id="btnExportDocument"'), 'index.html should contain Export File button');
+    assert(indexHtml.includes('id="btnUiThemeToggle"'), 'index.html should contain Dark/Light UI toggle button');
+    assert(indexHtml.includes('id="colorThemeDropdown"'), 'index.html should contain custom Color Theme Swatches dropdown');
+    assert(indexHtml.includes('id="previewRatioSelect"'), 'index.html should contain VLP Ratio preview width selector');
+    assert(indexHtml.includes('id="mobilePaneTabs"'), 'index.html should contain responsive mobile/zoom pane switcher');
     assert(indexHtml.includes('id="authGateOverlay"'), 'index.html should contain authentication gate overlay');
     assert(indexHtml.includes('id="accountAdminModal"'), 'index.html should contain Open WebUI-style account/admin modal');
 
+    assert(!indexHtml.includes('id="btnLoadAnnexB"'), 'Decluttered topbar must not contain standalone btnLoadAnnexB');
+    assert(!indexHtml.includes('id="btnLoadAnnexC"'), 'Decluttered topbar must not contain standalone btnLoadAnnexC');
+    assert(!indexHtml.includes('id="btnOpenSessions"'), 'Decluttered topbar must not contain standalone btnOpenSessions');
+
     assert(!/https?:\/\//i.test(appJs), 'app.js must not reference external URLs');
     assert(appJs.includes('vlp_hide_guide_on_startup'), 'app.js should persist startup guide preference in localStorage');
-    assert(appJs.includes('function performRedo()'), 'app.js should define performRedo()');
-    assert(appJs.includes('function armTypingUndo('), 'app.js should define armTypingUndo()');
+    assert(appJs.includes('performRedo()'), 'app.js should define performRedo()');
+    assert(appJs.includes('armTypingUndo('), 'app.js should define armTypingUndo()');
     assert(appJs.includes('doc.body.innerHTML = previewHtmlSnippet'), 'app.js should update preview iframe DOM in-place to preserve scroll');
-    assert(appJs.includes('function exportDocument()'), 'app.js should define exportDocument()');
+    assert(appJs.includes('exportDocument('), 'app.js should define exportDocument()');
     assert(appJs.includes('renderOwuiAdminAuthTab'), 'app.js should include Open WebUI-style admin Authentication tab');
+    assert(/previewTheme\s*:\s*['"]dark['"]/.test(appJs), 'app.js should default previewTheme to dark mode');
+  });
+
+  await check('4d. v0.3.1-beta VLP Split-Screen Scaling & Light/Dark Context CSS Isolation', () => {
+    const cssBlock = VLP.getMasterStyleBlock('crimson-slate');
+    assert(cssBlock.includes('table-layout: fixed'), 'Master style must enforce table-layout: fixed for VLP split-screen');
+    assert(cssBlock.includes('max-width: 100% !important'), 'Master style must constrain wide images with max-width: 100% !important');
+    assert(cssBlock.includes('overflow-wrap: anywhere'), 'Master style must wrap long commands/tokens via overflow-wrap: anywhere');
+    assert(cssBlock.includes('@container vlp-manual'), 'Master style must define @container vlp-manual responsive rules');
+    assert(cssBlock.includes('not(.theme-light)'), 'Master style must isolate dark prefers-color-scheme from Light mode (.theme-light)');
+
+    const sampleNode = {
+      id: 'st-scale-1',
+      title: 'Split Screen Scaling Test',
+      mode: 'steps',
+      overview: VLP.createDefaultOverviewData(),
+      stepsData: {
+        sectionTitle: 'Verify Responsive Table',
+        introText: 'Ensure wide images and long commands fit VLP taskbar.',
+        steps: [
+          {
+            id: 'r1',
+            instruction: 'Run `ip addr show` and inspect output.',
+            contextText: 'Must remain legible in Light Mode even when OS prefers dark.',
+            credentialsList: [],
+            tables: [],
+            termPrompt: '',
+            termCommand: '',
+            termOutput: '',
+            images: [{ src: './images/wide-screenshot.png', alt: 'Wide Screenshot' }]
+          }
+        ]
+      },
+      rawHtml: '',
+      images: [],
+      children: []
+    };
+
+    const emittedHtml = VLP.generateNodeHtml(sampleNode, { colorTheme: 'crimson-slate', imageMode: 'vlp' });
+    assert(emittedHtml.includes('class="col-step-num"'), 'Procedural steps table header should emit class="col-step-num"');
+
+    const reparsed = VLP.parseHtmlToNodeState(emittedHtml, sampleNode.title);
+    assert.strictEqual(reparsed.mode, 'steps');
+    assert.strictEqual(reparsed.stepsData.steps.length, 1);
+    assert.strictEqual(reparsed.stepsData.steps[0].contextText, 'Must remain legible in Light Mode even when OS prefers dark.');
+    assert.strictEqual(reparsed.stepsData.steps[0].images.length, 1);
   });
 
   await check('4b. v0.2.0-beta Features: Color Themes, Rich Text, Multi-VM Creds, Nested Tables & Round-Trip', () => {
@@ -354,7 +410,9 @@ async function main() {
     await check('5. HTTP API: /api/health, static index.html, and sample manuals', async () => {
       const h = await httpRequest(testPort, 'GET', '/api/health');
       assert.strictEqual(h.status, 200);
-      assert.strictEqual(JSON.parse(h.body.toString()).ok, true);
+      const healthJson = JSON.parse(h.body.toString());
+      assert.strictEqual(healthJson.ok, true);
+      assert.strictEqual(healthJson.version, '0.3.1-beta');
 
       const idx = await httpRequest(testPort, 'GET', '/');
       assert.strictEqual(idx.status, 200);

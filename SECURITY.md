@@ -4,8 +4,8 @@
 
 | Version | Supported | Notes |
 | --- | --- | --- |
-| `0.3.x` (`beta 0.3.0`) | Yes | Current pre-release container image, multi-user auth, PII encryption & student exports |
-| `0.2.x` (`beta 0.2.1`) | Security fixes | Superseded by `0.3.0-beta` |
+| `0.3.x` (`beta 0.3.1`) | Yes | Current pre-release container image, multi-user auth, PII encryption & student exports |
+| `0.2.x` (`beta 0.2.1`) | Security fixes | Superseded by `0.3.1-beta` |
 | `main` | Yes | Active development branch |
 
 ---

@@ -6,25 +6,28 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.3.0`)
+## Release & Pre-Packaged Docker Image (`beta 0.3.1`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.0-beta`)
-- **GitHub Release (`beta 0.3.0`)**: [v0.3.0-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.0-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.0-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.0-beta/vlp-manual-generator-0.3.0-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.1-beta`)
+- **GitHub Release (`beta 0.3.1`)**: [v0.3.1-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.1-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.1-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.1-beta/vlp-manual-generator-0.3.1-beta.tar)
 
 ---
 
 ## Key Features
 
 - **100% Native & Air-Gapped**: Deterministic formatting engine (`public/vlp-formatter.js`) with zero external CDNs, fonts, or AI dependencies.
-- **Multi-Format Student Export Dropdown (`.pdf`, `.html`, `.mdx`, `.rtf`)**: Alongside the untouched **Export XML** and **Export VLP ZIP** tools, export the **Full Manual** or **Current Page** as a standalone **Student `.pdf`** (pure binary PDF with inline screenshots), **Standalone `.html`** (with offline dark/light toggle and embedded base64 screenshots), **`.mdx` Markdown**, **`.rtf` Rich Text**, or browser **Print / Save PDF**.
-- **Multi-User Local Accounts & Admin Panel (<30 Concurrent Users)**:
+- **VLP Split-Screen Scaling & Light/Dark Contrast Isolation**: Master `<style>` uses `table-layout: fixed`, container queries (`@container vlp-manual`), and responsive image/code wrapping so screenshots and data tables fit cleanly inside VLP's 1/3 or 1/2 right-hand taskbar without horizontal clipping, while isolating Light Mode `.theme-light` / `clr-theme="light"` `.step-context` colors from OS dark-mode overrides.
+- **Dark-First UI + High-Contrast Light Mode**: Opens in **Dark Mode** by default for both the Studio UI and VLP Live Preview, with a single top-bar **Dark / Light** toggle and crisp high-contrast Light Mode styling across context boxes, modals, and tables.
+- **Unified Export Submenu (`Export ▾`)**: Consolidates **Export VLP `content.xml`**, **Export VLP Package (`.zip`)**, **Scope** (`Full Manual` / `Current Page`), and student document exports—standalone **`.pdf`** (pure binary PDF with inline screenshots), **Standalone `.html`** (with offline dark/light toggle and embedded base64 screenshots), **`.mdx` Markdown**, **`.rtf` Rich Text**, or browser **Print / Save PDF...**.
+- **Multi-User Local Accounts, Sessions & Admin Panel (<30 Concurrent Users)**:
   - **First-User Admin Bootstrap**: The first registered account (or `ADMIN_EMAIL` + `ADMIN_PASSWORD` environment variables) automatically becomes Administrator; subsequent accounts sign in or register according to Admin settings.
-  - **Open WebUI-Style Settings & Admin Panel**: Manage **Account** (Profile, Password, Offline TOTP MFA, API Keys), **Users** (create, approve pending accounts, assign roles/groups, reset passwords), **Groups**, **Authentication** (`User Access`, `Pending Accounts` custom overlay, `LDAP`, `OAuth / OIDC` config & claim mappings), and **Security Audit**.
+  - **Open WebUI-Style Settings & Admin Panel**: Manage **Account** (Profile, Password, Offline TOTP MFA, API Keys), **Sessions** (private snapshots, Shared Team Manuals, `.json` project backups), **Users** (create, approve pending accounts, assign roles/groups, reset passwords), **Groups**, **Authentication** (`User Access`, `Pending Accounts` custom overlay, `LDAP`, `OAuth / OIDC` config & claim mappings), and **Security Audit**.
   - **Encrypted PII & Hardened Sessions**: Passwords hashed via salted `scrypt` (`timingSafeEqual`), user PII & secrets encrypted at rest with `AES-256-GCM`, blind-indexed via `HMAC-SHA256`, and protected by signed `HttpOnly; SameSite=Strict` cookies and brute-force login throttling.
   - **Per-User Workspace Isolation + Shared Team Manuals**: Each user's autosave (`IndexedDB` + `/data/users/<id>/sessions/`) is isolated so up to 30 concurrent authors never overwrite each other, with optional publishing to **Shared Team Manuals**.
 - **Strict VLP Spec Compliance**: Implements the Master `<style>` block and layout rules from `vlp-manual-html-formatter.txt` (Course Overview `.course-overview`, Procedural Steps `.lab-wrapper`, `.purpose-card`, `.lab-note`, and semantic inline tags).
-- **Curated Color Themes (Figma Color Combinations)**: Top-bar theme dropdown with 8 pre-defined Light/Dark-compatible palettes (`Crimson & Slate`, `Cobalt & Electric Sky`, `Emerald & Mint`, `Royal Indigo & Violet`, `Amber Gold & Obsidian`, `Teal & Coral`, `Rose & Burgundy`, `Cyber Cyan & Neon Slate`) that restyle both the Editor UI and generated HTML `<style>` tokens.
+- **Custom Color Theme Swatches Dropdown (Figma Color Combinations)**: Interactive top-bar swatch picker showing multi-dot color previews for all 8 Light/Dark-compatible palettes (`Crimson & Slate`, `Cobalt & Electric Sky`, `Emerald & Mint`, `Royal Indigo & Violet`, `Amber Gold & Obsidian`, `Teal & Coral`, `Rose & Burgundy`, `Cyber Cyan & Neon Slate`) that restyle both the Editor UI and generated HTML `<style>` tokens.
+- **Zoom-Safe Header & Responsive Pane Switcher**: Wrapping top bar plus automatic **Structure | Editor | Preview** tabs on narrow viewports or high browser zoom (`125%`–`200%`).
 - **Rich Text & Semantic Toolbar**: Bold (`Ctrl+B`), Italic (`Ctrl+I`), Underline (`Ctrl+U`), Strikethrough (`Ctrl+Shift+S`), Text Highlight, Bullet/Numbered Lists, plus `UI Target`, `Command`, and `Key Press`.
 - **Interactive Data Tables Everywhere**: Add structured `.vlp-data-table` grids inside individual **Steps**, **Chapters**, or **Overviews** (with optional titles, header rows, `+Row/+Col`), plus automatic table extraction when consolidating legacy Annex C XML chapters.
 - **Multi-System VM Credentials Everywhere**: Add one or multiple Target VM credential blocks (`Target System`, `Username`, `Password`, `Role/IP`) on **Overviews**, **Step Page Headers**, and **inside individual Steps**.
@@ -51,19 +54,19 @@ flowchart LR
 
 ## Interface Navigation Demo (Step-by-Step)
 
-### 1. Top Action Bar
+### 1. Top Action Bar & Responsive Navigation
 
 | Control | What It Does |
 | --- | --- |
 | **Saved (Browser & Disk)** badge | Confirms dual auto-save status (user-scoped `IndexedDB` + `/data/users/<id>/sessions/autosave.json`). |
 | **Undo** / **Redo** | Full edit history (`Ctrl+Z`, `Ctrl+Y` / `Ctrl+Shift+Z`) covering typing bursts, toolbar formatting, tables, credentials, steps, themes, and structural changes. |
-| **Templates & Button Guide** | Opens the 3-tab modal (**Pre-Made Templates**, **What Every Button Does**, and **Reference Manuals**). Shows the **Button Demo Guide** automatically on startup unless **Do not show this guide automatically on startup** is checked. |
-| **Load Annex B** / **Load Annex C** | Loads the bundled reference manuals (`dsac.annexb.lab01-en` end-goal example and `dsac.annexc.lab01-en` multi-chapter XML example). |
-| **Sessions** | Manage private snapshots, publish/load **Shared Team Manuals**, or download/restore `.json` backups. |
+| **Color Theme Swatches** dropdown | Custom multi-dot swatch picker in the top bar for all 8 curated Light/Dark palettes (`Crimson & Slate`, `Cobalt & Electric Sky`, etc.). |
+| **Dark / Light** UI toggle | Dark-first toggle switching both the Studio UI and VLP Live Preview between **Dark** (default) and high-contrast **Light** mode. |
+| **Templates & Button Guide** | Opens the 3-tab modal (**Pre-Made Templates**, **What Every Button Does**, and **Reference Manuals** with **Load Annex B** / **Load Annex C**). Shows the **Button Demo Guide** automatically on startup unless **Do not show this guide automatically on startup** is checked. |
 | **Import XML / ZIP** | Imports an existing VLP `content.xml` or `.zip` manual package (including `./images/*`). |
-| **Export XML** / **Export VLP ZIP** | Untouched live tools downloading `content.xml` or a complete `<manual-name>-en.zip`. |
-| **Export File Dropdown** | Exports **Full Manual** or **Current Page** as `.pdf`, `.html`, `.mdx`, `.rtf`, or **Print / Save PDF...**. |
-| **Account / Admin Pill** | Opens the Open WebUI-style Settings & Admin panel (`Account`, `Users`, `Groups`, `Authentication`, `Security Audit`). |
+| **Export ▾** submenu | Unified dropdown containing **Scope** (`Full Manual` / `Current Page`), **Export VLP `content.xml`**, **Export VLP Package (`.zip`)**, and student exports (`.pdf`, `.html`, `.mdx`, `.rtf`, **Print / Save PDF...**). |
+| **Account / Admin Pill** | Opens the Open WebUI-style Settings & Admin panel (`Account`, **`Sessions`** for private snapshots / Shared Team Manuals / `.json` backups, `Data Controls`, `Users`, `Groups`, `Authentication`, `Security Audit`). |
+| **Mobile / Zoom Pane Tabs** (`Structure \| Editor \| Preview`) | Appears automatically on narrow screens (`<= 1024px`) or high browser zoom so each pane remains full-width and usable without horizontal clipping. |
 
 ---
 
@@ -115,7 +118,7 @@ Context: Opening the Local Group Policy Editor for baseline firewall setup.
 Click **Replace Steps** or **Append Steps**—exact step wording is preserved, and `Context:` lines automatically populate the indented shaded `.step-context` block.
 
 #### Consolidate Legacy XML Chapters (Annex C Demo)
-1. Click **Load Annex C** in the top bar.
+1. Open **Templates & Button Guide** → **Reference Manuals** and click **Load Annex C**.
 2. Select any Level 1 Chapter node (such as `Configuring DCUI (Direct Console User Interface)`).
 3. Click **Consolidate Chapter Steps into VLP Table** in the amber banner.
 4. All child micro-steps are cleaned of Word/Office inline styles and zero-width characters, screenshots are mapped 1-to-1 inline inside step cells, and the chapter is standardized into a single `.lab-wrapper` table page.
@@ -129,11 +132,12 @@ Click **Replace Steps** or **Append Steps**—exact step wording is preserved, a
 ### 4. Right Pane — Live VLP Preview & Export
 
 1. Toggle **Live VLP Preview** (updates in-place without jumping back to the top while typing), **HTML (`</>` Source)**, or **Node XML** tabs.
-2. Switch **Light Mode** ↔ **VLP Dark Mode** to verify contrast against VMware Clarity dark selectors.
-3. Choose how images appear in copied HTML via **Copied HTML Images**:
+2. Switch **Light Mode** ↔ **VLP Dark Mode** to verify contrast against VMware Clarity dark selectors and isolated `.theme-light` Light Mode rules.
+3. Use the **VLP Ratio** preview selector (`Auto (100%)`, `VLP 1/3 Taskbar (360px)`, `VLP 1/2 Split (520px)`, `Desktop (900px)`) to verify dynamic image, table (`table-layout: fixed`), and code-block scaling inside VLP's right-hand Split-Screen manual pane.
+4. Choose how images appear in copied HTML via **Copied HTML Images**:
    - `./images/<uuid>.png (VLP Standard)` — for VLP XML/ZIP manual packages
    - `Inline Base64 Data URI (Standalone)` — for standalone copy/paste directly into VLP CKEditor
-4. Click **Copy VLP HTML** to copy the self-contained `<style>...</style>` + HTML container snippet.
+5. Click **Copy VLP HTML** to copy the self-contained `<style>...</style>` + HTML container snippet.
 
 ---
 
@@ -170,20 +174,20 @@ docker compose up -d
 
 Open **`http://localhost:8080`** in your browser. On first launch, create the Administrator account (or configure `ADMIN_EMAIL` / `ADMIN_PASSWORD`). User accounts, encrypted PII, sessions, and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`beta 0.3.0` Tarball)
+### Option 2: Air-Gapped Transfer (`beta 0.3.1` Tarball)
 
-Download `vlp-manual-generator-0.3.0-beta.tar` from the [**beta 0.3.0** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.0-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+Download `vlp-manual-generator-0.3.1-beta.tar` from the [**beta 0.3.1** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.1-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
 
 ```bash
-docker load -i vlp-manual-generator-0.3.0-beta.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.0-beta
+docker load -i vlp-manual-generator-0.3.1-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.1-beta
 ```
 
 To build and export the tarball yourself from source:
 
 ```bash
-docker build -t vlp-manual-generator:0.3.0-beta .
-docker save -o vlp-manual-generator-0.3.0-beta.tar vlp-manual-generator:0.3.0-beta
+docker build -t vlp-manual-generator:0.3.1-beta .
+docker save -o vlp-manual-generator-0.3.1-beta.tar vlp-manual-generator:0.3.1-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests

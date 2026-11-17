@@ -4,8 +4,17 @@
   const VLP = window.VLPFormatter;
 
   const HIDE_GUIDE_KEY = 'vlp_hide_guide_on_startup';
+  const UI_THEME_KEY = 'vlp_ui_theme';
   const MAX_UNDO_HISTORY = 40;
   const TYPING_BURST_MS = 900;
+
+  function getInitialUiTheme() {
+    try {
+      return localStorage.getItem(UI_THEME_KEY) === 'light' ? 'light' : 'dark';
+    } catch (_ignore) {
+      return 'dark';
+    }
+  }
 
   // =========================================================================
   // Application State
@@ -16,9 +25,12 @@
     activeStepIndex: 0,
     imageMap: {},
     sampleSource: '',
-    previewTheme: 'light', // 'light' | 'dark'
-    outTab: 'preview',     // 'preview' | 'html' | 'xml'
-    copyImageMode: 'vlp',  // 'vlp' | 'base64'
+    uiTheme: getInitialUiTheme(), // 'dark' | 'light'
+    previewTheme: 'dark',         // 'light' | 'dark'
+    previewRatio: 'auto',         // 'auto' | '360' | '520' | '900'
+    mobilePane: 'editor',         // 'tree' | 'editor' | 'preview'
+    outTab: 'preview',            // 'preview' | 'html' | 'xml'
+    copyImageMode: 'vlp',         // 'vlp' | 'base64'
     undoStack: [],
     redoStack: [],
     hasPendingSave: false,
@@ -135,6 +147,7 @@
       imageMap: state.imageMap,
       sampleSource: state.sampleSource,
       previewTheme: state.previewTheme,
+      previewRatio: state.previewRatio,
       copyImageMode: state.copyImageMode,
       updatedAt: new Date().toISOString()
     };
@@ -776,17 +789,157 @@
   }
 
   // =========================================================================
-  // Color Themes, Shared Credentials & Table Grid Builders
+  // UI Theme, Responsive Panes, Popovers, Color Themes & Builders
   // =========================================================================
+  function applyUiTheme(theme, opts) {
+    const next = theme === 'light' ? 'light' : 'dark';
+    state.uiTheme = next;
+    document.documentElement.dataset.uiTheme = next;
+    try {
+      localStorage.setItem(UI_THEME_KEY, next);
+    } catch (_ignore) {}
+
+    const btn = $('btnUiThemeToggle');
+    const iconEl = $('uiThemeIcon');
+    const labelEl = $('uiThemeLabel');
+    if (btn) btn.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
+    if (iconEl) iconEl.textContent = next === 'dark' ? '\u263E' : '\u2600';
+    if (labelEl) labelEl.textContent = next === 'dark' ? 'Dark' : 'Light';
+
+    if (opts && opts.syncPreview) {
+      state.previewTheme = next;
+      if (state.manual) {
+        renderOutputTabs();
+        updateOutputs();
+      }
+    }
+  }
+
+  function setMobilePane(paneName) {
+    const next = paneName || 'editor';
+    state.mobilePane = next;
+    document.querySelectorAll('#mobilePaneTabs [data-mobile-pane]').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.mobilePane === next);
+    });
+    document.querySelectorAll('.workspace > .pane[data-pane]').forEach(function (pane) {
+      pane.classList.toggle('mobile-pane-active', pane.dataset.pane === next);
+    });
+  }
+
+  function applyPreviewRatio() {
+    const frame = $('vlpPreviewFrame');
+    const pane = $('previewPane');
+    const sel = $('previewRatioSelect');
+    const ratio = state.previewRatio || 'auto';
+    if (sel) sel.value = ratio;
+    if (!frame || !pane) return;
+    if (ratio === 'auto') {
+      pane.classList.remove('ratio-constrained');
+      frame.style.width = '100%';
+    } else {
+      pane.classList.add('ratio-constrained');
+      frame.style.width = ratio + 'px';
+    }
+  }
+
+  function closeAllPopovers() {
+    const pairs = [
+      ['btnColorTheme', 'colorThemeMenu'],
+      ['btnExportMenu', 'exportMenuPopover']
+    ];
+    pairs.forEach(function (pair) {
+      const btn = $(pair[0]);
+      const menu = $(pair[1]);
+      if (menu) menu.classList.add('hidden');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function positionFixedPopover(triggerEl, popoverEl, alignRight) {
+    if (!triggerEl || !popoverEl) return;
+    const rect = triggerEl.getBoundingClientRect();
+    popoverEl.style.visibility = 'hidden';
+    popoverEl.classList.remove('hidden');
+    const popRect = popoverEl.getBoundingClientRect();
+    const margin = 8;
+    let left = alignRight ? (rect.right - popRect.width) : rect.left;
+    if (left + popRect.width > window.innerWidth - margin) {
+      left = window.innerWidth - popRect.width - margin;
+    }
+    if (left < margin) left = margin;
+
+    let top = rect.bottom + 6;
+    if (top + popRect.height > window.innerHeight - margin && rect.top - popRect.height - 6 >= margin) {
+      top = rect.top - popRect.height - 6;
+    }
+    if (top < margin) top = margin;
+
+    popoverEl.style.left = Math.round(left) + 'px';
+    popoverEl.style.top = Math.round(top) + 'px';
+    popoverEl.style.visibility = '';
+  }
+
+  function togglePopover(triggerEl, popoverEl, alignRight) {
+    if (!triggerEl || !popoverEl) return;
+    const wasHidden = popoverEl.classList.contains('hidden');
+    closeAllPopovers();
+    if (wasHidden) {
+      positionFixedPopover(triggerEl, popoverEl, alignRight);
+      triggerEl.setAttribute('aria-expanded', 'true');
+    }
+  }
+
   function populateColorThemeDropdown() {
-    const sel = $('colorThemeSelect');
-    if (!sel) return;
-    sel.innerHTML = '';
+    const menu = $('colorThemeMenu');
+    if (!menu) return;
+    menu.innerHTML = '';
+    const activeId = (state.manual && state.manual.colorTheme) || 'crimson-slate';
     VLP.getColorThemes().forEach(function (t) {
-      const opt = document.createElement('option');
-      opt.value = t.id;
-      opt.textContent = t.name;
-      sel.appendChild(opt);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'theme-option-btn' + (t.id === activeId ? ' active' : '');
+      btn.setAttribute('role', 'option');
+      btn.setAttribute('aria-selected', t.id === activeId ? 'true' : 'false');
+      btn.dataset.themeId = t.id;
+
+      const left = document.createElement('span');
+      left.className = 'theme-option-left';
+
+      const dots = document.createElement('span');
+      dots.className = 'theme-dots';
+      dots.setAttribute('aria-hidden', 'true');
+      [t.swatch, t.light.cardBorder, t.cmd.bg].forEach(function (clr) {
+        const d = document.createElement('span');
+        d.className = 'theme-dot-mini';
+        d.style.background = clr;
+        dots.appendChild(d);
+      });
+
+      const name = document.createElement('span');
+      name.className = 'theme-option-name';
+      name.textContent = t.name;
+
+      left.appendChild(dots);
+      left.appendChild(name);
+
+      const check = document.createElement('span');
+      check.className = 'theme-option-check';
+      check.textContent = '\u2713';
+
+      btn.appendChild(left);
+      btn.appendChild(check);
+
+      btn.addEventListener('click', function () {
+        closeAllPopovers();
+        if (state.manual && state.manual.colorTheme !== t.id) {
+          pushUndo();
+        }
+        applyColorTheme(t.id);
+        updateOutputs();
+        scheduleAutosave();
+      });
+
+      menu.appendChild(btn);
     });
   }
 
@@ -802,8 +955,17 @@
 
     const swatch = $('colorThemeSwatch');
     if (swatch) swatch.style.background = t.swatch;
-    const sel = $('colorThemeSelect');
-    if (sel) sel.value = t.id;
+    const label = $('colorThemeLabel');
+    if (label) label.textContent = t.name;
+
+    const menu = $('colorThemeMenu');
+    if (menu) {
+      menu.querySelectorAll('[data-theme-id]').forEach(function (btn) {
+        const isActive = btn.dataset.themeId === t.id;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+    }
   }
 
   function normalizeManualData(manual) {
@@ -1680,9 +1842,12 @@
     }
 
     if (!previewDocInitialized || !doc || !doc.head || !doc.body) {
+      const htmlThemeAttrs = isDark
+        ? ' class="clr-theme-dark theme-dark dark" data-theme="dark" clr-theme="dark"'
+        : ' class="theme-light clr-theme-light" data-theme="light" clr-theme="light"';
       const frameDoc =
         '<!DOCTYPE html>\n' +
-        '<html lang="en"' + (isDark ? ' class="clr-theme-dark theme-dark dark" data-theme="dark" clr-theme="dark"' : '') + '>\n' +
+        '<html lang="en"' + htmlThemeAttrs + '>\n' +
         '<head>\n' +
         '  <meta charset="UTF-8" />\n' +
         '  <base href="' + window.location.origin + '/" />\n' +
@@ -1690,7 +1855,7 @@
         hostCss +
         '  </style>\n' +
         '</head>\n' +
-        '<body' + (isDark ? ' class="theme-dark"' : '') + '>\n' +
+        '<body class="' + (isDark ? 'theme-dark' : 'theme-light') + '">\n' +
         previewHtmlSnippet + '\n' +
         '</body>\n' +
         '</html>';
@@ -1713,10 +1878,10 @@
         htmlEl.setAttribute('clr-theme', 'dark');
         doc.body.className = 'theme-dark';
       } else {
-        htmlEl.className = '';
-        htmlEl.removeAttribute('data-theme');
-        htmlEl.removeAttribute('clr-theme');
-        doc.body.className = '';
+        htmlEl.className = 'theme-light clr-theme-light';
+        htmlEl.setAttribute('data-theme', 'light');
+        htmlEl.setAttribute('clr-theme', 'light');
+        doc.body.className = 'theme-light';
       }
 
       let baseStyle = doc.getElementById('vlp-host-style');
@@ -1778,10 +1943,14 @@
     $('htmlOutputPane').classList.toggle('hidden', state.outTab !== 'html');
     $('xmlOutputPane').classList.toggle('hidden', state.outTab !== 'xml');
     $('previewThemeToggleWrap').classList.toggle('hidden', state.outTab !== 'preview');
+    if ($('previewRatioSelect')) {
+      $('previewRatioSelect').classList.toggle('hidden', state.outTab !== 'preview');
+    }
 
     $('themeBtnLight').classList.toggle('active', state.previewTheme === 'light');
     $('themeBtnDark').classList.toggle('active', state.previewTheme === 'dark');
     $('copyImageModeSelect').value = state.copyImageMode;
+    applyPreviewRatio();
   }
 
   function renderAll() {
@@ -2150,11 +2319,11 @@
         card.innerHTML =
           '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
           '  <div><strong>' + VLP.escapeHtml(item.label) + '</strong> <span class="badge">' + VLP.escapeHtml(item.category.toUpperCase()) + '</span></div>' +
-          '  <code style="font-size:11px; color:#7dd3fc;">' + VLP.escapeHtml(item.tagPreview) + '</code>' +
+          '  <code style="font-size:11px; color:var(--app-blue);">' + VLP.escapeHtml(item.tagPreview) + '</code>' +
           '</div>' +
           '<p style="margin:6px 0 4px;">' + VLP.escapeHtml(item.summary) + '</p>' +
           '<div class="muted-hint"><strong>When to use:</strong> ' + VLP.escapeHtml(item.whenToUse) + ' &bull; <strong>Shortcut:</strong> <code>' + VLP.escapeHtml(item.shortcut) + '</code></div>' +
-          '<div class="guide-preview-box' + (isDark ? ' dark-sim clr-theme-dark theme-dark' : '') + '">' +
+          '<div class="guide-preview-box' + (isDark ? ' dark-sim clr-theme-dark theme-dark' : ' theme-light clr-theme-light') + '"' + (isDark ? ' data-theme="dark" clr-theme="dark"' : ' data-theme="light" clr-theme="light"') + '>' +
           '  <div class="lab-wrapper" style="max-width:100%;">' + activeStyleBlock + item.demoHtml + '</div>' +
           '</div>';
 
@@ -2305,12 +2474,11 @@
     }
   }
 
-  async function exportDocument() {
+  async function exportDocument(formatOverride, scopeOverride) {
     if (!state.manual) return;
-    const formatEl = $('exportFormatSelect');
     const scopeEl = $('exportScopeSelect');
-    const format = formatEl ? formatEl.value : 'pdf';
-    const scope = scopeEl ? scopeEl.value : 'full';
+    const format = formatOverride || 'pdf';
+    const scope = scopeOverride || (scopeEl ? scopeEl.value : 'full');
 
     if (format === 'print') {
       const htmlStr = VLP.generateStandaloneManualHtml(state.manual, {
@@ -2392,7 +2560,7 @@
       if (r.ok && d.ok && d.session && d.session.state) {
         pushUndo();
         restoreSerializedState(d.session.state);
-        closeModal('sessionsModal');
+        closeModal('accountAdminModal');
         scheduleAutosave();
         showToast('Restored snapshot: ' + s.name);
       }
@@ -2433,6 +2601,7 @@
 
   async function refreshSnapshotsList() {
     const listEl = $('snapshotsList');
+    if (!listEl) return;
     listEl.innerHTML = 'Loading saved snapshots...';
     try {
       const res = await fetch('/api/sessions');
@@ -2477,6 +2646,7 @@
     state.imageMap = Object.assign({}, state.imageMap, saved.imageMap || {});
     state.sampleSource = saved.sampleSource || '';
     if (saved.previewTheme) state.previewTheme = saved.previewTheme;
+    if (saved.previewRatio) state.previewRatio = saved.previewRatio;
     if (saved.copyImageMode) state.copyImageMode = saved.copyImageMode;
     applyColorTheme(state.manual.colorTheme);
     updateUndoRedoButtons();
@@ -2490,14 +2660,62 @@
   function bindEvents() {
     populateColorThemeDropdown();
 
-    $('colorThemeSelect').addEventListener('change', function () {
-      const nextTheme = $('colorThemeSelect').value;
-      if (state.manual && state.manual.colorTheme !== nextTheme) {
-        pushUndo();
-      }
-      applyColorTheme(nextTheme);
-      updateOutputs();
+    $('btnColorTheme').addEventListener('click', function (e) {
+      e.stopPropagation();
+      togglePopover($('btnColorTheme'), $('colorThemeMenu'), false);
+    });
+
+    $('btnUiThemeToggle').addEventListener('click', function () {
+      const next = state.uiTheme === 'dark' ? 'light' : 'dark';
+      applyUiTheme(next, { syncPreview: true });
       scheduleAutosave();
+    });
+
+    $('btnExportMenu').addEventListener('click', function (e) {
+      e.stopPropagation();
+      togglePopover($('btnExportMenu'), $('exportMenuPopover'), true);
+    });
+
+    $('exportMenuPopover').addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+
+    $('btnExportXml').addEventListener('click', function () {
+      closeAllPopovers();
+      exportContentXml();
+    });
+
+    $('btnExportZip').addEventListener('click', function () {
+      closeAllPopovers();
+      exportVlpZip();
+    });
+
+    $('exportMenuPopover').querySelectorAll('[data-export-doc]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const docFormat = btn.dataset.exportDoc;
+        closeAllPopovers();
+        exportDocument(docFormat);
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('#colorThemeDropdown') && !e.target.closest('#exportMenuWrap')) {
+        closeAllPopovers();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closeAllPopovers();
+      }
+    });
+
+    window.addEventListener('resize', closeAllPopovers);
+
+    document.querySelectorAll('#mobilePaneTabs [data-mobile-pane]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setMobilePane(btn.dataset.mobilePane);
+      });
     });
 
     // Topbar buttons & startup guide preference
@@ -2553,22 +2771,11 @@
         }
       }
     });
-    $('btnLoadAnnexB').addEventListener('click', function () { loadSampleManual('annexb'); });
-    $('btnLoadAnnexC').addEventListener('click', function () { loadSampleManual('annexc'); });
-    $('btnOpenSessions').addEventListener('click', function () {
-      $('sessionsModal').classList.add('open');
-      $('snapshotNameInput').value = (state.manual && state.manual.name ? state.manual.name : 'Manual') + ' Snapshot';
-      refreshSnapshotsList();
-      refreshSharedSnapshotsList();
-    });
     $('importPackageInput').addEventListener('change', function (e) {
       const file = e.target.files[0];
       e.target.value = '';
       handlePackageImport(file);
     });
-    $('btnExportXml').addEventListener('click', exportContentXml);
-    $('btnExportZip').addEventListener('click', exportVlpZip);
-    $('btnExportDocument').addEventListener('click', exportDocument);
     $('btnUserAccount').addEventListener('click', function () { openAccountAdminModal('account'); });
 
     // Tree controls
@@ -2992,6 +3199,14 @@
       });
     });
 
+    if ($('previewRatioSelect')) {
+      $('previewRatioSelect').addEventListener('change', function () {
+        state.previewRatio = $('previewRatioSelect').value || 'auto';
+        applyPreviewRatio();
+        scheduleAutosave();
+      });
+    }
+
     $('copyImageModeSelect').addEventListener('change', function () {
       state.copyImageMode = $('copyImageModeSelect').value;
       updateOutputs();
@@ -3030,74 +3245,6 @@
       bd.addEventListener('click', function (e) {
         if (e.target === bd) bd.classList.remove('open');
       });
-    });
-
-    // Sessions Modal actions (Private & Shared Team Manuals)
-    $('btnRefreshSnapshots').addEventListener('click', refreshSnapshotsList);
-    if ($('btnRefreshShared')) {
-      $('btnRefreshShared').addEventListener('click', refreshSharedSnapshotsList);
-    }
-    if ($('btnShareCurrent')) {
-      $('btnShareCurrent').addEventListener('click', async function () {
-        const name = $('snapshotNameInput').value.trim() || (state.manual && state.manual.name) || 'Shared Manual';
-        const payload = buildSerializableState();
-        try {
-          const res = await fetch('/api/sessions-shared', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, state: payload })
-          });
-          const data = await res.json();
-          if (!res.ok || !data.ok) throw new Error(data.error || 'Share failed');
-          refreshSharedSnapshotsList();
-          showToast('Shared manual to Team Manuals: ' + name);
-        } catch (err) {
-          showToast('Share failed: ' + err.message, true);
-        }
-      });
-    }
-    $('btnSaveSnapshot').addEventListener('click', async function () {
-      const name = $('snapshotNameInput').value.trim() || 'Manual Snapshot';
-      const payload = buildSerializableState();
-      try {
-        const res = await fetch('/api/sessions/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name, state: payload })
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
-        refreshSnapshotsList();
-        showToast('Saved snapshot: ' + name);
-      } catch (err) {
-        showToast('Could not save server snapshot: ' + err.message, true);
-      }
-    });
-
-    $('btnExportJsonBackup').addEventListener('click', function () {
-      const payload = buildSerializableState();
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const safeName = (state.manual.name || 'vlp-project').replace(/[^a-zA-Z0-9._-]/g, '_');
-      downloadBlob(blob, safeName + '-backup.json');
-      showToast('Downloaded JSON project backup');
-    });
-
-    $('importJsonBackupInput').addEventListener('change', async function (e) {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file) return;
-      try {
-        const parsed = JSON.parse(await file.text());
-        pushUndo();
-        if (!restoreSerializedState(parsed)) {
-          throw new Error('Invalid project backup JSON');
-        }
-        closeModal('sessionsModal');
-        scheduleAutosave();
-        showToast('Restored project from JSON backup');
-      } catch (err) {
-        showToast('JSON restore failed: ' + err.message, true);
-      }
     });
 
     // Auth Gate & Open WebUI Account/Admin Events
@@ -3360,6 +3507,7 @@
 
     const titleMap = {
       account: 'Account',
+      sessions: 'Sessions & Snapshots',
       data: 'Data Controls',
       about: 'About',
       'admin-users': 'Users',
@@ -3374,6 +3522,8 @@
 
     if (tabId === 'account') {
       await renderOwuiAccountTab(body);
+    } else if (tabId === 'sessions') {
+      renderOwuiSessionsTab(body);
     } else if (tabId === 'data') {
       renderOwuiDataTab(body);
     } else if (tabId === 'about') {
@@ -3492,12 +3642,13 @@
         if (!res.ok || !d.ok) return;
         mfaHost.innerHTML = '';
         const box = document.createElement('div');
-        box.style.background = '#1f1f23';
+        box.style.background = 'var(--app-surface-2)';
+        box.style.border = '1px solid var(--app-border)';
         box.style.padding = '10px 12px';
         box.style.borderRadius = '8px';
         box.innerHTML =
           '<div class="owui-row-title">Authenticator Setup Key</div>' +
-          '<div class="owui-row-desc" style="margin-bottom:6px;">Add this Base32 key to any standard TOTP app: <code style="color:#38bdf8;">' + VLP.escapeHtml(d.secret) + '</code></div>';
+          '<div class="owui-row-desc" style="margin-bottom:6px;">Add this Base32 key to any standard TOTP app: <code style="color:var(--app-blue);">' + VLP.escapeHtml(d.secret) + '</code></div>';
         const codeInput = document.createElement('input');
         codeInput.className = 'owui-input textarea-mono';
         codeInput.placeholder = 'Enter 6-digit verification code';
@@ -3578,6 +3729,114 @@
     }
   }
 
+  function renderOwuiSessionsTab(body) {
+    const defaultSnapName = (state.manual && state.manual.name ? state.manual.name : 'Manual') + ' Snapshot';
+
+    body.innerHTML =
+      '<div class="card">' +
+      '  <div class="card-header"><span class="card-title">Save Named Snapshot (Server /data + Browser)</span></div>' +
+      '  <div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+      '    <input id="snapshotNameInput" class="input" type="text" style="flex:1; min-width:200px;" placeholder="e.g. Annex B Lab 01 - Checkpoint" />' +
+      '    <button type="button" id="btnSaveSnapshot" class="btn btn-sm btn-primary">Save Snapshot</button>' +
+      '  </div>' +
+      '</div>' +
+      '<div class="card">' +
+      '  <div class="card-header"><span class="card-title">Portable Offline Project Backup (.json)</span></div>' +
+      '  <div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+      '    <button type="button" id="btnExportJsonBackup" class="btn btn-sm">Download .json Backup</button>' +
+      '    <label class="btn btn-sm" for="importJsonBackupInput">Restore .json Backup' +
+      '      <input id="importJsonBackupInput" type="file" accept=".json" class="hidden" />' +
+      '    </label>' +
+      '  </div>' +
+      '</div>' +
+      '<div class="card">' +
+      '  <div class="card-header">' +
+      '    <span class="card-title">Your Private Snapshots</span>' +
+      '    <button type="button" id="btnRefreshSnapshots" class="btn btn-xs">Refresh</button>' +
+      '  </div>' +
+      '  <div id="snapshotsList" class="muted-hint">Loading...</div>' +
+      '</div>' +
+      '<div class="card">' +
+      '  <div class="card-header">' +
+      '    <span class="card-title">Shared Team Manuals (All Active Users)</span>' +
+      '    <div style="display:flex; gap:6px;">' +
+      '      <button type="button" id="btnShareCurrent" class="btn btn-xs btn-blue">Share Current Manual</button>' +
+      '      <button type="button" id="btnRefreshShared" class="btn btn-xs">Refresh</button>' +
+      '    </div>' +
+      '  </div>' +
+      '  <div id="sharedSnapshotsList" class="muted-hint">Loading...</div>' +
+      '</div>';
+
+    $('snapshotNameInput').value = defaultSnapName;
+    $('btnRefreshSnapshots').addEventListener('click', refreshSnapshotsList);
+    $('btnRefreshShared').addEventListener('click', refreshSharedSnapshotsList);
+
+    $('btnShareCurrent').addEventListener('click', async function () {
+      const name = $('snapshotNameInput').value.trim() || (state.manual && state.manual.name) || 'Shared Manual';
+      const payload = buildSerializableState();
+      try {
+        const res = await fetch('/api/sessions-shared', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, state: payload })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Share failed');
+        refreshSharedSnapshotsList();
+        showToast('Shared manual to Team Manuals: ' + name);
+      } catch (err) {
+        showToast('Share failed: ' + err.message, true);
+      }
+    });
+
+    $('btnSaveSnapshot').addEventListener('click', async function () {
+      const name = $('snapshotNameInput').value.trim() || 'Manual Snapshot';
+      const payload = buildSerializableState();
+      try {
+        const res = await fetch('/api/sessions/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, state: payload })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+        refreshSnapshotsList();
+        showToast('Saved snapshot: ' + name);
+      } catch (err) {
+        showToast('Could not save server snapshot: ' + err.message, true);
+      }
+    });
+
+    $('btnExportJsonBackup').addEventListener('click', function () {
+      const payload = buildSerializableState();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const safeName = ((state.manual && state.manual.name) || 'vlp-project').replace(/[^a-zA-Z0-9._-]/g, '_');
+      downloadBlob(blob, safeName + '-backup.json');
+      showToast('Downloaded JSON project backup');
+    });
+
+    $('importJsonBackupInput').addEventListener('change', async function (e) {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        pushUndo();
+        if (!restoreSerializedState(parsed)) {
+          throw new Error('Invalid project backup JSON');
+        }
+        closeModal('accountAdminModal');
+        scheduleAutosave();
+        showToast('Restored project from JSON backup');
+      } catch (err) {
+        showToast('JSON restore failed: ' + err.message, true);
+      }
+    });
+
+    refreshSnapshotsList();
+    refreshSharedSnapshotsList();
+  }
+
   function renderOwuiDataTab(body) {
     const sec = document.createElement('div');
     sec.className = 'owui-section-title';
@@ -3600,8 +3859,7 @@
     bSess.className = 'btn btn-sm btn-blue';
     bSess.textContent = 'Manage Private & Shared Snapshots';
     bSess.addEventListener('click', function () {
-      closeModal('accountAdminModal');
-      $('btnOpenSessions').click();
+      renderOwuiTab('sessions');
     });
 
     const bPdf = document.createElement('button');
@@ -3609,9 +3867,8 @@
     bPdf.className = 'btn btn-sm btn-primary';
     bPdf.textContent = 'Export Student PDF (Full Manual)';
     bPdf.addEventListener('click', function () {
-      $('exportScopeSelect').value = 'full';
-      $('exportFormatSelect').value = 'pdf';
-      exportDocument();
+      if ($('exportScopeSelect')) $('exportScopeSelect').value = 'full';
+      exportDocument('pdf', 'full');
     });
 
     const bZip = document.createElement('button');
@@ -3628,10 +3885,10 @@
 
   function renderOwuiAboutTab(body) {
     body.innerHTML =
-      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.0-beta)</div>' +
+      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.1-beta)</div>' +
       '<p class="owui-row-desc" style="font-size:12.5px; line-height:1.55;">100% air-gapped, deterministic authoring studio supporting VLP HTML5/XML packages, Student Exports (.pdf, .html, .mdx, .rtf), and multi-user local accounts.</p>' +
       '<div class="owui-section-title">PII &amp; Credential Security Architecture</div>' +
-      '<ul style="font-size:12.5px; color:#d4d4d8; line-height:1.65; padding-left:18px;">' +
+      '<ul style="font-size:12.5px; color:var(--app-text); line-height:1.65; padding-left:18px;">' +
       '<li><strong>Password Storage:</strong> Salted <code>scrypt</code> (32-byte random salt, N=16384, r=8, p=1) verified with constant-time <code>timingSafeEqual</code>.</li>' +
       '<li><strong>PII Encryption at Rest:</strong> Names, emails, usernames, OAuth secrets, and LDAP bind credentials encrypted on disk via <strong>AES-256-GCM</strong> with per-record random IV &amp; authentication tag.</li>' +
       '<li><strong>Blind Lookup Indexes:</strong> Email &amp; username uniqueness checked using keyed <strong>HMAC-SHA256</strong> blind indexes without exposing plaintext PII.</li>' +
@@ -4292,6 +4549,8 @@
   // Initialization
   // =========================================================================
   async function init() {
+    applyUiTheme(state.uiTheme, { syncPreview: false });
+    setMobilePane(state.mobilePane);
     bindEvents();
     await checkAuthAndLoadWorkspace();
   }

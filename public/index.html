@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-ui-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,7 +11,7 @@
     <div class="topbar-left">
       <div class="brand-mark" aria-hidden="true">VLP</div>
       <span class="brand-title">VLP Manual HTML Formatter</span>
-      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped • v0.3.0-beta</span>
+      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped &bull; v0.3.1-beta</span>
       <span id="saveStatusBadge" class="badge status-ok" title="Dual Auto-Save (Browser IndexedDB + Server Disk)">
         <span class="status-dot"></span>
         <span id="saveStatusText">Ready</span>
@@ -19,37 +19,56 @@
     </div>
 
     <div class="topbar-actions">
-      <div class="theme-picker-wrap" title="Color Theme Palette (Figma Color Combinations)">
-        <span id="colorThemeSwatch" class="theme-swatch-dot" aria-hidden="true"></span>
-        <select id="colorThemeSelect" class="theme-select" aria-label="Color Theme Palette"></select>
+      <div id="colorThemeDropdown" class="theme-dropdown">
+        <button type="button" id="btnColorTheme" class="btn btn-sm theme-dropdown-btn" aria-haspopup="listbox" aria-expanded="false" title="Color Theme Palette">
+          <span id="colorThemeSwatch" class="theme-swatch-dot" aria-hidden="true"></span>
+          <span id="colorThemeLabel">Crimson &amp; Slate</span>
+          <span class="dropdown-caret" aria-hidden="true">&#9662;</span>
+        </button>
+        <div id="colorThemeMenu" class="menu-popover theme-menu-popover hidden" role="listbox" aria-label="Color Theme Palette"></div>
       </div>
+
+      <button type="button" id="btnUiThemeToggle" class="btn btn-sm" aria-pressed="true" title="Toggle App &amp; Preview Light / Dark Mode">
+        <span id="uiThemeIcon" aria-hidden="true">&#9790;</span>
+        <span id="uiThemeLabel">Dark</span>
+      </button>
+
       <button id="btnUndo" class="btn btn-sm" title="Undo last edit (Ctrl+Z)" disabled>Undo</button>
       <button id="btnRedo" class="btn btn-sm" title="Redo last undone edit (Ctrl+Y)" disabled>Redo</button>
       <button id="btnOpenTemplates" class="btn btn-sm btn-blue">Templates &amp; Button Guide</button>
-      <button id="btnLoadAnnexB" class="btn btn-sm" title="Load dsac.annexb.lab01-en reference manual">Load Annex B</button>
-      <button id="btnLoadAnnexC" class="btn btn-sm" title="Load dsac.annexc.lab01-en multi-chapter XML example">Load Annex C</button>
-      <button id="btnOpenSessions" class="btn btn-sm">Sessions</button>
+
       <label class="btn btn-sm" for="importPackageInput" title="Import VLP .zip package or content.xml">
         Import XML / ZIP
         <input id="importPackageInput" type="file" accept=".xml,.zip" class="hidden" />
       </label>
-      <button id="btnExportXml" class="btn btn-sm" title="Download VLP content.xml">Export XML</button>
-      <button id="btnExportZip" class="btn btn-sm btn-primary" title="Download full VLP package (.zip with content.xml + images/)">Export VLP ZIP</button>
-      <div class="export-dropdown-group" title="Export student-ready documents (.pdf, .html, .mdx, .rtf)">
-        <select id="exportScopeSelect" class="export-select" aria-label="Export Scope">
-          <option value="full">Full Manual</option>
-          <option value="current">Current Page</option>
-        </select>
-        <select id="exportFormatSelect" class="export-select" aria-label="Export File Type">
-          <option value="pdf">.pdf (Student PDF)</option>
-          <option value="html">.html (Standalone Web)</option>
-          <option value="mdx">.mdx (MDX Markdown)</option>
-          <option value="rtf">.rtf (Rich Text / Word)</option>
-          <option value="print">Print / Save PDF...</option>
-        </select>
-        <button id="btnExportDocument" class="btn btn-xs btn-blue">Export File</button>
+
+      <div id="exportMenuWrap" class="export-menu-wrap">
+        <button type="button" id="btnExportMenu" class="btn btn-sm btn-primary" aria-haspopup="true" aria-expanded="false" title="Export VLP XML, ZIP, or Student Documents">
+          Export <span class="dropdown-caret" aria-hidden="true">&#9662;</span>
+        </button>
+        <div id="exportMenuPopover" class="menu-popover export-menu-popover hidden" role="menu" aria-label="Export Options">
+          <div class="menu-section-row">
+            <label class="field-label" for="exportScopeSelect" style="margin:0;">Scope</label>
+            <select id="exportScopeSelect" class="select export-scope-select" aria-label="Export Scope">
+              <option value="full">Full Manual</option>
+              <option value="current">Current Page</option>
+            </select>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="menu-section-title">VLP Native Package</div>
+          <button type="button" id="btnExportXml" class="menu-item-btn" role="menuitem">Export VLP content.xml</button>
+          <button type="button" id="btnExportZip" class="menu-item-btn menu-item-accent" role="menuitem">Export VLP Package (.zip)</button>
+          <div class="menu-divider"></div>
+          <div class="menu-section-title">Student Documents</div>
+          <button type="button" class="menu-item-btn" data-export-doc="pdf" role="menuitem">.pdf (Student PDF)</button>
+          <button type="button" class="menu-item-btn" data-export-doc="html" role="menuitem">.html (Standalone Web)</button>
+          <button type="button" class="menu-item-btn" data-export-doc="mdx" role="menuitem">.mdx (MDX Markdown)</button>
+          <button type="button" class="menu-item-btn" data-export-doc="rtf" role="menuitem">.rtf (Rich Text / Word)</button>
+          <button type="button" class="menu-item-btn" data-export-doc="print" role="menuitem">Print / Save PDF...</button>
+        </div>
       </div>
-      <button id="btnUserAccount" class="user-pill-btn hidden" title="Account &amp; Admin Settings">
+
+      <button id="btnUserAccount" class="user-pill-btn hidden" title="Account, Sessions &amp; Admin Settings">
         <span id="userAvatarDot" class="user-avatar-dot">A</span>
         <span id="userDisplayLabel">Account</span>
         <span id="userRoleChip" class="role-chip">User</span>
@@ -57,9 +76,15 @@
     </div>
   </header>
 
+  <nav id="mobilePaneTabs" class="mobile-pane-tabs" aria-label="Workspace Pane Switcher">
+    <button type="button" class="mobile-pane-tab" data-mobile-pane="tree">Structure</button>
+    <button type="button" class="mobile-pane-tab active" data-mobile-pane="editor">Editor</button>
+    <button type="button" class="mobile-pane-tab" data-mobile-pane="preview">Preview</button>
+  </nav>
+
   <main class="workspace">
     <!-- Left Pane: Manual Hierarchy Tree -->
-    <aside class="pane" aria-label="Manual Tree">
+    <aside class="pane" data-pane="tree" aria-label="Manual Tree">
       <div class="pane-header">
         <span class="pane-title">Manual Structure</span>
         <div style="display:flex; gap:4px;">
@@ -90,7 +115,7 @@
     </aside>
 
     <!-- Center Pane: Hybrid Editor & Formatting Toolbar -->
-    <section class="pane" aria-label="Manual Editor">
+    <section class="pane mobile-pane-active" data-pane="editor" aria-label="Manual Editor">
       <div class="editor-header-bar">
         <input id="nodeTitleInput" class="input node-title-input" type="text" placeholder="Node / Page Title" />
         <div class="segmented" role="group" aria-label="Page Layout Mode">
@@ -408,17 +433,25 @@
     </section>
 
     <!-- Right Pane: Live VLP Preview & HTML/XML Output -->
-    <section class="pane" aria-label="VLP Preview and Output">
-      <div class="pane-header">
+    <section class="pane" data-pane="preview" aria-label="VLP Preview and Output">
+      <div class="pane-header preview-pane-header">
         <div class="segmented" role="tablist">
           <button type="button" id="outTabPreview" class="active" data-out-tab="preview">Live VLP Preview</button>
           <button type="button" id="outTabHtml" data-out-tab="html">HTML (&lt;/&gt; Source)</button>
           <button type="button" id="outTabXml" data-out-tab="xml">Node XML</button>
         </div>
 
-        <div id="previewThemeToggleWrap" class="segmented" role="group" aria-label="Preview Theme">
-          <button type="button" id="themeBtnLight" class="active" data-preview-theme="light">Light Mode</button>
-          <button type="button" id="themeBtnDark" data-preview-theme="dark">VLP Dark Mode</button>
+        <div class="preview-controls-right">
+          <select id="previewRatioSelect" class="select preview-ratio-select" aria-label="VLP Split-Screen Panel Ratio" title="Preview VLP Split-Screen Panel Width">
+            <option value="auto">Auto (100%)</option>
+            <option value="360">VLP 1/3 Taskbar (360px)</option>
+            <option value="520">VLP 1/2 Split (520px)</option>
+            <option value="900">Desktop (900px)</option>
+          </select>
+          <div id="previewThemeToggleWrap" class="segmented" role="group" aria-label="Preview Theme">
+            <button type="button" id="themeBtnLight" data-preview-theme="light">Light Mode</button>
+            <button type="button" id="themeBtnDark" class="active" data-preview-theme="dark">VLP Dark Mode</button>
+          </div>
         </div>
       </div>
 
@@ -475,59 +508,6 @@
     </div>
   </div>
 
-  <!-- Modal: Sessions & Backup Manager -->
-  <div id="sessionsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="sessionsModalTitle">
-    <div class="modal modal-sm">
-      <div class="modal-header">
-        <strong id="sessionsModalTitle">Session Persistence &amp; Snapshots</strong>
-        <button type="button" class="btn btn-sm" data-close-modal="sessionsModal">Close</button>
-      </div>
-      <div class="modal-body">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Save Named Snapshot (Server /data + Browser)</span>
-          </div>
-          <div style="display:flex; gap:8px;">
-            <input id="snapshotNameInput" class="input" type="text" placeholder="e.g. Annex B Lab 01 - Checkpoint" />
-            <button type="button" id="btnSaveSnapshot" class="btn btn-sm btn-primary">Save Snapshot</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Portable Offline Project Backup (.json)</span>
-          </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button type="button" id="btnExportJsonBackup" class="btn btn-sm">Download .json Backup</button>
-            <label class="btn btn-sm" for="importJsonBackupInput">
-              Restore .json Backup
-              <input id="importJsonBackupInput" type="file" accept=".json" class="hidden" />
-            </label>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Your Private Snapshots</span>
-            <button type="button" id="btnRefreshSnapshots" class="btn btn-xs">Refresh</button>
-          </div>
-          <div id="snapshotsList" class="muted-hint">Loading...</div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Shared Team Manuals (All Active Users)</span>
-            <div style="display:flex; gap:6px;">
-              <button type="button" id="btnShareCurrent" class="btn btn-xs btn-blue">Share Current Manual</button>
-              <button type="button" id="btnRefreshShared" class="btn btn-xs">Refresh</button>
-            </div>
-          </div>
-          <div id="sharedSnapshotsList" class="muted-hint">Loading...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Auth Gate / First-Run Admin Bootstrap / Pending Account Overlay -->
   <div id="authGateOverlay" class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
     <div class="auth-card">
@@ -535,7 +515,7 @@
         <div class="brand-mark" aria-hidden="true">VLP</div>
         <div>
           <h2 id="authGateTitle" style="margin:0;">Sign In to VLP Manual Generator</h2>
-          <div class="muted-hint">Air-Gapped Local Workspace • v0.3.0-beta</div>
+          <div class="muted-hint">Air-Gapped Local Workspace &bull; v0.3.1-beta</div>
         </div>
       </div>
       <p id="authGateSubtitle" class="auth-sub"></p>
@@ -613,12 +593,13 @@
       <aside class="owui-sidebar" aria-label="Account and Admin Navigation">
         <div class="owui-sidebar-top">
           <button type="button" class="btn btn-xs" data-close-modal="accountAdminModal">&larr; Back</button>
-          <span style="font-size:12px; font-weight:700; color:#e4e4e7;">Settings</span>
+          <span class="owui-sidebar-title">Settings</span>
         </div>
         <input id="owuiNavSearch" class="owui-search-input" type="text" placeholder="Search settings..." />
         <div class="owui-nav-scroll">
           <div class="owui-nav-heading">Personal</div>
           <button type="button" class="owui-nav-btn active" data-owui-tab="account">Account</button>
+          <button type="button" class="owui-nav-btn" data-owui-tab="sessions">Sessions</button>
           <button type="button" class="owui-nav-btn" data-owui-tab="data">Data Controls</button>
           <button type="button" class="owui-nav-btn" data-owui-tab="about">About</button>
 
@@ -634,8 +615,8 @@
           <div style="display:flex; align-items:center; gap:8px; min-width:0;">
             <span id="owuiFooterAvatar" class="user-avatar-dot">U</span>
             <div style="min-width:0;">
-              <div id="owuiFooterName" style="font-size:12px; font-weight:700; color:#f4f4f5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">User</div>
-              <div id="owuiFooterRole" style="font-size:10.5px; color:#a1a1aa; text-transform:uppercase;">user</div>
+              <div id="owuiFooterName" class="owui-footer-name">User</div>
+              <div id="owuiFooterRole" class="owui-footer-role">user</div>
             </div>
           </div>
           <button type="button" id="btnSignOut" class="btn btn-xs">Sign Out</button>
