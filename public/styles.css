@@ -18,6 +18,58 @@
   --app-amber-soft: rgba(245, 158, 11, 0.15);
   --app-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --app-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --app-scrollbar-thumb: #54698d;
+  --app-scrollbar-track: #0d1421;
+  color-scheme: dark;
+  accent-color: var(--app-accent);
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--app-scrollbar-thumb);
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--app-scrollbar-track);
+  }
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.28);
+  color: #ffffff;
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.skip-link:is(:focus, :focus-visible) {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 3000;
+  background: var(--app-surface-3);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 2px solid var(--app-blue);
+  font-weight: 700;
+  text-decoration: none;
 }
 
 * {
@@ -234,6 +286,7 @@ button, input, textarea, select {
   display: grid;
   grid-template-columns: 270px minmax(430px, 1.08fr) minmax(380px, 0.92fr);
   height: calc(100vh - 54px);
+  height: calc(100dvh - 54px);
   overflow: hidden;
 }
 
@@ -274,6 +327,7 @@ button, input, textarea, select {
   overflow-y: auto;
   padding: 12px;
   min-height: 0;
+  container-type: inline-size;
 }
 
 /* Sidebar Tree */
@@ -303,15 +357,44 @@ button, input, textarea, select {
   outline: none;
 }
 
-.input:focus, .textarea:focus, .select:focus {
+:is(.input, .textarea, .select):focus-visible {
   border-color: var(--app-blue);
+  outline: 2px solid var(--app-blue);
+  outline-offset: 1px;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+:is(.input, .owui-input):not([type="range"]):user-invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+input[type="checkbox"]:not(.owui-switch input) {
+  accent-color: var(--app-accent);
+  inline-size: 1.15em;
+  aspect-ratio: 1;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:not(.owui-switch input):focus-visible {
+  outline: 2px solid var(--app-blue);
+  outline-offset: 2px;
 }
 
 .textarea {
   resize: vertical;
+  field-sizing: content;
+  height: auto;
+  width: 100%;
   min-height: 76px;
+  min-block-size: 3lh;
+  max-block-size: 14lh;
   line-height: 1.5;
+}
+
+#rawHtmlTextarea {
+  min-block-size: 14lh;
+  max-block-size: 28lh;
 }
 
 .textarea-mono {
@@ -677,10 +760,12 @@ button, input, textarea, select {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.dropzone:hover, .dropzone:focus, .dropzone.dragover {
+.dropzone:hover, .dropzone:focus-visible, .dropzone.dragover {
   border-color: var(--app-blue);
   background: var(--app-blue-soft);
   color: var(--app-text);
+  outline: 2px solid var(--app-blue);
+  outline-offset: 2px;
 }
 
 .img-chip-list {
@@ -761,20 +846,109 @@ button, input, textarea, select {
   flex-wrap: wrap;
 }
 
-/* Modals */
-.modal-backdrop {
+/* Native <dialog> Modals & Top-Layer Transitions */
+.modal-backdrop,
+.auth-overlay {
+  --backdrop-bg: rgba(2, 6, 23, 0.78);
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.78);
-  display: none;
+  margin: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  width: calc(100% - 40px);
+  max-width: 960px;
+  max-height: 88vh;
+  height: fit-content;
+  overflow: visible;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
 }
 
-.modal-backdrop.open {
+dialog:is(.modal-backdrop, .auth-overlay):is([open], .open) {
   display: flex;
+}
+
+#sessionsModal {
+  max-width: 620px;
+}
+
+#accountAdminModal {
+  max-width: 1120px;
+  height: 86vh;
+  max-height: 820px;
+}
+
+.auth-overlay {
+  --backdrop-bg: rgba(10, 10, 12, 0.94);
+  max-width: 440px;
+  z-index: 1500;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .modal-backdrop,
+  .auth-overlay {
+    transform: scale(0.96);
+  }
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  background-color: rgba(2, 6, 23, 0);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  transition-property: background-color, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+dialog.auth-overlay::backdrop {
+  backdrop-filter: blur(8px);
+}
+
+:is(dialog.modal-backdrop[open], dialog.auth-overlay[open], .modal-backdrop.open, .auth-overlay.open):where(:not([data-closing])) {
+  display: flex;
+  opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: scale(1);
+
+    @starting-style {
+      transform: scale(0.96);
+    }
+  }
+
+  &::backdrop {
+    background-color: var(--backdrop-bg, rgba(2, 6, 23, 0.78));
+
+    @starting-style {
+      background-color: rgba(2, 6, 23, 0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .auth-overlay,
+  dialog::backdrop {
+    transition-duration: 0.08s;
+  }
 }
 
 .modal {
@@ -862,8 +1036,9 @@ button, input, textarea, select {
 
 .toast {
   position: fixed;
-  bottom: 18px;
-  right: 18px;
+  inset: auto 18px 18px auto;
+  margin: 0;
+  border: none;
   background: #16a34a;
   color: #fff;
   font-weight: 600;
@@ -874,12 +1049,20 @@ button, input, textarea, select {
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.18s;
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
 }
 
-.toast.show {
+.toast:where(.show, :popover-open, .\:popover-open) {
   opacity: 1;
   transform: translateY(0);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 .toast.error {
@@ -958,8 +1141,10 @@ button, input, textarea, select {
 }
 
 .tbl-cell-input {
+  field-sizing: content;
   width: 100%;
-  min-width: 90px;
+  min-inline-size: 10ch;
+  max-inline-size: 42ch;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
@@ -969,9 +1154,11 @@ button, input, textarea, select {
   outline: none;
 }
 
-.tbl-cell-input:focus {
+.tbl-cell-input:focus-visible {
   background: var(--app-surface);
   border-color: var(--app-blue);
+  outline: 2px solid var(--app-blue);
+  outline-offset: -1px;
 }
 
 @media (max-width: 1120px) {
@@ -1077,22 +1264,7 @@ button, input, textarea, select {
   color: #fde047;
 }
 
-/* Auth Gate & Pending Approval Fullscreen Backdrop */
-.auth-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 10, 12, 0.94);
-  backdrop-filter: blur(8px);
-  z-index: 1500;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.auth-overlay.open {
-  display: flex;
-}
+/* Auth Gate & Pending Approval Dialog Card */
 
 .auth-card {
   width: 100%;
@@ -1185,8 +1357,10 @@ button, input, textarea, select {
   outline: none;
 }
 
-.owui-search-input:focus {
-  border-color: #52525b;
+.owui-search-input:focus-visible {
+  border-color: var(--app-blue);
+  outline: 2px solid var(--app-blue);
+  outline-offset: 1px;
 }
 
 .owui-nav-scroll {
@@ -1330,9 +1504,11 @@ button, input, textarea, select {
   padding: 5px 10px;
 }
 
-.owui-input:focus,
-.owui-select:focus {
-  border-color: #71717a;
+.owui-input:focus-visible,
+.owui-select:focus-visible {
+  border-color: var(--app-blue);
+  outline: 2px solid var(--app-blue);
+  outline-offset: 1px;
 }
 
 .owui-input:disabled,
@@ -1419,6 +1595,16 @@ button, input, textarea, select {
   transform: translateX(15px);
 }
 
+.owui-switch input:focus-visible + .owui-slider,
+.owui-switch:has(input:focus-visible) .owui-slider {
+  outline: 2px solid var(--app-blue);
+  outline-offset: 2px;
+}
+
+input[type="checkbox"][switch] {
+  accent-color: var(--app-accent);
+}
+
 .owui-banner-warn {
   background: rgba(161, 98, 7, 0.22);
   border: 1px solid rgba(202, 138, 4, 0.42);
@@ -1480,6 +1666,10 @@ button, input, textarea, select {
 }
 
 @media (max-width: 760px) {
+  #accountAdminModal {
+    height: 92vh;
+    max-height: 92dvh;
+  }
   .owui-modal {
     flex-direction: column;
     height: 92vh;
@@ -1492,5 +1682,131 @@ button, input, textarea, select {
   }
   .owui-grid-2 {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Keyboard Focus Indicators */
+:where(
+  .btn,
+  .tb-btn-main,
+  .tb-btn-help,
+  .segmented button,
+  .tree-node,
+  .user-pill-btn,
+  .owui-nav-btn,
+  .owui-save-btn,
+  .owui-pw-eye,
+  .theme-select,
+  .export-select
+):focus-visible {
+  outline: 2px solid var(--app-blue);
+  outline-offset: 2px;
+}
+
+label:has(> input[type="file"]):focus-within {
+  outline: 2px solid var(--app-blue);
+  outline-offset: 2px;
+}
+
+/* Customizable <select> Progressive Enhancement */
+@supports (appearance: base-select) {
+  :is(.theme-select, .export-select, .select, .owui-select),
+  :is(.theme-select, .export-select, .select, .owui-select)::picker(select) {
+    appearance: base-select;
+  }
+
+  :is(.theme-select, .export-select, .select, .owui-select)::picker(select) {
+    background-color: var(--app-surface);
+    color: var(--app-text);
+    border: 1px solid var(--app-border-strong);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  }
+
+  :is(.theme-select, .export-select, .select, .owui-select) option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  :is(.theme-select, .export-select, .select, .owui-select) option:hover {
+    background-color: var(--app-surface-2);
+  }
+
+  :is(.theme-select, .export-select, .select, .owui-select) option:checked {
+    background-color: var(--app-accent-soft);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  :is(.theme-select, .export-select, .select, .owui-select)::picker-icon {
+    color: var(--app-text-muted);
+  }
+}
+
+.theme-option-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+}
+
+/* Container-Aware Editor Reflow */
+@container (max-width: 520px) {
+  .grid-2,
+  .grid-3,
+  .img-chip-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .step-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .img-chip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .img-chip img {
+    width: 100%;
+    height: 110px;
+  }
+}
+
+/* Child-State Styling via :has() */
+.step-card:has(:focus-visible),
+.card:has(> .card-header input[type="checkbox"]:checked) {
+  border-color: var(--app-border-strong);
+}
+
+.card-red:not(:has(.card-header input[type="checkbox"]:checked)) {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+/* Forced Colors Mode Support */
+@media (forced-colors: active) {
+  .theme-swatch-dot,
+  .theme-option-swatch {
+    forced-color-adjust: none;
+  }
+
+  .badge,
+  .step-num-badge,
+  .card-red,
+  .tree-node.active {
+    border: 1px solid ButtonText;
+  }
+
+  .owui-slider {
+    border: 1px solid ButtonText;
   }
 }

@@ -39,19 +39,84 @@
   let lastPreviewedNodeId = null;
   let previewDocInitialized = false;
   let previewScrollRafId = null;
+  let supportsDisplayTransition;
+  let owuiControlCounter = 0;
 
   // =========================================================================
-  // DOM Helpers
+  // DOM & Top-Layer Dialog Helpers
   // =========================================================================
   const $ = function (id) { return document.getElementById(id); };
+
+  function canTransitionDisplay() {
+    if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+    if (!window.CSS || typeof window.CSS.supports !== 'function' || !window.CSS.supports('transition-behavior', 'allow-discrete') || !document.body) {
+      return false;
+    }
+    const probe = document.createElement('div');
+    probe.style.cssText = 'transition: display 1s allow-discrete !important; display: block;';
+    document.body.appendChild(probe);
+    getComputedStyle(probe).display;
+    probe.style.display = 'none';
+    supportsDisplayTransition = getComputedStyle(probe).display === 'block';
+    probe.remove();
+    return supportsDisplayTransition;
+  }
+
+  function supportsTopLayerExit() {
+    return Boolean(window.CSS && typeof window.CSS.supports === 'function' && window.CSS.supports('overlay', 'auto') && canTransitionDisplay());
+  }
+
+  function openDialogModal(el) {
+    if (!el) return;
+    el.removeAttribute('data-closing');
+    el.classList.add('open');
+    if (typeof el.showModal === 'function' && !el.open) {
+      try {
+        el.showModal();
+      } catch (_ignore) {}
+    }
+  }
+
+  async function closeTopLayer(el) {
+    if (!el) return;
+    if (el.open && !supportsTopLayerExit()) {
+      el.setAttribute('data-closing', '');
+      const animations = typeof el.getAnimations === 'function' ? el.getAnimations({ subtree: true }) : [];
+      if (animations.length > 0) {
+        await Promise.race([
+          Promise.allSettled(animations.map(function (a) { return a.finished; })),
+          new Promise(function (r) { setTimeout(r, 600); })
+        ]);
+      }
+      if (!el.hasAttribute('data-closing')) return;
+      el.removeAttribute('data-closing');
+    }
+    el.classList.remove('open');
+    if (typeof el.close === 'function' && el.open) {
+      try {
+        el.close();
+      } catch (_ignore) {}
+    }
+  }
 
   function showToast(msg, isError) {
     const el = $('toast');
     el.textContent = msg;
     el.className = 'toast show' + (isError ? ' error' : '');
+    if (typeof el.showPopover === 'function') {
+      try {
+        if (el.matches(':popover-open')) el.hidePopover();
+        el.showPopover();
+      } catch (_ignore) {}
+    }
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () {
       el.className = 'toast';
+      if (typeof el.hidePopover === 'function') {
+        try {
+          if (el.matches(':popover-open')) el.hidePopover();
+        } catch (_ignore) {}
+      }
     }, 2600);
   }
 
@@ -586,6 +651,8 @@
         const row = document.createElement('div');
         row.className = 'tree-node level-' + Math.min(level, 2) + (node.id === state.activeNodeId ? ' active' : '');
         row.setAttribute('role', 'treeitem');
+        row.setAttribute('aria-selected', node.id === state.activeNodeId ? 'true' : 'false');
+        row.tabIndex = 0;
         row.title = node.title;
 
         const main = document.createElement('div');
@@ -644,10 +711,32 @@
         actions.appendChild(delBtn);
         row.appendChild(actions);
 
-        row.addEventListener('click', function () {
+        function selectTreeNode() {
           state.activeNodeId = node.id;
           state.activeStepIndex = 0;
           renderAll();
+        }
+
+        row.addEventListener('click', selectTreeNode);
+        row.addEventListener('keydown', function (e) {
+          if (e.target !== row) return;
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            selectTreeNode();
+            const activeEl = treeList.querySelector('.tree-node.active');
+            if (activeEl) activeEl.focus();
+          } else if (e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+        row.addEventListener('keyup', function (e) {
+          if (e.target !== row) return;
+          if (e.key === ' ') {
+            e.preventDefault();
+            selectTreeNode();
+            const activeEl = treeList.querySelector('.tree-node.active');
+            if (activeEl) activeEl.focus();
+          }
         });
 
         treeList.appendChild(row);
@@ -785,7 +874,12 @@
     VLP.getColorThemes().forEach(function (t) {
       const opt = document.createElement('option');
       opt.value = t.id;
-      opt.textContent = t.name;
+      const dot = document.createElement('span');
+      dot.className = 'theme-option-swatch';
+      dot.style.backgroundColor = t.swatch;
+      dot.setAttribute('aria-hidden', 'true');
+      opt.appendChild(dot);
+      opt.appendChild(document.createTextNode(t.name));
       sel.appendChild(opt);
     });
   }
@@ -1770,9 +1864,15 @@
   }
 
   function renderOutputTabs() {
-    $('outTabPreview').classList.toggle('active', state.outTab === 'preview');
-    $('outTabHtml').classList.toggle('active', state.outTab === 'html');
-    $('outTabXml').classList.toggle('active', state.outTab === 'xml');
+    const isPrev = state.outTab === 'preview';
+    const isHtml = state.outTab === 'html';
+    const isXml = state.outTab === 'xml';
+    $('outTabPreview').classList.toggle('active', isPrev);
+    $('outTabPreview').setAttribute('aria-selected', isPrev ? 'true' : 'false');
+    $('outTabHtml').classList.toggle('active', isHtml);
+    $('outTabHtml').setAttribute('aria-selected', isHtml ? 'true' : 'false');
+    $('outTabXml').classList.toggle('active', isXml);
+    $('outTabXml').setAttribute('aria-selected', isXml ? 'true' : 'false');
 
     $('previewPane').classList.toggle('hidden', state.outTab !== 'preview');
     $('htmlOutputPane').classList.toggle('hidden', state.outTab !== 'html');
@@ -1997,12 +2097,12 @@
   function openTemplatesModal(tab, focusGuideId) {
     currentModalTab = tab || 'templates';
     syncStartupGuideCheckbox();
-    $('templatesModal').classList.add('open');
+    openDialogModal($('templatesModal'));
     renderTemplatesModalBody(focusGuideId);
   }
 
   function closeModal(id) {
-    $(id).classList.remove('open');
+    closeTopLayer($(id));
   }
 
   function applyTemplateToCurrent(tpl) {
@@ -2071,9 +2171,15 @@
   }
 
   function renderTemplatesModalBody(focusGuideId) {
-    $('modalTabTemplates').classList.toggle('active', currentModalTab === 'templates');
-    $('modalTabGuide').classList.toggle('active', currentModalTab === 'guide');
-    $('modalTabSamples').classList.toggle('active', currentModalTab === 'samples');
+    const isTpl = currentModalTab === 'templates';
+    const isGuide = currentModalTab === 'guide';
+    const isSamples = currentModalTab === 'samples';
+    $('modalTabTemplates').classList.toggle('active', isTpl);
+    $('modalTabTemplates').setAttribute('aria-selected', isTpl ? 'true' : 'false');
+    $('modalTabGuide').classList.toggle('active', isGuide);
+    $('modalTabGuide').setAttribute('aria-selected', isGuide ? 'true' : 'false');
+    $('modalTabSamples').classList.toggle('active', isSamples);
+    $('modalTabSamples').setAttribute('aria-selected', isSamples ? 'true' : 'false');
 
     const body = $('templatesModalBody');
     body.innerHTML = '';
@@ -2537,7 +2643,7 @@
     document.addEventListener('keydown', function (e) {
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const target = e.target;
-      if (target && target.closest && target.closest('.modal-backdrop.open')) return;
+      if (target && target.closest && target.closest('dialog[open], .modal-backdrop.open, .auth-overlay.open')) return;
       if (target && target.id === 'quickPasteInput') return;
 
       const key = e.key.toLowerCase();
@@ -2556,7 +2662,7 @@
     $('btnLoadAnnexB').addEventListener('click', function () { loadSampleManual('annexb'); });
     $('btnLoadAnnexC').addEventListener('click', function () { loadSampleManual('annexc'); });
     $('btnOpenSessions').addEventListener('click', function () {
-      $('sessionsModal').classList.add('open');
+      openDialogModal($('sessionsModal'));
       $('snapshotNameInput').value = (state.manual && state.manual.name ? state.manual.name : 'Manual') + ' Snapshot';
       refreshSnapshotsList();
       refreshSharedSnapshotsList();
@@ -3026,11 +3132,42 @@
       });
     });
 
-    document.querySelectorAll('.modal-backdrop').forEach(function (bd) {
-      bd.addEventListener('click', function (e) {
-        if (e.target === bd) bd.classList.remove('open');
+    document.querySelectorAll('dialog.modal-backdrop, dialog.auth-overlay').forEach(function (dlg) {
+      dlg.addEventListener('close', function () {
+        dlg.classList.remove('open');
+        dlg.removeAttribute('data-closing');
+        dlg.returnValue = '';
+      });
+      dlg.addEventListener('cancel', function (e) {
+        if (dlg.id === 'authGateOverlay' && state.authLocked) {
+          e.preventDefault();
+          return;
+        }
+        if (dlg.getAttribute('closedby') === 'any' && !supportsTopLayerExit()) {
+          e.preventDefault();
+          closeTopLayer(dlg);
+        }
       });
     });
+
+    if (typeof HTMLDialogElement !== 'undefined' && !('closedBy' in HTMLDialogElement.prototype)) {
+      const outsideDialog = function (e, dialog) {
+        const r = dialog.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      };
+      document.querySelectorAll('dialog[closedby="any"]').forEach(function (dlg) {
+        let pressedOutside = false;
+        dlg.addEventListener('pointerdown', function (e) {
+          pressedOutside = outsideDialog(e, dlg);
+        });
+        dlg.addEventListener('pointerup', function (e) {
+          if (pressedOutside && outsideDialog(e, dlg)) {
+            closeTopLayer(dlg);
+          }
+          pressedOutside = false;
+        });
+      });
+    }
 
     // Sessions Modal actions (Private & Shared Team Manuals)
     $('btnRefreshSnapshots').addEventListener('click', refreshSnapshotsList);
@@ -3234,6 +3371,10 @@
   }
 
   function makeOwuiSwitchRow(title, desc, checked, disabled) {
+    const uid = 'owui-ctrl-' + (++owuiControlCounter);
+    const titleId = uid + '-title';
+    const descId = uid + '-desc';
+
     const row = document.createElement('div');
     row.className = 'owui-row';
 
@@ -3241,23 +3382,32 @@
     labelDiv.className = 'owui-row-label';
     const tEl = document.createElement('div');
     tEl.className = 'owui-row-title';
+    tEl.id = titleId;
     tEl.textContent = title;
     labelDiv.appendChild(tEl);
     if (desc) {
       const dEl = document.createElement('div');
       dEl.className = 'owui-row-desc';
+      dEl.id = descId;
       dEl.textContent = desc;
       labelDiv.appendChild(dEl);
     }
 
     const sw = document.createElement('label');
     sw.className = 'owui-switch';
+    sw.htmlFor = uid;
     const input = document.createElement('input');
+    input.id = uid;
     input.type = 'checkbox';
+    input.setAttribute('switch', '');
+    input.setAttribute('role', 'switch');
+    input.setAttribute('aria-labelledby', titleId);
+    if (desc) input.setAttribute('aria-describedby', descId);
     input.checked = Boolean(checked);
     input.disabled = Boolean(disabled);
     const slider = document.createElement('span');
     slider.className = 'owui-slider';
+    slider.setAttribute('aria-hidden', 'true');
     sw.appendChild(input);
     sw.appendChild(slider);
 
@@ -3267,24 +3417,31 @@
   }
 
   function makeOwuiSelectRow(title, desc, value, choices, disabled) {
+    const uid = 'owui-ctrl-' + (++owuiControlCounter);
+    const descId = uid + '-desc';
     const row = document.createElement('div');
     row.className = 'owui-row';
 
     const labelDiv = document.createElement('div');
     labelDiv.className = 'owui-row-label';
-    const tEl = document.createElement('div');
+    const tEl = document.createElement('label');
     tEl.className = 'owui-row-title';
+    tEl.style.display = 'block';
+    tEl.htmlFor = uid;
     tEl.textContent = title;
     labelDiv.appendChild(tEl);
     if (desc) {
       const dEl = document.createElement('div');
       dEl.className = 'owui-row-desc';
+      dEl.id = descId;
       dEl.textContent = desc;
       labelDiv.appendChild(dEl);
     }
 
     const sel = document.createElement('select');
+    sel.id = uid;
     sel.className = 'owui-select owui-select-compact';
+    if (desc) sel.setAttribute('aria-describedby', descId);
     sel.disabled = Boolean(disabled);
     choices.forEach(function (ch) {
       const opt = document.createElement('option');
@@ -3301,20 +3458,26 @@
 
   function makeOwuiInputField(title, desc, value, opts) {
     const o = opts || {};
+    const uid = 'owui-ctrl-' + (++owuiControlCounter);
+    const descId = uid + '-desc';
     const wrap = document.createElement('div');
     wrap.className = 'owui-field-block';
 
-    const tEl = document.createElement('div');
+    const tEl = document.createElement('label');
     tEl.className = 'owui-row-title';
+    tEl.style.display = 'block';
     tEl.style.marginBottom = '4px';
+    tEl.htmlFor = uid;
     tEl.textContent = title;
     wrap.appendChild(tEl);
 
     const input = document.createElement('input');
+    input.id = uid;
     input.className = 'owui-input';
     input.type = o.isPassword ? 'password' : 'text';
     input.value = value != null ? String(value) : '';
     input.placeholder = o.placeholder || '';
+    if (desc) input.setAttribute('aria-describedby', descId);
     input.disabled = Boolean(o.disabled);
 
     if (o.isPassword) {
@@ -3323,9 +3486,14 @@
       const eye = document.createElement('button');
       eye.type = 'button';
       eye.className = 'owui-pw-eye';
+      eye.setAttribute('aria-label', 'Show password');
+      eye.setAttribute('aria-pressed', 'false');
       eye.innerHTML = '&#128065;';
       eye.addEventListener('click', function () {
-        input.type = input.type === 'password' ? 'text' : 'password';
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        eye.setAttribute('aria-pressed', show ? 'true' : 'false');
+        eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
       });
       pwWrap.appendChild(input);
       pwWrap.appendChild(eye);
@@ -3337,6 +3505,7 @@
     if (desc) {
       const dEl = document.createElement('div');
       dEl.className = 'owui-row-desc';
+      dEl.id = descId;
       dEl.textContent = desc;
       wrap.appendChild(dEl);
     }
@@ -3345,7 +3514,7 @@
 
   function openAccountAdminModal(tab) {
     currentOwuiTab = tab || 'account';
-    $('accountAdminModal').classList.add('open');
+    openDialogModal($('accountAdminModal'));
     renderOwuiTab(currentOwuiTab);
   }
 
@@ -4096,8 +4265,12 @@
 
   function bindAuthAndAdminEvents() {
     $('btnToggleAuthPw').addEventListener('click', function () {
+      const btn = $('btnToggleAuthPw');
       const pw = $('authPasswordInput');
-      pw.type = pw.type === 'password' ? 'text' : 'password';
+      const show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
     });
 
     $('btnToggleAuthMode').addEventListener('click', function () {
@@ -4258,24 +4431,24 @@
 
       if (status.needsSetup) {
         state.authLocked = true;
-        $('authGateOverlay').classList.add('open');
+        openDialogModal($('authGateOverlay'));
         configureAuthGateView('setup', state.publicConfig);
         return;
       }
       if (!status.authenticated || !status.user) {
         state.authLocked = true;
-        $('authGateOverlay').classList.add('open');
+        openDialogModal($('authGateOverlay'));
         configureAuthGateView('login', state.publicConfig);
         return;
       }
       if (status.user.role === 'pending') {
         state.authLocked = true;
-        $('authGateOverlay').classList.add('open');
+        openDialogModal($('authGateOverlay'));
         configureAuthGateView('pending', state.publicConfig);
         return;
       }
 
-      $('authGateOverlay').classList.remove('open');
+      await closeTopLayer($('authGateOverlay'));
       await loadUserWorkspace();
       if (state.publicConfig && state.publicConfig.requireMfa && !status.user.mfaEnabled) {
         openAccountAdminModal('account');
@@ -4283,7 +4456,7 @@
       }
     } catch (_err) {
       // Offline fallback without API server: allow local client-only workspace
-      $('authGateOverlay').classList.remove('open');
+      await closeTopLayer($('authGateOverlay'));
       await loadUserWorkspace();
     }
   }

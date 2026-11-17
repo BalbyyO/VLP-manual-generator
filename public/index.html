@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
   <title>VLP Manual HTML Formatter &amp; XML Builder</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <header class="topbar">
+    <a href="#editorBody" class="skip-link visually-hidden">Skip to editor</a>
     <div class="topbar-left">
       <div class="brand-mark" aria-hidden="true">VLP</div>
       <span class="brand-title">VLP Manual HTML Formatter</span>
@@ -72,11 +74,11 @@
       <div class="pane-body">
         <div class="manual-meta-card">
           <label class="field-label" for="manualNameInput">Manual Package Name</label>
-          <input id="manualNameInput" class="input" type="text" placeholder="e.g. dsac.annexb.lab01" />
+          <input id="manualNameInput" class="input" type="text" placeholder="e.g. dsac.annexb.lab01" autocorrect="off" autocapitalize="none" spellcheck="false" />
           <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
             <div style="flex:1;">
               <label class="field-label" for="manualLangInput">Language</label>
-              <input id="manualLangInput" class="input" type="text" value="en" />
+              <input id="manualLangInput" class="input" type="text" value="en" autocorrect="off" autocapitalize="none" spellcheck="false" />
             </div>
             <div style="flex:1;">
               <label class="field-label">Total Pages</label>
@@ -224,7 +226,7 @@
       </div>
 
       <!-- Editor Body -->
-      <div id="editorBody" class="pane-body">
+      <div id="editorBody" class="pane-body" tabindex="-1">
         <!-- Chapter Consolidation Banner (shown when node has children) -->
         <div id="chapterConsolidateBanner" class="card card-amber hidden">
           <div class="card-header">
@@ -410,10 +412,10 @@
     <!-- Right Pane: Live VLP Preview & HTML/XML Output -->
     <section class="pane" aria-label="VLP Preview and Output">
       <div class="pane-header">
-        <div class="segmented" role="tablist">
-          <button type="button" id="outTabPreview" class="active" data-out-tab="preview">Live VLP Preview</button>
-          <button type="button" id="outTabHtml" data-out-tab="html">HTML (&lt;/&gt; Source)</button>
-          <button type="button" id="outTabXml" data-out-tab="xml">Node XML</button>
+        <div class="segmented" role="tablist" aria-label="Output View">
+          <button type="button" id="outTabPreview" class="active" role="tab" aria-selected="true" data-out-tab="preview">Live VLP Preview</button>
+          <button type="button" id="outTabHtml" role="tab" aria-selected="false" data-out-tab="html">HTML (&lt;/&gt; Source)</button>
+          <button type="button" id="outTabXml" role="tab" aria-selected="false" data-out-tab="xml">Node XML</button>
         </div>
 
         <div id="previewThemeToggleWrap" class="segmented" role="group" aria-label="Preview Theme">
@@ -451,15 +453,15 @@
   </main>
 
   <!-- Modal: Templates, Button Guide & Sample Manuals -->
-  <div id="templatesModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="templatesModalTitle">
+  <dialog id="templatesModal" class="modal-backdrop" closedby="any" aria-labelledby="templatesModalTitle">
     <div class="modal">
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:12px;">
           <strong id="templatesModalTitle">Templates, Button Demonstrations &amp; Sample Manuals</strong>
-          <div class="segmented">
-            <button type="button" id="modalTabTemplates" class="active" data-modal-tab="templates">Pre-Made Templates</button>
-            <button type="button" id="modalTabGuide" data-modal-tab="guide">What Every Button Does</button>
-            <button type="button" id="modalTabSamples" data-modal-tab="samples">Reference Manuals</button>
+          <div class="segmented" role="tablist" aria-label="Guide Sections">
+            <button type="button" id="modalTabTemplates" class="active" role="tab" aria-selected="true" data-modal-tab="templates">Pre-Made Templates</button>
+            <button type="button" id="modalTabGuide" role="tab" aria-selected="false" data-modal-tab="guide">What Every Button Does</button>
+            <button type="button" id="modalTabSamples" role="tab" aria-selected="false" data-modal-tab="samples">Reference Manuals</button>
           </div>
         </div>
         <button type="button" class="btn btn-sm" data-close-modal="templatesModal">Close</button>
@@ -470,13 +472,13 @@
           <input id="chkHideGuideStartup" type="checkbox" />
           <span>Do not show this guide automatically on startup</span>
         </label>
-        <button type="button" class="btn btn-sm btn-primary" data-close-modal="templatesModal">Got It</button>
+        <button type="button" class="btn btn-sm btn-primary" data-close-modal="templatesModal" autofocus>Got It</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- Modal: Sessions & Backup Manager -->
-  <div id="sessionsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="sessionsModalTitle">
+  <dialog id="sessionsModal" class="modal-backdrop" closedby="any" aria-labelledby="sessionsModalTitle">
     <div class="modal modal-sm">
       <div class="modal-header">
         <strong id="sessionsModalTitle">Session Persistence &amp; Snapshots</strong>
@@ -488,7 +490,7 @@
             <span class="card-title">Save Named Snapshot (Server /data + Browser)</span>
           </div>
           <div style="display:flex; gap:8px;">
-            <input id="snapshotNameInput" class="input" type="text" placeholder="e.g. Annex B Lab 01 - Checkpoint" />
+            <input id="snapshotNameInput" class="input" type="text" placeholder="e.g. Annex B Lab 01 - Checkpoint" autofocus />
             <button type="button" id="btnSaveSnapshot" class="btn btn-sm btn-primary">Save Snapshot</button>
           </div>
         </div>
@@ -526,10 +528,10 @@
         </div>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- Auth Gate / First-Run Admin Bootstrap / Pending Account Overlay -->
-  <div id="authGateOverlay" class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
+  <dialog id="authGateOverlay" class="auth-overlay" closedby="none" aria-labelledby="authGateTitle">
     <div class="auth-card">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
         <div class="brand-mark" aria-hidden="true">VLP</div>
@@ -565,18 +567,18 @@
           </div>
           <div class="auth-field">
             <label for="authEmailInput">Email Address</label>
-            <input id="authEmailInput" class="owui-input" type="email" placeholder="instructor@lab.local" autocomplete="email" />
+            <input id="authEmailInput" class="owui-input" type="email" inputmode="email" placeholder="instructor@lab.local" autocomplete="email" autocorrect="off" autocapitalize="none" spellcheck="false" />
           </div>
           <div class="auth-field">
             <label for="authUsernameInput">Username</label>
-            <input id="authUsernameInput" class="owui-input" type="text" placeholder="jinstructor" autocomplete="username" />
+            <input id="authUsernameInput" class="owui-input" type="text" placeholder="jinstructor" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" />
           </div>
         </div>
 
         <div id="authLoginFields">
           <div class="auth-field">
             <label for="authIdentifierInput">Email or Username</label>
-            <input id="authIdentifierInput" class="owui-input" type="text" placeholder="admin or admin@lab.local" autocomplete="username" />
+            <input id="authIdentifierInput" class="owui-input" type="text" placeholder="admin or admin@lab.local" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" />
           </div>
         </div>
 
@@ -584,13 +586,13 @@
           <label for="authPasswordInput">Password</label>
           <div class="owui-pw-wrap">
             <input id="authPasswordInput" class="owui-input" type="password" placeholder="Minimum 8 characters" autocomplete="current-password" />
-            <button type="button" id="btnToggleAuthPw" class="owui-pw-eye" aria-label="Show password">&#128065;</button>
+            <button type="button" id="btnToggleAuthPw" class="owui-pw-eye" aria-label="Show password" aria-pressed="false">&#128065;</button>
           </div>
         </div>
 
         <div id="authMfaField" class="auth-field hidden">
           <label for="authTotpInput">Authenticator 6-Digit Code</label>
-          <input id="authTotpInput" class="owui-input textarea-mono" type="text" maxlength="6" placeholder="123456" autocomplete="one-time-code" />
+          <input id="authTotpInput" class="owui-input textarea-mono" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="one-time-code" autocorrect="off" autocapitalize="none" spellcheck="false" />
         </div>
 
         <div id="authSsoNotice" class="owui-banner-warn hidden" style="margin:8px 0 12px;">
@@ -605,17 +607,17 @@
         <button type="button" id="btnToggleAuthMode" style="background:none; border:none; color:#60a5fa; font-weight:600; cursor:pointer; padding:0 4px;">Sign Up</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- Modal: Open WebUI-Style Account & Admin Settings Panel -->
-  <div id="accountAdminModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="owuiActiveTitle">
+  <dialog id="accountAdminModal" class="modal-backdrop" closedby="any" aria-labelledby="owuiActiveTitle">
     <div class="owui-modal">
       <aside class="owui-sidebar" aria-label="Account and Admin Navigation">
         <div class="owui-sidebar-top">
           <button type="button" class="btn btn-xs" data-close-modal="accountAdminModal">&larr; Back</button>
           <span style="font-size:12px; font-weight:700; color:#e4e4e7;">Settings</span>
         </div>
-        <input id="owuiNavSearch" class="owui-search-input" type="text" placeholder="Search settings..." />
+        <search><input id="owuiNavSearch" class="owui-search-input" type="search" aria-label="Search settings" placeholder="Search settings..." autofocus /></search>
         <div class="owui-nav-scroll">
           <div class="owui-nav-heading">Personal</div>
           <button type="button" class="owui-nav-btn active" data-owui-tab="account">Account</button>
@@ -653,12 +655,12 @@
         </div>
       </section>
     </div>
-  </div>
+  </dialog>
 
   <!-- Hidden reusable file input for inline step images -->
   <input id="stepImageFileInput" type="file" accept="image/*" multiple class="hidden" />
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="toast" class="toast" popover="manual" role="status" aria-live="polite"></div>
 
   <script src="./vlp-formatter.js"></script>
   <script src="./app.js"></script>
