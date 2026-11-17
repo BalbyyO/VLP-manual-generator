@@ -6,11 +6,11 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.3.1`)
+## Release & Pre-Packaged Docker Image (`beta 0.3.2`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.1-beta`)
-- **GitHub Release (`beta 0.3.1`)**: [v0.3.1-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.1-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.1-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.1-beta/vlp-manual-generator-0.3.1-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.2-beta`)
+- **GitHub Release (`beta 0.3.2`)**: [v0.3.2-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.2-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.2-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.2-beta/vlp-manual-generator-0.3.2-beta.tar)
 
 ---
 
@@ -65,6 +65,7 @@ flowchart LR
 | **Templates & Button Guide** | Opens the 3-tab modal (**Pre-Made Templates**, **What Every Button Does**, and **Reference Manuals** with **Load Annex B** / **Load Annex C**). Shows the **Button Demo Guide** automatically on startup unless **Do not show this guide automatically on startup** is checked. |
 | **Import XML / ZIP** | Imports an existing VLP `content.xml` or `.zip` manual package (including `./images/*`). |
 | **Export ▾** submenu | Unified dropdown containing **Scope** (`Full Manual` / `Current Page`), **Export VLP `content.xml`**, **Export VLP Package (`.zip`)**, and student exports (`.pdf`, `.html`, `.mdx`, `.rtf`, **Print / Save PDF...**). |
+| **Report Bug** | Opens a pre-filled GitHub New Issue page (`v0.3.2-beta`, viewport, and theme info) directly from the top bar or **Account & Admin → About**. |
 | **Account / Admin Pill** | Opens the Open WebUI-style Settings & Admin panel (`Account`, **`Sessions`** for private snapshots / Shared Team Manuals / `.json` backups, `Data Controls`, `Users`, `Groups`, `Authentication`, `Security Audit`). |
 | **Mobile / Zoom Pane Tabs** (`Structure \| Editor \| Preview`) | Appears automatically on narrow screens (`<= 1024px`) or high browser zoom so each pane remains full-width and usable without horizontal clipping. |
 
@@ -174,20 +175,20 @@ docker compose up -d
 
 Open **`http://localhost:8080`** in your browser. On first launch, create the Administrator account (or configure `ADMIN_EMAIL` / `ADMIN_PASSWORD`). User accounts, encrypted PII, sessions, and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`beta 0.3.1` Tarball)
+### Option 2: Air-Gapped Transfer (`beta 0.3.2` Tarball)
 
-Download `vlp-manual-generator-0.3.1-beta.tar` from the [**beta 0.3.1** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.1-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+Download `vlp-manual-generator-0.3.2-beta.tar` from the [**beta 0.3.2** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.2-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
 
 ```bash
-docker load -i vlp-manual-generator-0.3.1-beta.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.1-beta
+docker load -i vlp-manual-generator-0.3.2-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.2-beta
 ```
 
 To build and export the tarball yourself from source:
 
 ```bash
-docker build -t vlp-manual-generator:0.3.1-beta .
-docker save -o vlp-manual-generator-0.3.1-beta.tar vlp-manual-generator:0.3.1-beta
+docker build -t vlp-manual-generator:0.3.2-beta .
+docker save -o vlp-manual-generator-0.3.2-beta.tar vlp-manual-generator:0.3.2-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests

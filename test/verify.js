@@ -189,11 +189,11 @@ async function main() {
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
   });
 
-  await check('4c. v0.3.1-beta UX: Streamlined Header, Dark-First Default, Custom Swatches, VLP Ratio & Responsive Panes', () => {
+  await check('4c. v0.3.2-beta UX: Streamlined Header, Bug Report, Dark-First Default, Custom Swatches, VLP Ratio & Responsive Panes', () => {
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const appJs = fs.readFileSync(path.join(rootDir, 'public', 'app.js'), 'utf8');
 
-    assert(indexHtml.includes('v0.3.1-beta'), 'index.html badge should display v0.3.1-beta');
+    assert(indexHtml.includes('v0.3.2-beta'), 'index.html badge should display v0.3.2-beta');
     assert(indexHtml.includes('id="btnUndo"'), 'index.html should contain Undo button');
     assert(indexHtml.includes('id="btnRedo"'), 'index.html should contain Redo button');
     assert(indexHtml.includes('id="chkHideGuideStartup"'), 'index.html should contain startup guide opt-out checkbox');
@@ -206,6 +206,7 @@ async function main() {
     assert(indexHtml.includes('id="colorThemeDropdown"'), 'index.html should contain custom Color Theme Swatches dropdown');
     assert(indexHtml.includes('id="previewRatioSelect"'), 'index.html should contain VLP Ratio preview width selector');
     assert(indexHtml.includes('id="mobilePaneTabs"'), 'index.html should contain responsive mobile/zoom pane switcher');
+    assert(indexHtml.includes('id="btnReportBug"'), 'index.html should contain Report Bug button');
     assert(indexHtml.includes('id="authGateOverlay"'), 'index.html should contain authentication gate overlay');
     assert(indexHtml.includes('id="accountAdminModal"'), 'index.html should contain Open WebUI-style account/admin modal');
 
@@ -219,15 +220,17 @@ async function main() {
     assert(appJs.includes('armTypingUndo('), 'app.js should define armTypingUndo()');
     assert(appJs.includes('doc.body.innerHTML = previewHtmlSnippet'), 'app.js should update preview iframe DOM in-place to preserve scroll');
     assert(appJs.includes('exportDocument('), 'app.js should define exportDocument()');
+    assert(appJs.includes('openBugReport('), 'app.js should define openBugReport()');
     assert(appJs.includes('renderOwuiAdminAuthTab'), 'app.js should include Open WebUI-style admin Authentication tab');
     assert(/previewTheme\s*:\s*['"]dark['"]/.test(appJs), 'app.js should default previewTheme to dark mode');
   });
 
-  await check('4d. v0.3.1-beta VLP Split-Screen Scaling & Light/Dark Context CSS Isolation', () => {
+  await check('4d. v0.3.2-beta VLP Split-Screen Scaling, Step Header Alignment & Light/Dark Context CSS Isolation', () => {
     const cssBlock = VLP.getMasterStyleBlock('crimson-slate');
     assert(cssBlock.includes('table-layout: fixed'), 'Master style must enforce table-layout: fixed for VLP split-screen');
     assert(cssBlock.includes('max-width: 100% !important'), 'Master style must constrain wide images with max-width: 100% !important');
     assert(cssBlock.includes('overflow-wrap: anywhere'), 'Master style must wrap long commands/tokens via overflow-wrap: anywhere');
+    assert(cssBlock.includes('width: 68px !important') && cssBlock.includes('white-space: nowrap'), 'col-step-num header must prevent STEP mid-word wrapping');
     assert(cssBlock.includes('@container vlp-manual'), 'Master style must define @container vlp-manual responsive rules');
     assert(cssBlock.includes('not(.theme-light)'), 'Master style must isolate dark prefers-color-scheme from Light mode (.theme-light)');
 
@@ -412,7 +415,8 @@ async function main() {
       assert.strictEqual(h.status, 200);
       const healthJson = JSON.parse(h.body.toString());
       assert.strictEqual(healthJson.ok, true);
-      assert.strictEqual(healthJson.version, '0.3.1-beta');
+      assert.strictEqual(healthJson.version, '0.3.2-beta');
+      assert(String(healthJson.issueUrl || '').includes('/issues/new'), '/api/health should expose GitHub issueUrl');
 
       const idx = await httpRequest(testPort, 'GET', '/');
       assert.strictEqual(idx.status, 200);

@@ -489,13 +489,28 @@
     background-color: transparent !important;
   }
 
-  .lab-table th,
   .lab-table td,
   .vlp-data-table th,
   .vlp-data-table td {
     min-width: 0;
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+
+  .lab-table th.col-step-num {
+    width: 68px !important;
+    padding: 10px 8px;
+    text-align: center;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .lab-table > tbody > tr > td:first-child {
+    padding-left: 8px;
+    padding-right: 8px;
+    text-align: center;
+    white-space: nowrap;
   }
 
   .vlp-table-title {
@@ -684,9 +699,12 @@
     }
 
     .col-step-num {
-      width: 42px !important;
+      width: 52px !important;
       padding-left: 4px !important;
       padding-right: 4px !important;
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .lab-table > tbody > tr > td:first-child {
@@ -713,9 +731,12 @@
     }
 
     .col-step-num {
-      width: 42px !important;
+      width: 52px !important;
       padding-left: 4px !important;
       padding-right: 4px !important;
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .lab-table > tbody > tr > td:first-child {
@@ -1260,7 +1281,7 @@
     lines.push('  <table class="lab-table">');
     lines.push('    <thead>');
     lines.push('      <tr>');
-    lines.push('        <th class="col-step-num" style="width: 52px; text-align: center;">Step</th>');
+    lines.push('        <th class="col-step-num" style="width: 68px; text-align: center;">Step</th>');
     lines.push('        <th style="width: auto;">Action &amp; Verification</th>');
     lines.push('      </tr>');
     lines.push('    </thead>');

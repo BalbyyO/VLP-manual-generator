@@ -2723,6 +2723,9 @@
     $('btnRedo').addEventListener('click', performRedo);
     $('btnOpenTemplates').addEventListener('click', function () { openTemplatesModal('templates'); });
     $('btnShowGuideModal').addEventListener('click', function () { openTemplatesModal('guide'); });
+    if ($('btnReportBug')) {
+      $('btnReportBug').addEventListener('click', openBugReport);
+    }
 
     const chkHideGuide = $('chkHideGuideStartup');
     if (chkHideGuide) {
@@ -3883,10 +3886,48 @@
     body.appendChild(row);
   }
 
+  async function openBugReport() {
+    let baseIssueUrl = '';
+    try {
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        const health = await res.json();
+        baseIssueUrl = (health && health.issueUrl) || '';
+      }
+    } catch (_ignore) {}
+
+    if (!baseIssueUrl) {
+      showToast('Bug report repository URL unavailable offline. Open GitHub Issues on an internet-connected host.', true);
+      return;
+    }
+
+    const title = '[v0.3.2-beta] Bug Report: ';
+    const envLines = [
+      '**Version:** v0.3.2-beta',
+      '**Browser Viewport:** ' + window.innerWidth + 'x' + window.innerHeight,
+      '**UI Theme:** ' + state.uiTheme + ' | **Preview Theme:** ' + state.previewTheme,
+      '',
+      '**Steps to Reproduce:**',
+      '1. ',
+      '',
+      '**Expected Behavior:**',
+      '',
+      '**Actual Behavior:**',
+      ''
+    ].join('\n');
+
+    const fullUrl = baseIssueUrl + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(envLines);
+    const opened = window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      showToast('Popup blocked — please allow popups to open GitHub Issues', true);
+    }
+  }
+
   function renderOwuiAboutTab(body) {
     body.innerHTML =
-      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.1-beta)</div>' +
+      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.2-beta)</div>' +
       '<p class="owui-row-desc" style="font-size:12.5px; line-height:1.55;">100% air-gapped, deterministic authoring studio supporting VLP HTML5/XML packages, Student Exports (.pdf, .html, .mdx, .rtf), and multi-user local accounts.</p>' +
+      '<div style="margin:10px 0 6px;"><button type="button" id="btnAboutReportBug" class="btn btn-sm btn-blue">Report Bug on GitHub</button></div>' +
       '<div class="owui-section-title">PII &amp; Credential Security Architecture</div>' +
       '<ul style="font-size:12.5px; color:var(--app-text); line-height:1.65; padding-left:18px;">' +
       '<li><strong>Password Storage:</strong> Salted <code>scrypt</code> (32-byte random salt, N=16384, r=8, p=1) verified with constant-time <code>timingSafeEqual</code>.</li>' +
@@ -3894,6 +3935,8 @@
       '<li><strong>Blind Lookup Indexes:</strong> Email &amp; username uniqueness checked using keyed <strong>HMAC-SHA256</strong> blind indexes without exposing plaintext PII.</li>' +
       '<li><strong>Session Security:</strong> HMAC-SHA256 signed <code>HttpOnly; SameSite=Strict</code> session cookies with password/role-change session version revocation and login brute-force throttling.</li>' +
       '</ul>';
+    const bugBtn = $('btnAboutReportBug');
+    if (bugBtn) bugBtn.addEventListener('click', openBugReport);
   }
 
   async function renderOwuiAdminUsersTab(body) {
