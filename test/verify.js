@@ -182,7 +182,7 @@ async function main() {
     });
 
     const catalog = VLP.getToolbarCatalog();
-    assert.strictEqual(catalog.length, 21);
+    assert.strictEqual(catalog.length, 22);
 
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const stylesCss = fs.readFileSync(path.join(rootDir, 'public', 'styles.css'), 'utf8');
@@ -190,11 +190,18 @@ async function main() {
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
   });
 
-  await check('4c. v0.3.3-beta UX: Streamlined Header, Bug Report, Dark-First Default, Custom Swatches, VLP Ratio, MFA QR & Panes', () => {
+  await check('4c. v0.3.4-beta UX: Streamlined Header, Bug Report, Dark-First Default, Custom Swatches, VLP Ratio, MFA QR & Hidden Raw Converter', () => {
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const appJs = fs.readFileSync(path.join(rootDir, 'public', 'app.js'), 'utf8');
 
-    assert(indexHtml.includes('v0.3.3-beta'), 'index.html badge should display v0.3.3-beta');
+    assert(indexHtml.includes('v0.3.4-beta'), 'index.html badge should display v0.3.4-beta');
+    assert(indexHtml.includes('id="quickPastePanel" class="hidden"'), 'quickPastePanel must default to hidden on load');
+    assert(indexHtml.includes('data-guide-id="raw-text-converter"'), 'Raw Text Converter card header must link to Button Demo Guide');
+    assert(indexHtml.includes('id="quickPasteModeSelect"'), 'Raw Text Converter must include split mode selector');
+    assert(indexHtml.includes('id="quickPasteUnwrapToggle"'), 'Raw Text Converter must include unwrap paragraph lines toggle');
+    assert(indexHtml.includes('id="quickPasteStatusBox"'), 'Raw Text Converter must include validation status diagnostics box');
+    assert(appJs.includes('setQuickPasteVisible(false)'), 'app.js must initialize quickPastePanel hidden');
+    assert(appJs.includes("document.querySelectorAll('[data-guide-id]')"), 'app.js must bind all data-guide-id help triggers');
     assert(indexHtml.includes('id="btnUndo"'), 'index.html should contain Undo button');
     assert(indexHtml.includes('id="btnRedo"'), 'index.html should contain Redo button');
     assert(indexHtml.includes('id="chkHideGuideStartup"'), 'index.html should contain startup guide opt-out checkbox');
@@ -417,7 +424,7 @@ async function main() {
       assert.strictEqual(h.status, 200);
       const healthJson = JSON.parse(h.body.toString());
       assert.strictEqual(healthJson.ok, true);
-      assert.strictEqual(healthJson.version, '0.3.3-beta');
+      assert.strictEqual(healthJson.version, '0.3.4-beta');
       assert(String(healthJson.issueUrl || '').includes('/issues/new'), '/api/health should expose GitHub issueUrl');
 
       const idx = await httpRequest(testPort, 'GET', '/');
@@ -800,6 +807,65 @@ async function main() {
         totpCode: testTotp(mfaSetup.secret)
       });
       assert.strictEqual(loginWithTotp.status, 200);
+    });
+
+    await check('9. v0.3.4-beta Raw Text Converter: Body Text Preservation, Error Handling & Button Demo Guide Explanation', () => {
+      // 1. Guide catalog entry present for Button Demo Guide
+      const convGuide = VLP.getToolbarCatalog().find((c) => c.id === 'raw-text-converter');
+      assert(convGuide, 'Button Demo Guide must include raw-text-converter explanation card');
+      assert(convGuide.demoHtml.includes('How Splitting Works'), 'Converter guide card must explain how splitting works');
+
+      // 2. Unnumbered multi-line wrapped prose stays ONE step (no mid-paragraph breaking!)
+      const wrappedProse = [
+        'Open Server Manager from the taskbar and wait for the dashboard',
+        'to finish enumerating local roles before clicking Manage in the',
+        'upper-right corner of the window.'
+      ].join('\n');
+      const wrappedRes = VLP.parseRawTextToSteps(wrappedProse, { splitMode: 'smart', unwrapPdfLines: true });
+      assert.strictEqual(wrappedRes.errors.length, 0);
+      assert.strictEqual(wrappedRes.steps.length, 1);
+      assert.strictEqual(wrappedRes.detectedMode, 'paragraphs');
+      assert(wrappedRes.steps[0].instruction.includes('dashboard to finish enumerating'), 'Wrapped prose lines must rejoin smoothly');
+
+      // 3. Multiple blank-line paragraphs become 1 step per paragraph
+      const twoParas = 'First paragraph line one\nline two.\n\nSecond paragraph line one\nline two.';
+      const twoParaRes = VLP.parseRawTextToSteps(twoParas, { splitMode: 'smart', unwrapPdfLines: true });
+      assert.strictEqual(twoParaRes.steps.length, 2);
+
+      // 4. Numbered steps + IPv4 safety + multi-paragraph continuation within step
+      const numberedMulti = [
+        'Step 1: Configure static addressing',
+        '192.168.10.11 is the management IP for the ESXi host.',
+        '',
+        'Set gateway to 192.168.10.1 before saving.',
+        'Context: Static addressing ensures persistent lab reachability.',
+        '2. Verify DNS lookup'
+      ].join('\n');
+      const numRes = VLP.parseRawTextToSteps(numberedMulti, { splitMode: 'smart', unwrapPdfLines: true });
+      assert.strictEqual(numRes.steps.length, 2);
+      assert(numRes.steps[0].instruction.includes('192.168.10.11 is the management IP'));
+      assert(numRes.steps[0].instruction.includes('Set gateway to 192.168.10.1'));
+      assert.strictEqual(numRes.steps[0].contextText, 'Static addressing ensures persistent lab reachability.');
+
+      // 5. Explicit splitMode variations
+      const lineModeRes = VLP.parseRawTextToSteps(wrappedProse, { splitMode: 'line' });
+      assert.strictEqual(lineModeRes.steps.length, 3);
+      const strictNumNoNums = VLP.parseRawTextToSteps(twoParas, { splitMode: 'numbered' });
+      assert.strictEqual(strictNumNoNums.steps.length, 1);
+      assert(strictNumNoNums.warnings.length >= 1, 'Numbered mode with no step numbers must emit a warning');
+
+      // 6. Error handling for empty, binary PDF, RTF, and VLP XML inputs
+      assert(VLP.parseRawTextToSteps('   ').errors.length >= 1, 'Empty input must return actionable error');
+      assert(VLP.parseRawTextToSteps('%PDF-1.7 binary').errors.length >= 1, 'PDF header paste must return error');
+      assert(VLP.parseRawTextToSteps('{\\rtf1\\ansi test}').errors.length >= 1, 'RTF raw paste must return error');
+      assert(VLP.parseRawTextToSteps('<Manual name="x">').errors.length >= 1, 'XML paste must return error');
+
+      // 7. Warning + auto-recovery for unclosed ``` fence and unbalanced shortcuts
+      const unclosedRes = VLP.parseRawTextToSteps('1. Click **Start without closing\n```term\nwhoami');
+      assert.strictEqual(unclosedRes.steps.length, 1);
+      assert(unclosedRes.warnings.some((w) => w.includes('terminal code fence')), 'Unclosed ``` fence must emit warning');
+      assert(unclosedRes.warnings.some((w) => w.includes('unclosed **UI Target**')), 'Unclosed ** must emit warning');
+      assert.strictEqual(unclosedRes.steps[0].termOutput, 'whoami');
     });
   } finally {
     serverProc.kill();

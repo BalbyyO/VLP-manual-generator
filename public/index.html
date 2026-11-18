@@ -11,7 +11,7 @@
     <div class="topbar-left">
       <div class="brand-mark" aria-hidden="true">VLP</div>
       <span class="brand-title">VLP Manual HTML Formatter</span>
-      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped &bull; v0.3.3-beta</span>
+      <span class="badge" title="100% Native Deterministic Formatter — No AI or Internet Required">Air-Gapped &bull; v0.3.4-beta</span>
       <span id="saveStatusBadge" class="badge status-ok" title="Dual Auto-Save (Browser IndexedDB + Server Disk)">
         <span class="status-dot"></span>
         <span id="saveStatusText">Ready</span>
@@ -354,16 +354,36 @@
 
         <!-- Procedural Steps Form -->
         <div id="stepsEditor" class="hidden">
-          <!-- Raw Text Quick Converter -->
+          <!-- Raw Text Quick Converter (starts hidden by default) -->
           <div class="card">
             <div class="card-header">
-              <span class="card-title">Raw Text &rarr; Procedural Steps Converter (Native, No AI)</span>
-              <button type="button" id="btnToggleQuickPaste" class="btn btn-xs">Hide / Show</button>
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span class="card-title">Raw Text &rarr; Procedural Steps Converter (Native, No AI)</span>
+                <button type="button" class="tb-btn-help" data-guide-id="raw-text-converter" title="Open explanation &amp; live example in Button Demo Guide">?</button>
+              </div>
+              <button type="button" id="btnToggleQuickPaste" class="btn btn-xs" aria-expanded="false" aria-controls="quickPastePanel">Show Converter</button>
             </div>
-            <div id="quickPastePanel">
-              <textarea id="quickPasteInput" class="textarea" rows="5" placeholder="Paste raw numbered steps or lines here (preserves exact wording):&#10;1. Click **Start**, type `gpedit.msc`, and press [[Enter]].&#10;Context: Opening Local Group Policy Editor for baseline firewall setup.&#10;2. Run `whoami` to verify your account."></textarea>
+            <div id="quickPastePanel" class="hidden">
+              <div class="quick-paste-controls">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <label class="field-label" for="quickPasteModeSelect" style="margin:0;">Split Mode:</label>
+                  <select id="quickPasteModeSelect" class="select quick-paste-mode-select" aria-label="Raw Text Split Mode">
+                    <option value="smart">Smart (Numbered Steps or Blank-Line Paragraphs)</option>
+                    <option value="numbered">Numbered Steps Only (1. / Step 1:)</option>
+                    <option value="paragraph">Blank-Line Paragraphs</option>
+                    <option value="line">Line-by-Line (1 Line = 1 Step)</option>
+                  </select>
+                  <label style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; cursor:pointer;">
+                    <input id="quickPasteUnwrapToggle" type="checkbox" checked />
+                    <span>Unwrap wrapped paragraph lines</span>
+                  </label>
+                </div>
+                <span id="quickPastePreviewBadge" class="badge">0 steps</span>
+              </div>
+              <textarea id="quickPasteInput" class="textarea" rows="5" placeholder="Paste raw numbered steps or multi-line paragraphs here (wrapped paragraphs stay intact):&#10;1. Click **Start**, type `gpedit.msc`, and press [[Enter]].&#10;Context: Opening Local Group Policy Editor for baseline firewall setup.&#10;2. Run `whoami` to verify your account."></textarea>
+              <div id="quickPasteStatusBox" class="quick-paste-status hidden" role="status" aria-live="polite"></div>
               <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:8px;">
-                <span class="muted-hint">Supports numbered steps (<code>1.</code>, <code>Step 1:</code>), <code>Context:</code>, <code>**UI**</code>, <code>`cmd`</code>, <code>[[Key]]</code>, and <code>```term</code> blocks.</span>
+                <span class="muted-hint">Supports <code>1.</code> / <code>Step 1:</code>, blank-line paragraphs, <code>Context:</code>, <code>**UI**</code>, <code>`cmd`</code>, <code>[[Key]]</code>, and <code>```term</code> blocks. Click <strong>?</strong> above for full guide.</span>
                 <div style="display:flex; gap:6px;">
                   <button type="button" id="btnQuickPasteAppend" class="btn btn-sm">Append Steps</button>
                   <button type="button" id="btnQuickPasteReplace" class="btn btn-sm btn-primary">Replace Steps</button>
@@ -517,7 +537,7 @@
         <div class="brand-mark" aria-hidden="true">VLP</div>
         <div>
           <h2 id="authGateTitle" style="margin:0;">Sign In to VLP Manual Generator</h2>
-          <div class="muted-hint">Air-Gapped Local Workspace &bull; v0.3.3-beta</div>
+          <div class="muted-hint">Air-Gapped Local Workspace &bull; v0.3.4-beta</div>
         </div>
       </div>
       <p id="authGateSubtitle" class="auth-sub"></p>

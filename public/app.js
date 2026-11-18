@@ -2915,7 +2915,7 @@
       });
     });
 
-    $('editorToolbar').querySelectorAll('[data-guide-id]').forEach(function (btn) {
+    document.querySelectorAll('[data-guide-id]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         openTemplatesModal('guide', btn.dataset.guideId);
       });
@@ -3119,20 +3119,106 @@
       handleStepsToolbarAction('add-step');
     });
 
-    // Quick Paste Raw Text -> Steps
+    // Quick Paste Raw Text -> Steps (always starts hidden by default)
+    function setQuickPasteVisible(visible) {
+      const panel = $('quickPastePanel');
+      const toggleBtn = $('btnToggleQuickPaste');
+      if (!panel || !toggleBtn) return;
+      panel.classList.toggle('hidden', !visible);
+      toggleBtn.textContent = visible ? 'Hide Converter' : 'Show Converter';
+      toggleBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
+    }
+
+    function getQuickPasteOptions() {
+      const modeEl = $('quickPasteModeSelect');
+      const unwrapEl = $('quickPasteUnwrapToggle');
+      return {
+        splitMode: modeEl ? modeEl.value : 'smart',
+        unwrapPdfLines: unwrapEl ? unwrapEl.checked : true
+      };
+    }
+
+    function updateQuickPasteDiagnostics(parsedResult) {
+      const inputEl = $('quickPasteInput');
+      const badgeEl = $('quickPastePreviewBadge');
+      const statusEl = $('quickPasteStatusBox');
+      if (!inputEl || !badgeEl || !statusEl) return parsedResult || null;
+
+      const raw = inputEl.value;
+      if (!raw || !raw.trim()) {
+        badgeEl.textContent = '0 steps';
+        statusEl.className = 'quick-paste-status hidden';
+        statusEl.innerHTML = '';
+        return null;
+      }
+
+      const parsed = parsedResult || VLP.parseRawTextToSteps(raw, getQuickPasteOptions());
+      const count = (parsed.steps || []).length;
+      const modeDesc = parsed.detectedMode ? (' (' + parsed.detectedMode + ')') : '';
+      badgeEl.textContent = count + (count === 1 ? ' step' : ' steps') + (count > 0 ? modeDesc : '');
+
+      const errs = parsed.errors || [];
+      const warns = parsed.warnings || [];
+      if (errs.length > 0) {
+        statusEl.className = 'quick-paste-status is-error';
+        statusEl.innerHTML = errs.map(function (msg) {
+          return '<div><strong>Error:</strong> ' + VLP.escapeHtml(msg) + '</div>';
+        }).join('');
+      } else if (warns.length > 0) {
+        statusEl.className = 'quick-paste-status is-warn';
+        statusEl.innerHTML = warns.map(function (msg) {
+          return '<div><strong>Note:</strong> ' + VLP.escapeHtml(msg) + '</div>';
+        }).join('');
+      } else {
+        statusEl.className = 'quick-paste-status is-ok';
+        statusEl.textContent = 'Ready: ' + count + (count === 1 ? ' procedural step' : ' procedural steps') +
+          ' detected via ' + (parsed.detectedMode || 'smart') + ' grouping.';
+      }
+      return parsed;
+    }
+
+    setQuickPasteVisible(false);
+
     $('btnToggleQuickPaste').addEventListener('click', function () {
-      $('quickPastePanel').classList.toggle('hidden');
+      const currentlyHidden = $('quickPastePanel').classList.contains('hidden');
+      setQuickPasteVisible(currentlyHidden);
     });
+
+    $('quickPasteInput').addEventListener('input', function () { updateQuickPasteDiagnostics(); });
+    $('quickPasteModeSelect').addEventListener('change', function () { updateQuickPasteDiagnostics(); });
+    $('quickPasteUnwrapToggle').addEventListener('change', function () { updateQuickPasteDiagnostics(); });
 
     function runQuickPaste(replaceExisting) {
       const raw = $('quickPasteInput').value;
-      const parsed = VLP.parseRawTextToSteps(raw);
-      if (!parsed.steps.length) {
-        showToast('Paste one or more lines or numbered steps first', true);
+      let parsed;
+      try {
+        parsed = VLP.parseRawTextToSteps(raw, getQuickPasteOptions());
+      } catch (err) {
+        parsed = { sectionTitle: '', introText: '', steps: [], warnings: [], errors: [err.message || 'Failed to parse raw text.'], detectedMode: 'error' };
+      }
+
+      const errs = parsed.errors || [];
+      if (errs.length > 0 || !parsed.steps.length) {
+        const badgeEl = $('quickPastePreviewBadge');
+        const statusEl = $('quickPasteStatusBox');
+        const messages = errs.length > 0 ? errs : ['Paste or type one or more procedural steps or paragraphs first.'];
+        if (badgeEl) badgeEl.textContent = '0 steps';
+        if (statusEl) {
+          statusEl.className = 'quick-paste-status is-error';
+          statusEl.innerHTML = messages.map(function (msg) {
+            return '<div><strong>Error:</strong> ' + VLP.escapeHtml(msg) + '</div>';
+          }).join('');
+        }
+        showToast(messages[0], true);
         return;
       }
+
+      updateQuickPasteDiagnostics(parsed);
       const info = getActiveInfo();
-      if (!info) return;
+      if (!info) {
+        showToast('Select a Procedural Steps page first before converting text.', true);
+        return;
+      }
       pushUndo();
       const stData = info.node.stepsData;
       if (parsed.sectionTitle && !stData.sectionTitle) stData.sectionTitle = parsed.sectionTitle;
@@ -3146,7 +3232,8 @@
       renderStepsList(stData);
       updateOutputs();
       scheduleAutosave();
-      showToast((replaceExisting ? 'Replaced with ' : 'Appended ') + parsed.steps.length + ' step(s)');
+      const warnSuffix = (parsed.warnings && parsed.warnings.length) ? ' (with warnings — review notes above)' : '';
+      showToast((replaceExisting ? 'Replaced with ' : 'Appended ') + parsed.steps.length + ' step(s)' + warnSuffix);
     }
 
     $('btnQuickPasteAppend').addEventListener('click', function () { runQuickPaste(false); });
@@ -3948,9 +4035,9 @@
       return;
     }
 
-    const title = '[v0.3.3-beta] Bug Report: ';
+    const title = '[v0.3.4-beta] Bug Report: ';
     const envLines = [
-      '**Version:** v0.3.3-beta',
+      '**Version:** v0.3.4-beta',
       '**Browser Viewport:** ' + window.innerWidth + 'x' + window.innerHeight,
       '**UI Theme:** ' + state.uiTheme + ' | **Preview Theme:** ' + state.previewTheme,
       '',
@@ -3972,7 +4059,7 @@
 
   function renderOwuiAboutTab(body) {
     body.innerHTML =
-      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.3-beta)</div>' +
+      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.4-beta)</div>' +
       '<p class="owui-row-desc" style="font-size:12.5px; line-height:1.55;">100% air-gapped, deterministic authoring studio supporting VLP HTML5/XML packages, Student Exports (.pdf, .html, .mdx, .rtf), and multi-user local accounts.</p>' +
       '<div style="margin:10px 0 6px;"><button type="button" id="btnAboutReportBug" class="btn btn-sm btn-blue">Report Bug on GitHub</button></div>' +
       '<div class="owui-section-title">PII &amp; Credential Security Architecture</div>' +

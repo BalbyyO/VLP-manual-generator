@@ -6,11 +6,11 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.3.3`)
+## Release & Pre-Packaged Docker Image (`beta 0.3.4`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.3-beta`)
-- **GitHub Release (`beta 0.3.3`)**: [v0.3.3-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.3-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.3-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.3-beta/vlp-manual-generator-0.3.3-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.4-beta`)
+- **GitHub Release (`beta 0.3.4`)**: [v0.3.4-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.4-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.4-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.4-beta/vlp-manual-generator-0.3.4-beta.tar)
 
 ---
 
@@ -109,7 +109,7 @@ Highlight text inside any editor box (including table cells) and click a toolbar
 > **Note:** Formatting is strictly deterministic—plain text is never auto-tagged unless you apply a toolbar button, keyboard shortcut, or explicit markup.
 
 #### Convert Raw Text into Steps
-In **Procedural Steps** mode, paste plain or numbered steps into **Raw Text → Procedural Steps Converter**:
+In **Procedural Steps** mode, the **Raw Text → Procedural Steps Converter (Native, No AI)** starts **hidden by default**—click **Show Converter** when needed (or click **`?`** beside its title to open the explanation and live preview inside the **Button Demo Guide**):
 
 ```text
 1. Click **Start**, type `gpedit.msc`, and press [[Enter]].
@@ -117,7 +117,9 @@ Context: Opening the Local Group Policy Editor for baseline firewall setup.
 2. Run `whoami` to confirm the active administrative account.
 ```
 
-Click **Replace Steps** or **Append Steps**—exact step wording is preserved, and `Context:` lines automatically populate the indented shaded `.step-context` block.
+- **No More Mid-Paragraph Line Splits**: Wrapped multi-line paragraphs stay intact inside one step unless separated by a step number (`1.` / `Step 1:`) or blank line, and the **Unwrap wrapped paragraph lines** toggle smoothly rejoins hard line breaks.
+- **Split Modes & Live Validation**: Choose **Smart** (default), **Numbered Steps Only**, **Blank-Line Paragraphs**, or **Line-by-Line**, with live step-count feedback and clear error/warning diagnostics for empty input, raw `%PDF-` / `{\rtf` / XML pastes, or unclosed ```` ```term ```` / inline shortcuts (`**`, `` ` ``, `[[ ]]`).
+- Click **Replace Steps** or **Append Steps**—exact wording is preserved, and `Context:` lines automatically populate the indented shaded `.step-context` block.
 
 #### Consolidate Legacy XML Chapters (Annex C Demo)
 1. Open **Templates & Button Guide** → **Reference Manuals** and click **Load Annex C**.

@@ -1378,9 +1378,48 @@
   /* =========================================================================
    * Deterministic Raw Text & Legacy HTML Parsers
    * ========================================================================= */
-  function parseRawTextToSteps(rawText) {
+  function parseRawTextToSteps(rawText, options) {
+    const opts = options || {};
+    const splitMode = ['smart', 'numbered', 'paragraph', 'line'].indexOf(opts.splitMode) !== -1
+      ? opts.splitMode
+      : 'smart';
+    const unwrapPdfLines = opts.unwrapPdfLines !== undefined
+      ? Boolean(opts.unwrapPdfLines)
+      : (splitMode !== 'line');
+
+    const warnings = [];
+    const errors = [];
+
+    if (rawText !== null && rawText !== undefined && typeof rawText !== 'string') {
+      errors.push('Converter input must be plain text.');
+      return { sectionTitle: '', introText: '', steps: [], warnings: warnings, errors: errors, detectedMode: 'invalid' };
+    }
+
     const cleaned = stripZeroWidthAndNbsp(rawText || '').trim();
-    if (!cleaned) return { sectionTitle: '', introText: '', steps: [] };
+    if (!cleaned) {
+      errors.push('Paste or type one or more procedural steps or paragraphs before converting.');
+      return { sectionTitle: '', introText: '', steps: [], warnings: warnings, errors: errors, detectedMode: 'empty' };
+    }
+
+    if (cleaned.length > 200000) {
+      errors.push('Input exceeds 200,000 characters. Split long lab guides into smaller chapters before converting.');
+      return { sectionTitle: '', introText: '', steps: [], warnings: warnings, errors: errors, detectedMode: 'too-large' };
+    }
+
+    if (/^%PDF-/i.test(cleaned)) {
+      errors.push('Detected raw PDF binary data (%PDF-). Copy readable text from your PDF viewer rather than dropping binary bytes here.');
+      return { sectionTitle: '', introText: '', steps: [], warnings: warnings, errors: errors, detectedMode: 'binary-pdf' };
+    }
+
+    if (/^\{\\rtf\d*/i.test(cleaned)) {
+      errors.push('Detected raw RTF formatting codes ({\\rtf). Open the RTF document in Word/WordPad and copy the visible text.');
+      return { sectionTitle: '', introText: '', steps: [], warnings: warnings, errors: errors, detectedMode: 'raw-rtf' };
+    }
+
+    if (/^(?:<\?xml\b|<Manual\b|<ContentNodes\b)/i.test(cleaned)) {
+      errors.push('Detected VLP XML markup. Use "Import XML / ZIP" in the top bar to load XML manuals.');
+      return { sectionTitle: '', introText: '', steps: [], warnings: warnings, errors: errors, detectedMode: 'vlp-xml' };
+    }
 
     const rawLines = cleaned.split(/\r?\n/);
     let sectionTitle = '';
@@ -1394,8 +1433,8 @@
         idx++;
         continue;
       }
-      if (contentLines.length === 0 && !sectionTitle && /^(?:#\s+|Section:\s*|Title:\s*)/i.test(line)) {
-        sectionTitle = line.replace(/^(?:#\s+|Section:\s*|Title:\s*)/i, '').trim();
+      if (contentLines.length === 0 && !sectionTitle && /^(?:#{1,3}\s+|Section:\s*|Title:\s*)/i.test(line)) {
+        sectionTitle = line.replace(/^(?:#{1,3}\s+|Section:\s*|Title:\s*)/i, '').trim();
         idx++;
         continue;
       }
@@ -1408,88 +1447,275 @@
       idx++;
     }
 
-    const numberedRe = /^\s*(?:step\s*\d+\s*[:.\-)]|\d+\s*[.)])\s+(.*)$/i;
-    const numberedCount = contentLines.filter(function (l) { return numberedRe.test(l); }).length;
+    // Matches "Step 1: ...", "Step 2 ...", or "1. ..." / "2) ..." (avoids decimals/IPv4 like 6.7 or 192.168.10.11)
+    function matchStepHeader(rawLine) {
+      const mStep = rawLine.match(/^\s*step\s+(\d{1,3})\s*(?:[:.\-)]\s*(.*)|\s+(.*))?$/i);
+      if (mStep) {
+        return { matched: true, num: Number(mStep[1]), rest: (mStep[2] || mStep[3] || '').trim() };
+      }
+      const mNum = rawLine.match(/^\s*(\d{1,3})\s*[.)](?:\s+(.*)|$)/);
+      if (mNum && Number(mNum[1]) <= 200) {
+        const rest = (mNum[2] || '').trim();
+        if (/^\s*\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(rawLine)) {
+          return { matched: false, num: 0, rest: '' };
+        }
+        return { matched: true, num: Number(mNum[1]), rest: rest };
+      }
+      return { matched: false, num: 0, rest: '' };
+    }
 
-    const blocks = [];
-    if (numberedCount >= 1) {
-      let current = null;
-      contentLines.forEach(function (rawLine) {
-        const trimmed = rawLine.trim();
-        const m = rawLine.match(numberedRe);
-        if (m) {
-          if (current) blocks.push(current);
-          current = [m[1].trim()];
-        } else if (current) {
-          if (trimmed) current.push(rawLine);
-        } else if (trimmed) {
-          introParts.push(trimmed);
+    function countStepHeaders(lines) {
+      let count = 0;
+      let inFence = false;
+      lines.forEach(function (l) {
+        const t = l.trim();
+        if (/^```/.test(t)) {
+          inFence = !inFence;
+          return;
+        }
+        if (!inFence && matchStepHeader(l).matched) count++;
+      });
+      return count;
+    }
+
+    function splitIntoParagraphBlocks(lines) {
+      const out = [];
+      let cur = [];
+      let inFence = false;
+      lines.forEach(function (l) {
+        const t = l.trim();
+        if (/^```/.test(t)) inFence = !inFence;
+        if (!inFence && !t) {
+          if (cur.length) {
+            out.push(cur);
+            cur = [];
+          }
+        } else {
+          cur.push(l);
         }
       });
-      if (current) blocks.push(current);
-    } else {
-      const joined = contentLines.join('\n').trim();
-      const hasContextMarker = /(?:^|\n)\s*(?:Context|What you are doing|Why this matters)\s*:/i.test(joined);
-      if (hasContextMarker) {
-        joined.split(/\r?\n\s*\r?\n/).forEach(function (blk) {
-          const lines = blk.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
-          if (lines.length) blocks.push(lines);
+      if (cur.length) out.push(cur);
+      return out;
+    }
+
+    const numberedCount = countStepHeaders(contentLines);
+    const blocks = [];
+    let detectedMode = 'paragraphs';
+
+    if (splitMode === 'numbered' || (splitMode === 'smart' && numberedCount >= 1)) {
+      if (numberedCount >= 1) {
+        detectedMode = 'numbered';
+        let current = null;
+        let inFence = false;
+        contentLines.forEach(function (rawLine) {
+          const trimmed = rawLine.trim();
+          if (/^```/.test(trimmed)) inFence = !inFence;
+          const hdr = !inFence ? matchStepHeader(rawLine) : { matched: false, rest: '' };
+          if (hdr.matched) {
+            if (current) blocks.push(current);
+            current = hdr.rest ? [hdr.rest] : [];
+          } else if (current !== null) {
+            current.push(rawLine);
+          } else if (trimmed) {
+            introParts.push(trimmed);
+          }
         });
+        if (current) blocks.push(current);
       } else {
+        detectedMode = 'single';
+        if (contentLines.some(function (l) { return l.trim(); })) {
+          blocks.push(contentLines.slice());
+        }
+        warnings.push('No numbered prefixes (like "1." or "Step 1:") were found; kept the pasted text together as 1 step.');
+      }
+    } else if (splitMode === 'line') {
+      detectedMode = 'lines';
+      let inFence = false;
+      let fenceBuf = [];
+      contentLines.forEach(function (rawLine) {
+        const t = rawLine.trim();
+        if (/^```/.test(t)) {
+          if (!inFence) {
+            inFence = true;
+            fenceBuf = [rawLine];
+          } else {
+            fenceBuf.push(rawLine);
+            blocks.push(fenceBuf);
+            fenceBuf = [];
+            inFence = false;
+          }
+          return;
+        }
+        if (inFence) {
+          fenceBuf.push(rawLine);
+          return;
+        }
+        if (!t) return;
+        const hdr = matchStepHeader(rawLine);
+        const cleanedLine = hdr.matched
+          ? hdr.rest
+          : t.replace(/^(?:[-•*]|\u2022)\s+/, '').trim();
+        if (cleanedLine) blocks.push([cleanedLine]);
+      });
+      if (fenceBuf.length) {
+        blocks.push(fenceBuf);
+        warnings.push('An unclosed ``` terminal code fence was automatically closed.');
+      }
+    } else if (splitMode === 'paragraph') {
+      detectedMode = 'paragraphs';
+      splitIntoParagraphBlocks(contentLines).forEach(function (paraLines) {
+        const outLines = paraLines.slice();
+        if (outLines.length) {
+          const hdr = matchStepHeader(outLines[0]);
+          if (hdr.matched) {
+            if (hdr.rest) outLines[0] = hdr.rest;
+            else outLines.shift();
+          }
+        }
+        if (outLines.some(function (l) { return l.trim(); })) blocks.push(outLines);
+      });
+    } else {
+      // splitMode === 'smart' with NO numbered steps: keep multi-line paragraphs together!
+      const nonEmptyLines = contentLines.filter(function (l) { return l.trim(); });
+      const bulletRe = /^\s*(?:[-•*]|\u2022)\s+(.*)$/;
+      const allBullets = nonEmptyLines.length > 0 && nonEmptyLines.every(function (l) {
+        return bulletRe.test(l) || /^\s{2,}\S/.test(l);
+      }) && bulletRe.test(nonEmptyLines[0]);
+
+      if (allBullets) {
+        detectedMode = 'bullets';
+        let curBullet = null;
         contentLines.forEach(function (rawLine) {
           const t = rawLine.trim();
           if (!t) return;
-          const unbulleted = t.replace(/^(?:[-•]|\*\s)\s+/, '').trim();
-          if (unbulleted) blocks.push([unbulleted]);
+          const bm = rawLine.match(bulletRe);
+          if (bm) {
+            if (curBullet) blocks.push(curBullet);
+            curBullet = [bm[1].trim()];
+          } else if (curBullet) {
+            curBullet.push(t);
+          }
+        });
+        if (curBullet) blocks.push(curBullet);
+      } else {
+        detectedMode = 'paragraphs';
+        splitIntoParagraphBlocks(contentLines).forEach(function (paraLines) {
+          if (paraLines.some(function (l) { return l.trim(); })) blocks.push(paraLines);
         });
       }
     }
 
-    const steps = blocks.map(function (blockLines) {
+    function unwrapProseParagraphs(linesArr) {
+      const paras = [];
+      let curPara = [];
+      function flushPara() {
+        if (!curPara.length) return;
+        if (!unwrapPdfLines) {
+          paras.push(curPara.join('\n'));
+        } else {
+          let merged = '';
+          for (let i = 0; i < curPara.length; i++) {
+            const line = curPara[i];
+            if (i === 0) {
+              merged = line;
+            } else {
+              const prev = curPara[i - 1];
+              const isSubBullet = /^(?:[-•*]|\u2022|[a-z0-9][.)])\s+/i.test(line);
+              const prevEndedHard = /:\s*$/.test(prev);
+              if (isSubBullet || prevEndedHard) {
+                merged += '\n' + line;
+              } else if (/-\s*$/.test(prev) && !/\s-\s*$/.test(prev) && /^[a-z]/.test(line)) {
+                merged = merged.replace(/-\s*$/, '') + line;
+              } else {
+                merged += ' ' + line;
+              }
+            }
+          }
+          paras.push(merged);
+        }
+        curPara = [];
+      }
+      linesArr.forEach(function (l) {
+        const t = l === '' ? '' : l.trim();
+        if (!t) flushPara();
+        else curPara.push(t);
+      });
+      flushPara();
+      return paras.join('\n\n');
+    }
+
+    function detectShortcutIssues(textBlock) {
+      const issues = [];
+      const uiDouble = (textBlock.match(/\*\*/g) || []).length;
+      if (uiDouble % 2 !== 0) issues.push('unclosed **UI Target** marker');
+      const backticks = (textBlock.match(/`/g) || []).length;
+      if (backticks % 2 !== 0) issues.push('unclosed `command` backtick');
+      const kbdOpen = (textBlock.match(/\[\[/g) || []).length;
+      const kbdClose = (textBlock.match(/\]\]/g) || []).length;
+      if (kbdOpen !== kbdClose) issues.push('unbalanced [[Key Press]] brackets');
+      const uiOpen = (textBlock.match(/\[ui\]/g) || []).length;
+      const uiClose = (textBlock.match(/\[\/ui\]/g) || []).length;
+      if (uiOpen !== uiClose) issues.push('unbalanced [ui]...[/ui] tags');
+      return issues;
+    }
+
+    const cliPromptRe = /^((?:\[[^\]]+\]\s*[$#]|[^\s@]+@[^\s:]+:[^$#]*[$#]|[A-Z]:\\[^>]*>|PS\s+[^>]+>|(?:Switch|Router|Firewall|ASA)(?:\([^)]*\))?\s*[>#]))\s*(.*)$/;
+    let unclosedFenceWarned = false;
+    let emptyStepCount = 0;
+    const steps = [];
+
+    blocks.forEach(function (blockLines) {
       const step = createDefaultStep();
       const instLines = [];
       const ctxLines = [];
       let inTermFence = false;
       const termLines = [];
+      let lastSection = ''; // 'inst' | 'ctx' | ''
 
       blockLines.forEach(function (line) {
         const t = line.trim();
-        if (/^```(?:term|terminal|sh|bash)?\s*$/i.test(t)) {
+        if (/^```(?:term|terminal|sh|bash|cli|powershell|ps1)?\s*$/i.test(t)) {
           inTermFence = !inTermFence;
+          lastSection = 'term';
           return;
         }
         if (inTermFence) {
           termLines.push(line);
           return;
         }
-        const ctxMatch = t.match(/^Context:\s*(.*)$/i);
+        if (!t) {
+          if (lastSection === 'inst' && instLines.length > 0 && instLines[instLines.length - 1] !== '') {
+            instLines.push('');
+          }
+          return;
+        }
+        const ctxMatch = t.match(/^(?:Context|What you are doing|Why this matters|Lab note|Note|Check your work|Tip):\s*(.*)$/i);
         if (ctxMatch) {
           if (ctxMatch[1].trim()) ctxLines.push(ctxMatch[1].trim());
+          lastSection = 'ctx';
           return;
         }
-        const whatMatch = t.match(/^What you are doing:\s*(.*)$/i);
-        if (whatMatch) {
-          if (whatMatch[1].trim()) ctxLines.push(whatMatch[1].trim());
-          return;
-        }
-        const whyMatch = t.match(/^Why this matters:\s*(.*)$/i);
-        if (whyMatch) {
-          if (whyMatch[1].trim()) ctxLines.push(whyMatch[1].trim());
-          return;
-        }
-        const termMatch = t.match(/^(?:Terminal|Output):\s*(.*)$/i);
+        const termMatch = t.match(/^(?:Terminal|Output|Command):\s*(.*)$/i);
         if (termMatch) {
           if (termMatch[1].trim()) termLines.push(termMatch[1].trim());
+          lastSection = 'term';
           return;
         }
+        lastSection = 'inst';
         instLines.push(t);
       });
 
-      step.instruction = instLines.join('\n');
+      if (inTermFence && !unclosedFenceWarned) {
+        unclosedFenceWarned = true;
+        warnings.push('An unclosed ``` terminal code fence was automatically closed.');
+      }
+
+      step.instruction = unwrapProseParagraphs(instLines);
       step.contextText = ctxLines.join('\n');
+
       if (termLines.length > 0) {
         const first = termLines[0].trim();
-        const promptMatch = first.match(/^(\[[^\]]+\][$#]|[^\s]+@[^\s]+:[^$#]*[$#]|[A-Z]:\\[^>]*>|PS\s+[^>]+>)\s*(.*)$/);
+        const promptMatch = first.match(cliPromptRe);
         if (promptMatch) {
           step.termPrompt = promptMatch[1].trim();
           step.termCommand = promptMatch[2].trim();
@@ -1498,13 +1724,43 @@
           step.termOutput = termLines.join('\n');
         }
       }
-      return step;
+
+      const hasContent = Boolean(
+        (step.instruction && step.instruction.trim()) ||
+        (step.contextText && step.contextText.trim()) ||
+        (step.termPrompt && step.termPrompt.trim()) ||
+        (step.termCommand && step.termCommand.trim()) ||
+        (step.termOutput && step.termOutput.trim())
+      );
+      if (!hasContent) {
+        emptyStepCount++;
+        return;
+      }
+
+      const combinedInline = [step.instruction, step.contextText].filter(Boolean).join('\n');
+      const shortcutIssues = detectShortcutIssues(combinedInline);
+      if (shortcutIssues.length > 0) {
+        warnings.push('Step ' + (steps.length + 1) + ' has ' + shortcutIssues.join(', ') + ' — verify formatting in Live Preview.');
+      }
+
+      steps.push(step);
     });
+
+    if (emptyStepCount > 0) {
+      warnings.push('Skipped ' + emptyStepCount + ' empty step header(s) with no instruction text.');
+    }
+
+    if (steps.length === 0 && errors.length === 0) {
+      errors.push('No valid procedural steps could be extracted. Verify your text is not just empty headers or metadata.');
+    }
 
     return {
       sectionTitle: sectionTitle,
       introText: introParts.join('\n\n'),
-      steps: steps
+      steps: steps,
+      warnings: warnings,
+      errors: errors,
+      detectedMode: detectedMode
     };
   }
 
@@ -2606,6 +2862,21 @@
         summary: 'Screenshot embedded directly inside the matching step table cell beneath instructions.',
         whenToUse: 'Always map screenshots 1-to-1 inline inside their corresponding step row rather than stacking at the bottom.',
         demoHtml: '<img class="step-inline-img" src="./assets/step-sample.svg" alt="Step Screenshot Preview" style="margin-top:0; max-height:110px;" />'
+      },
+      {
+        id: 'raw-text-converter',
+        category: 'steps',
+        label: 'Raw Text -> Procedural Steps Converter (Native, No AI)',
+        shortcut: 'Show Converter button (Steps Editor)',
+        tagPreview: '1. Action... / Context:... / ```term ... ```',
+        summary: 'Deterministically converts raw pasted prose or numbered instructions into VLP steps without AI. Starts hidden by default; multi-line wrapped paragraphs stay intact unless separated by a step number (1. or Step 1:) or blank line, and live validation flags unclosed ** / ` / [[ ]] / ``` fences or binary file pastes.',
+        whenToUse: 'Click Show Converter at the top of Procedural Steps whenever pasting plain text or copied lab instructions. Leave Split Mode on Smart to keep wrapped body text together; use Numbered Only or Blank-Line Paragraphs for manual control, or Line-by-Line for quick one-line lists.',
+        demoHtml:
+          '<div style="font-size:12px; margin-bottom:8px;"><strong>How Splitting Works:</strong> ' +
+          '(1) Lines starting with <code>1.</code>, <code>2)</code>, or <code>Step 1:</code> start a new step and group all wrapped/indented lines below them until the next number. ' +
+          '(2) Without step numbers, text only splits on <strong>blank lines</strong> (or bullet lists)—single line wraps are rejoined into smooth prose instead of breaking paragraphs. ' +
+          '(3) Optional markers: <code># Section Title</code>, <code>Intro:</code>, <code>Context:</code> / <code>Note:</code>, <code>```term</code> blocks, <code>**UI**</code>, <code>`cmd`</code>, and <code>[[Key]]</code>.</div>' +
+          '<table class="lab-table" style="margin-top:0;"><thead><tr><th class="col-step-num" style="width:68px;text-align:center;">Step</th><th style="width:auto;">Action &amp; Verification</th></tr></thead><tbody><tr><td style="text-align:center;"><span class="step-badge">1</span></td><td>Click <span class="ui-target">Start</span>, type <code class="cmd-inline">gpedit.msc</code>, and press <kbd class="key-press">Enter</kbd>. Even when pasted across multiple wrapped lines, the paragraph stays intact.<div class="step-context">Converted deterministically from <code>Context:</code> without breaking prose mid-sentence.</div></td></tr></tbody></table>'
       }
     ];
   }

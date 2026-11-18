@@ -656,7 +656,7 @@ app.get('/api/health', function (_req, res) {
   const bugsUrl = (pkg.bugs && pkg.bugs.url) ? String(pkg.bugs.url).replace(/\/+$/, '') : '';
   res.json({
     ok: true,
-    version: '0.3.3-beta',
+    version: '0.3.4-beta',
     port: PORT,
     dataDir: DATA_DIR,
     airGapped: true,

@@ -4,7 +4,7 @@
 
 | Version | Supported | Notes |
 | --- | --- | --- |
-| `0.3.x` (`beta 0.3.3`) | Yes | Current pre-release hardened container, QR+TOTP MFA, multi-user auth, PII encryption & student exports |
+| `0.3.x` (`beta 0.3.4`) | Yes | Current pre-release hardened container, improved Raw Text Converter w/ error diagnostics, QR+TOTP MFA, multi-user auth & PII encryption |
 | `0.2.x` (`beta 0.2.1`) | Security fixes | Superseded by `0.3.1-beta` |
 | `main` | Yes | Active development branch |
 
