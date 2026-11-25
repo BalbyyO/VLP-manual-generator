@@ -11,7 +11,7 @@ FROM alpine:latest
 
 LABEL org.opencontainers.image.source="https://github.com/BalbyyO/VLP-manual-generator"
 LABEL org.opencontainers.image.description="Self-contained air-gapped VLP Manual HTML Formatter & XML Builder"
-LABEL org.opencontainers.image.version="0.3.4-beta"
+LABEL org.opencontainers.image.version="0.3.5-beta"
 
 # Install latest Alpine OS security upgrades + Node.js runtime only (no npm/corepack/yarn CLI packages)
 RUN apk update \

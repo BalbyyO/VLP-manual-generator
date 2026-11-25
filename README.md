@@ -6,11 +6,11 @@
 
 This application converts raw text, draft notes, and legacy `content.xml` chapters into standardized, light-and-dark-mode compatible HTML5 snippets (`</> Source` ready) or complete VLP `.zip` archives (`content.xml` + `images/`)—running 100% natively without AI tools or external internet access.
 
-## Release & Pre-Packaged Docker Image (`beta 0.3.4`)
+## Release & Pre-Packaged Docker Image (`beta 0.3.5`)
 
-- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.4-beta`)
-- **GitHub Release (`beta 0.3.4`)**: [v0.3.4-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.4-beta)
-- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.4-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.4-beta/vlp-manual-generator-0.3.4-beta.tar)
+- **Container Registry Image (Pull Directly)**: `docker pull ghcr.io/balbyyo/vlp-manual-generator:latest` (also tagged `0.3.5-beta`)
+- **GitHub Release (`beta 0.3.5`)**: [v0.3.5-beta Release Page](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.5-beta)
+- **Direct Packaged Docker Image Download (`.tar`)**: [vlp-manual-generator-0.3.5-beta.tar](https://github.com/BalbyyO/VLP-manual-generator/releases/download/v0.3.5-beta/vlp-manual-generator-0.3.5-beta.tar)
 
 ---
 
@@ -22,7 +22,8 @@ This application converts raw text, draft notes, and legacy `content.xml` chapte
 - **Unified Export Submenu (`Export ▾`)**: Consolidates **Export VLP `content.xml`**, **Export VLP Package (`.zip`)**, **Scope** (`Full Manual` / `Current Page`), and student document exports—standalone **`.pdf`** (pure binary PDF with inline screenshots), **Standalone `.html`** (with offline dark/light toggle and embedded base64 screenshots), **`.mdx` Markdown**, **`.rtf` Rich Text**, or browser **Print / Save PDF...**.
 - **Multi-User Local Accounts, Sessions & Admin Panel (<30 Concurrent Users)**:
   - **First-User Admin Bootstrap**: The first registered account (or `ADMIN_EMAIL` + `ADMIN_PASSWORD` environment variables) automatically becomes Administrator; subsequent accounts sign in or register according to Admin settings.
-  - **Open WebUI-Style Settings & Admin Panel**: Manage **Account** (Profile, Password, Offline TOTP MFA with scannable QR code & copyable manual setup key, API Keys), **Sessions** (private snapshots, Shared Team Manuals, `.json` project backups), **Users** (create, approve pending accounts, assign roles/groups, reset passwords), **Groups**, **Authentication** (`User Access`, `Pending Accounts` custom overlay, `LDAP`, `OAuth / OIDC` config & claim mappings), and **Security Audit**.
+  - **Open WebUI-Style Settings & Admin Panel**: Manage **Account** (Profile, Password, Offline TOTP MFA with scannable QR code & copyable manual setup key, API Keys), **My Projects** (save multiple manuals, switch freely, and resume each project from its last auto-saved state), **Sessions** (private snapshots, Shared Team Manuals, `.json` project backups), **Users** (create, approve pending accounts, assign roles/groups, reset passwords), **Groups**, **Authentication** (`User Access`, `Pending Accounts` custom overlay, `LDAP`, `OAuth / OIDC` config & claim mappings), and **Security Audit**.
+  - **Lightweight Disk Image Persistence**: Uploaded/pasted screenshots are stored once in `/data/images/` and referenced by `/api/images/<filename>` across project saves, autosaves, and snapshots—eliminating `PayloadTooLargeError` even on large manuals with many high-resolution screenshots.
   - **Hardened Multi-Stage Container Image**: Built on `alpine:latest` (`apk upgrade --no-cache` patching `libcrypto3`, `libssl3`, `musl`, `zlib`) with `nodejs` runtime only and zero `npm`/`npx`/`corepack`/`yarn` CLI packages in the final image to eliminate base-image npm/tar CVEs.
   - **Encrypted PII & Hardened Sessions**: Passwords hashed via salted `scrypt` (`timingSafeEqual`), user PII & secrets encrypted at rest with `AES-256-GCM`, blind-indexed via `HMAC-SHA256`, and protected by signed `HttpOnly; SameSite=Strict` cookies and brute-force login throttling.
   - **Per-User Workspace Isolation + Shared Team Manuals**: Each user's autosave (`IndexedDB` + `/data/users/<id>/sessions/`) is isolated so up to 30 concurrent authors never overwrite each other, with optional publishing to **Shared Team Manuals**.
@@ -67,7 +68,7 @@ flowchart LR
 | **Import XML / ZIP** | Imports an existing VLP `content.xml` or `.zip` manual package (including `./images/*`). |
 | **Export ▾** submenu | Unified dropdown containing **Scope** (`Full Manual` / `Current Page`), **Export VLP `content.xml`**, **Export VLP Package (`.zip`)**, and student exports (`.pdf`, `.html`, `.mdx`, `.rtf`, **Print / Save PDF...**). |
 | **Report Bug** | Opens a pre-filled GitHub New Issue page (`v0.3.2-beta`, viewport, and theme info) directly from the top bar or **Account & Admin → About**. |
-| **Account / Admin Pill** | Opens the Open WebUI-style Settings & Admin panel (`Account`, **`Sessions`** for private snapshots / Shared Team Manuals / `.json` backups, `Data Controls`, `Users`, `Groups`, `Authentication`, `Security Audit`). |
+| **Account / Admin Pill** | Opens the Open WebUI-style Settings & Admin panel (`Account`, **`My Projects`** for multi-manual workspaces, **`Sessions`** for private snapshots / Shared Team Manuals / `.json` backups, `Data Controls`, `Users`, `Groups`, `Authentication`, `Security Audit`). |
 | **Mobile / Zoom Pane Tabs** (`Structure \| Editor \| Preview`) | Appears automatically on narrow screens (`<= 1024px`) or high browser zoom so each pane remains full-width and usable without horizontal clipping. |
 
 ---

@@ -190,11 +190,15 @@ async function main() {
     assert(!/https?:\/\//i.test(stylesCss), 'styles.css must not reference external URLs');
   });
 
-  await check('4c. v0.3.4-beta UX: Streamlined Header, Bug Report, Dark-First Default, Custom Swatches, VLP Ratio, MFA QR & Hidden Raw Converter', () => {
+  await check('4c. v0.3.5-beta UX: Streamlined Header, Bug Report, Dark-First Default, Custom Swatches, VLP Ratio, MFA QR, My Projects & Hidden Raw Converter', () => {
     const indexHtml = fs.readFileSync(path.join(rootDir, 'public', 'index.html'), 'utf8');
     const appJs = fs.readFileSync(path.join(rootDir, 'public', 'app.js'), 'utf8');
 
-    assert(indexHtml.includes('v0.3.4-beta'), 'index.html badge should display v0.3.4-beta');
+    assert(indexHtml.includes('v0.3.5-beta'), 'index.html badge should display v0.3.5-beta');
+    assert(indexHtml.includes('data-owui-tab="projects"'), 'index.html user menu must include My Projects tab');
+    assert(appJs.includes('buildCompactImageMap('), 'app.js must deduplicate & strip dataUrl bloat via buildCompactImageMap');
+    assert(appJs.includes('parseJsonResponse('), 'app.js must safely parse non-JSON HTTP responses via parseJsonResponse');
+    assert(appJs.includes('renderOwuiProjectsTab('), 'app.js must render My Projects tab');
     assert(indexHtml.includes('id="quickPastePanel" class="hidden"'), 'quickPastePanel must default to hidden on load');
     assert(indexHtml.includes('data-guide-id="raw-text-converter"'), 'Raw Text Converter card header must link to Button Demo Guide');
     assert(indexHtml.includes('id="quickPasteModeSelect"'), 'Raw Text Converter must include split mode selector');
@@ -424,7 +428,7 @@ async function main() {
       assert.strictEqual(h.status, 200);
       const healthJson = JSON.parse(h.body.toString());
       assert.strictEqual(healthJson.ok, true);
-      assert.strictEqual(healthJson.version, '0.3.4-beta');
+      assert.strictEqual(healthJson.version, '0.3.5-beta');
       assert(String(healthJson.issueUrl || '').includes('/issues/new'), '/api/health should expose GitHub issueUrl');
 
       const idx = await httpRequest(testPort, 'GET', '/');
@@ -866,6 +870,135 @@ async function main() {
       assert(unclosedRes.warnings.some((w) => w.includes('terminal code fence')), 'Unclosed ``` fence must emit warning');
       assert(unclosedRes.warnings.some((w) => w.includes('unclosed **UI Target**')), 'Unclosed ** must emit warning');
       assert.strictEqual(unclosedRes.steps[0].termOutput, 'whoami');
+    });
+
+    await check('10. v0.3.5-beta Multi-Project Workspace, Compact Image Persistence & JSON Error Handling', async () => {
+      // Sign in as Alice (admin) to test isolated per-user projects
+      const aliceLogin = await httpRequest(testPort, 'POST', '/api/auth/login', {
+        identifier: 'alice@lab.local',
+        password: 'StrongAdminPw!1'
+      });
+      assert.strictEqual(aliceLogin.status, 200);
+      const aliceCookie = aliceLogin.headers['set-cookie'].map((c) => c.split(';')[0]).join('; ');
+
+      // 1. Save a project with inline base64 images -> server extracts them to /data/images/ and strips raw dataUrl from project JSON on disk
+      const samplePng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+      const projManualA = {
+        id: 'manual-proj-a',
+        name: 'openshift.lab01',
+        defaultLanguageCode: 'en',
+        colorTheme: 'crimson-slate',
+        contentNodes: [
+          {
+            id: 'node-a1',
+            title: 'Step 1',
+            mode: 'steps',
+            overview: VLP.createDefaultOverviewData(),
+            stepsData: {
+              sectionTitle: 'OpenShift Lab',
+              introText: '',
+              steps: [
+                { id: 'sa1', instruction: 'Deploy pod', contextText: '', termPrompt: '', termCommand: '', termOutput: '', credentialsList: [], tables: [], images: [{ src: './images/shot-a1.png', alt: 'Shot A1' }] },
+                { id: 'sa2', instruction: 'Verify service', contextText: '', termPrompt: '', termCommand: '', termOutput: '', credentialsList: [], tables: [], images: [{ src: './images/shot-a2.png', alt: 'Shot A2' }] }
+              ]
+            },
+            rawHtml: '',
+            images: [],
+            children: []
+          }
+        ]
+      };
+
+      const createA = await httpRequest(testPort, 'POST', '/api/projects', {
+        title: 'OpenShift Lab 1',
+        state: {
+          manual: projManualA,
+          activeNodeId: 'node-a1',
+          imageMap: {
+            'shot-a1.png': { filename: 'shot-a1.png', src: './images/shot-a1.png', dataUrl: samplePng },
+            './images/shot-a1.png': { filename: 'shot-a1.png', src: './images/shot-a1.png', dataUrl: samplePng },
+            'shot-a2.png': { filename: 'shot-a2.png', src: './images/shot-a2.png', dataUrl: samplePng }
+          }
+        }
+      }, { Cookie: aliceCookie });
+      assert.strictEqual(createA.status, 201);
+      const projA = JSON.parse(createA.body.toString()).project;
+      assert.strictEqual(projA.title, 'OpenShift Lab 1');
+      assert.strictEqual(projA.stepCount, 2);
+      assert.strictEqual(projA.imageCount, 2);
+
+      // Check stored project on disk has zero embedded data:image/ bloat and extracted files exist in IMAGES_DIR
+      assert(fs.existsSync(path.join(tmpDataDir, 'images', 'shot-a1.png')), 'shot-a1.png should be persisted in IMAGES_DIR');
+      assert(fs.existsSync(path.join(tmpDataDir, 'images', 'shot-a2.png')), 'shot-a2.png should be persisted in IMAGES_DIR');
+      const getARes = await httpRequest(testPort, 'GET', '/api/projects/' + projA.id, null, { Cookie: aliceCookie });
+      assert.strictEqual(getARes.status, 200);
+      const getABodyStr = getARes.body.toString();
+      assert(!getABodyStr.includes('data:image/'), 'Saved project JSON must store lightweight /api/images/ refs, not inline base64 dataUrls');
+      const loadedA = JSON.parse(getABodyStr).project;
+      assert.strictEqual(Object.keys(loadedA.state.imageMap).length, 2, 'Duplicate ./images/ keys should be deduplicated');
+
+      // 2. Create a second project (Project B), list projects, duplicate, rename, autosave, resume & delete
+      const createB = await httpRequest(testPort, 'POST', '/api/projects', {
+        title: 'Windows Server Annex B',
+        state: {
+          manual: { id: 'manual-proj-b', name: 'win.annexb', defaultLanguageCode: 'en', contentNodes: [] },
+          activeNodeId: null,
+          imageMap: {}
+        }
+      }, { Cookie: aliceCookie });
+      assert.strictEqual(createB.status, 201);
+      const projB = JSON.parse(createB.body.toString()).project;
+
+      const listRes = await httpRequest(testPort, 'GET', '/api/projects', null, { Cookie: aliceCookie });
+      assert.strictEqual(listRes.status, 200);
+      const listed = JSON.parse(listRes.body.toString()).projects;
+      assert.strictEqual(listed.length, 2, 'Alice should have 2 saved multi-manual projects');
+
+      const renameRes = await httpRequest(testPort, 'PUT', '/api/projects/' + projB.id, { title: 'Windows Annex B Renamed' }, { Cookie: aliceCookie });
+      assert.strictEqual(renameRes.status, 200);
+      assert.strictEqual(JSON.parse(renameRes.body.toString()).project.title, 'Windows Annex B Renamed');
+
+      const autoProjRes = await httpRequest(testPort, 'POST', '/api/projects/' + projA.id + '/autosave', {
+        manual: projManualA,
+        activeNodeId: 'node-a1',
+        activeProjectTitle: 'OpenShift Lab 1',
+        imageMap: { 'shot-a1.png': { filename: 'shot-a1.png', src: './images/shot-a1.png', previewUrl: '/api/images/shot-a1.png' } }
+      }, { Cookie: aliceCookie });
+      assert.strictEqual(autoProjRes.status, 200);
+
+      const dupRes = await httpRequest(testPort, 'POST', '/api/projects/' + projA.id + '/duplicate', {}, { Cookie: aliceCookie });
+      assert.strictEqual(dupRes.status, 201);
+      const projACopy = JSON.parse(dupRes.body.toString()).project;
+      assert(projACopy.title.includes('(Copy)'));
+
+      const delCopyRes = await httpRequest(testPort, 'DELETE', '/api/projects/' + projACopy.id, null, { Cookie: aliceCookie });
+      assert.strictEqual(delCopyRes.status, 200);
+
+      // 3. Per-user project isolation: signup a third active user (after switching defaultUserRole to user or approving via Alice) and confirm zero access to Alice's projects
+      await httpRequest(testPort, 'PUT', '/api/admin/auth-config', { defaultUserRole: 'user' }, { Cookie: aliceCookie });
+      const carolSignup = await httpRequest(testPort, 'POST', '/api/auth/signup', {
+        name: 'Carol Author',
+        email: 'carol@lab.local',
+        username: 'carolauthor',
+        password: 'CarolPassword!99'
+      });
+      assert.strictEqual(carolSignup.status, 201);
+      const carolCookie = carolSignup.headers['set-cookie'].map((c) => c.split(';')[0]).join('; ');
+
+      const carolList = JSON.parse((await httpRequest(testPort, 'GET', '/api/projects', null, { Cookie: carolCookie })).body.toString());
+      assert.strictEqual(carolList.projects.length, 0, 'Carol must not see Alice projects');
+      const carolFetchAlice = await httpRequest(testPort, 'GET', '/api/projects/' + projA.id, null, { Cookie: carolCookie });
+      assert.strictEqual(carolFetchAlice.status, 404);
+
+      // 4. Server JSON error handler returns clean JSON (never HTML <!DOCTYPE>) on malformed JSON / payload error
+      const badJsonRes = await httpRequest(testPort, 'POST', '/api/sessions/save', '{bad json', {
+        Cookie: aliceCookie,
+        'Content-Type': 'application/json'
+      });
+      assert.strictEqual(badJsonRes.status, 400);
+      assert(String(badJsonRes.headers['content-type'] || '').includes('application/json'), 'Malformed JSON error must return application/json');
+      const badJsonBody = JSON.parse(badJsonRes.body.toString());
+      assert.strictEqual(badJsonBody.ok, false);
     });
   } finally {
     serverProc.kill();

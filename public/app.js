@@ -23,6 +23,8 @@
     manual: null,
     activeNodeId: null,
     activeStepIndex: 0,
+    activeProjectId: null,
+    activeProjectTitle: '',
     imageMap: {},
     sampleSource: '',
     uiTheme: getInitialUiTheme(), // 'dark' | 'light'
@@ -140,11 +142,169 @@
     }
   }
 
-  function buildSerializableState() {
+  async function parseJsonResponse(res) {
+    const raw = await res.text();
+    try {
+      return JSON.parse(raw);
+    } catch (_err) {
+      const snippet = String(raw || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+      throw new Error('Server HTTP ' + res.status + (snippet ? ': ' + snippet : ' (unexpected non-JSON response)'));
+    }
+  }
+
+  function collectReferencedImageFilenames(manual) {
+    const names = {};
+    if (!manual || !Array.isArray(manual.contentNodes)) return names;
+    function addSrc(src) {
+      if (!src) return;
+      const fn = VLP.extractFilenameFromSrc(src);
+      if (fn) names[fn] = true;
+    }
+    function walk(nodes) {
+      (nodes || []).forEach(function (n) {
+        if (n.overview && n.overview.bannerSrc) addSrc(n.overview.bannerSrc);
+        if (n.stepsData && Array.isArray(n.stepsData.steps)) {
+          n.stepsData.steps.forEach(function (st) {
+            (st.images || []).forEach(function (im) { addSrc(im && im.src); });
+          });
+        }
+        (n.images || []).forEach(function (im) { addSrc((im && im.filename) || (im && im.src)); });
+        if (n.rawHtml) {
+          const re = /<img\b[^>]*\bsrc=["']([^"']+)["']/gi;
+          let m;
+          while ((m = re.exec(n.rawHtml)) !== null) {
+            addSrc(m[1]);
+          }
+        }
+        walk(n.children || []);
+      });
+    }
+    walk(manual.contentNodes);
+    return names;
+  }
+
+  function buildCompactImageMap(manual, options) {
+    const opts = options || {};
+    const keepDataUrl = Boolean(opts.keepDataUrl);
+    const onlyReferenced = opts.onlyReferenced !== false;
+    const refNames = onlyReferenced ? collectReferencedImageFilenames(manual) : null;
+    const out = {};
+
+    Object.keys(state.imageMap || {}).forEach(function (k) {
+      const entry = state.imageMap[k];
+      if (!entry || typeof entry !== 'object') return;
+      const fn = entry.filename || VLP.extractFilenameFromSrc(entry.src || k);
+      if (!fn) return;
+      if (refNames && !refNames[fn]) return;
+      if (out[fn]) return;
+
+      const hasServerUrl = Boolean(
+        entry.previewUrl &&
+        (String(entry.previewUrl).startsWith('/api/images/') || String(entry.previewUrl).startsWith('/samples/'))
+      );
+      const compactEntry = {
+        filename: fn,
+        src: entry.src && !String(entry.src).startsWith('data:') ? entry.src : ('./images/' + fn),
+        previewUrl: entry.previewUrl || ('/api/images/' + encodeURIComponent(fn)),
+        width: entry.width || '',
+        height: entry.height || ''
+      };
+      if (entry.dataUrl && (keepDataUrl || !hasServerUrl)) {
+        compactEntry.dataUrl = entry.dataUrl;
+      }
+      out[fn] = compactEntry;
+    });
+    return out;
+  }
+
+  function hydrateImageMapEntries(rawMap) {
+    const hydrated = Object.assign({}, state.imageMap || {});
+    Object.keys(rawMap || {}).forEach(function (k) {
+      const entry = rawMap[k];
+      if (!entry || typeof entry !== 'object') return;
+      const fn = entry.filename || VLP.extractFilenameFromSrc(entry.src || k);
+      if (!fn) return;
+      const existing = hydrated[fn] || hydrated['./images/' + fn] || {};
+      const merged = {
+        filename: fn,
+        src: entry.src || existing.src || ('./images/' + fn),
+        previewUrl: entry.previewUrl || existing.previewUrl || ('/api/images/' + encodeURIComponent(fn)),
+        dataUrl: entry.dataUrl || existing.dataUrl || '',
+        width: entry.width || existing.width || '',
+        height: entry.height || existing.height || ''
+      };
+      hydrated[fn] = merged;
+      hydrated['./images/' + fn] = merged;
+    });
+    return hydrated;
+  }
+
+  async function syncUnsyncedImagesToServer() {
+    if (state.authLocked || !state.manual) return;
+    const refNames = collectReferencedImageFilenames(state.manual);
+    const seen = {};
+    const keys = Object.keys(state.imageMap || {});
+    for (let i = 0; i < keys.length; i++) {
+      const entry = state.imageMap[keys[i]];
+      if (!entry || typeof entry !== 'object') continue;
+      const fn = entry.filename || VLP.extractFilenameFromSrc(entry.src || keys[i]);
+      if (!fn || seen[fn] || !refNames[fn]) continue;
+      seen[fn] = true;
+      const hasServerUrl = Boolean(
+        entry.previewUrl &&
+        (String(entry.previewUrl).startsWith('/api/images/') || String(entry.previewUrl).startsWith('/samples/'))
+      );
+      if (!hasServerUrl && entry.dataUrl && String(entry.dataUrl).startsWith('data:')) {
+        try {
+          const res = await fetch('/api/images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: fn, dataUrl: entry.dataUrl })
+          });
+          if (res.ok) {
+            const d = await parseJsonResponse(res);
+            if (d.previewUrl) {
+              entry.previewUrl = d.previewUrl;
+              state.imageMap[fn] = entry;
+              state.imageMap['./images/' + fn] = entry;
+            }
+          }
+        } catch (_ignore) {}
+      }
+    }
+  }
+
+  async function ensureReferencedImagesDataUrls(manual) {
+    const refNames = collectReferencedImageFilenames(manual || state.manual);
+    const fns = Object.keys(refNames);
+    for (let i = 0; i < fns.length; i++) {
+      const fn = fns[i];
+      const entry = state.imageMap[fn] || state.imageMap['./images/' + fn];
+      if (!entry || entry.dataUrl) continue;
+      const fetchUrl = entry.previewUrl || ('/api/images/' + encodeURIComponent(fn));
+      if (!fetchUrl || fetchUrl.startsWith('./') || fetchUrl.startsWith('data:')) continue;
+      try {
+        const res = await fetch(fetchUrl);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const dataUrl = await readFileAsDataUrl(blob);
+        entry.dataUrl = dataUrl;
+        state.imageMap[fn] = entry;
+        state.imageMap['./images/' + fn] = entry;
+      } catch (_ignore) {}
+    }
+  }
+
+  function buildSerializableState(options) {
+    const opts = options || {};
+    const portable = Boolean(opts.portable);
     return {
       manual: state.manual,
       activeNodeId: state.activeNodeId,
-      imageMap: state.imageMap,
+      activeStepIndex: state.activeStepIndex,
+      activeProjectId: state.activeProjectId || null,
+      activeProjectTitle: state.activeProjectTitle || '',
+      imageMap: buildCompactImageMap(state.manual, { keepDataUrl: portable, onlyReferenced: !portable }),
       sampleSource: state.sampleSource,
       previewTheme: state.previewTheme,
       previewRatio: state.previewRatio,
@@ -153,15 +313,28 @@
     };
   }
 
-  async function saveToServerNow(payload) {
+  async function saveToServerNow(payloadOverride) {
     if (state.authLocked) return false;
     try {
+      await syncUnsyncedImagesToServer();
+      const payload = buildSerializableState({ compact: true });
       const res = await fetch('/api/sessions/autosave', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('Server save failed');
+      if (!res.ok) {
+        const errData = await parseJsonResponse(res).catch(function () { return {}; });
+        throw new Error(errData.error || 'Server save failed');
+      }
+      if (state.activeProjectId) {
+        const projTitle = state.activeProjectTitle || (state.manual && state.manual.name) || 'Untitled Project';
+        await fetch('/api/projects/' + encodeURIComponent(state.activeProjectId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: projTitle, state: payload })
+        }).catch(function () {});
+      }
       state.hasPendingSave = false;
       setSaveStatus('ok', 'Saved (Browser & Disk) • ' + formatTime());
       return true;
@@ -181,26 +354,29 @@
 
     const slotKey = getUserAutosaveKey();
     autosaveBrowserTimer = setTimeout(async function () {
-      const payload = buildSerializableState();
+      const payload = buildSerializableState({ compact: true });
       await idbSet(slotKey, payload);
     }, 250);
 
     autosaveServerTimer = setTimeout(async function () {
-      const payload = buildSerializableState();
-      await idbSet(slotKey, payload);
-      await saveToServerNow(payload);
+      await saveToServerNow();
+      const compact = buildSerializableState({ compact: true });
+      await idbSet(slotKey, compact);
     }, 1100);
   }
 
   function flushAutosaveBeacon() {
     if (state.authLocked || !state.manual) return;
-    const payload = buildSerializableState();
+    const payload = buildSerializableState({ compact: true });
     try {
       localStorage.setItem('vlp_autosave_meta_' + getUserAutosaveKey(), JSON.stringify({ updatedAt: payload.updatedAt, name: state.manual.name }));
     } catch (_ignore) {}
     if (navigator.sendBeacon) {
       const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       navigator.sendBeacon('/api/sessions/autosave', blob);
+      if (state.activeProjectId) {
+        navigator.sendBeacon('/api/projects/' + encodeURIComponent(state.activeProjectId) + '/autosave', blob);
+      }
     }
   }
 
@@ -238,7 +414,9 @@
       manual: JSON.parse(JSON.stringify(state.manual)),
       activeNodeId: state.activeNodeId,
       activeStepIndex: state.activeStepIndex,
-      imageMap: JSON.parse(JSON.stringify(state.imageMap)),
+      activeProjectId: state.activeProjectId || null,
+      activeProjectTitle: state.activeProjectTitle || '',
+      imageMap: buildCompactImageMap(state.manual, { keepDataUrl: false, onlyReferenced: false }),
       sampleSource: state.sampleSource
     };
   }
@@ -247,7 +425,9 @@
     state.manual = normalizeManualData(snap.manual);
     state.activeNodeId = snap.activeNodeId;
     state.activeStepIndex = typeof snap.activeStepIndex === 'number' ? snap.activeStepIndex : 0;
-    state.imageMap = snap.imageMap || {};
+    if (snap.activeProjectId !== undefined) state.activeProjectId = snap.activeProjectId || null;
+    if (snap.activeProjectTitle !== undefined) state.activeProjectTitle = snap.activeProjectTitle || '';
+    state.imageMap = hydrateImageMapEntries(snap.imageMap || {});
     state.sampleSource = snap.sampleSource || '';
     applyColorTheme(state.manual.colorTheme);
     updateUndoRedoButtons();
@@ -2450,17 +2630,18 @@
 
   async function exportVlpZip() {
     try {
+      await syncUnsyncedImagesToServer();
       const res = await fetch('/api/export-zip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           manual: state.manual,
-          imagesMeta: state.imageMap,
+          imagesMeta: buildCompactImageMap(state.manual),
           sampleSource: state.sampleSource
         })
       });
       if (!res.ok) {
-        const err = await res.json().catch(function () { return {}; });
+        const err = await parseJsonResponse(res).catch(function () { return {}; });
         throw new Error(err.error || 'ZIP export failed');
       }
       const blob = await res.blob();
@@ -2481,6 +2662,7 @@
     const scope = scopeOverride || (scopeEl ? scopeEl.value : 'full');
 
     if (format === 'print') {
+      await ensureReferencedImagesDataUrls(state.manual);
       const htmlStr = VLP.generateStandaloneManualHtml(state.manual, {
         scope: scope,
         activeNodeId: state.activeNodeId,
@@ -2503,6 +2685,7 @@
     }
 
     try {
+      await syncUnsyncedImagesToServer();
       const res = await fetch('/api/export-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2511,12 +2694,12 @@
           format: format,
           scope: scope,
           activeNodeId: state.activeNodeId,
-          imagesMeta: state.imageMap,
+          imagesMeta: buildCompactImageMap(state.manual),
           sampleSource: state.sampleSource
         })
       });
       if (!res.ok) {
-        const err = await res.json().catch(function () { return {}; });
+        const err = await parseJsonResponse(res).catch(function () { return {}; });
         throw new Error(err.error || 'Document export failed');
       }
       const blob = await res.blob();
@@ -2643,7 +2826,10 @@
     if (!saved || !saved.manual) return false;
     state.manual = normalizeManualData(saved.manual);
     state.activeNodeId = saved.activeNodeId || (saved.manual.contentNodes[0] && saved.manual.contentNodes[0].id);
-    state.imageMap = Object.assign({}, state.imageMap, saved.imageMap || {});
+    state.activeStepIndex = typeof saved.activeStepIndex === 'number' ? saved.activeStepIndex : 0;
+    state.activeProjectId = saved.activeProjectId || null;
+    state.activeProjectTitle = saved.activeProjectTitle || '';
+    state.imageMap = hydrateImageMapEntries(saved.imageMap || {});
     state.sampleSource = saved.sampleSource || '';
     if (saved.previewTheme) state.previewTheme = saved.previewTheme;
     if (saved.previewRatio) state.previewRatio = saved.previewRatio;
@@ -2785,6 +2971,8 @@
     $('btnNewManual').addEventListener('click', function () {
       pushUndo();
       state.manual = createBlankManual();
+      state.activeProjectId = null;
+      state.activeProjectTitle = '';
       state.sampleSource = '';
       state.activeNodeId = state.manual.contentNodes[0].id;
       applyColorTheme(state.manual.colorTheme);
@@ -3297,13 +3485,20 @@
       });
     }
 
-    $('copyImageModeSelect').addEventListener('change', function () {
+    $('copyImageModeSelect').addEventListener('change', async function () {
       state.copyImageMode = $('copyImageModeSelect').value;
+      if (state.copyImageMode === 'base64') {
+        await ensureReferencedImagesDataUrls(state.manual);
+      }
       updateOutputs();
       scheduleAutosave();
     });
 
     $('btnCopyHtml').addEventListener('click', async function () {
+      if (state.copyImageMode === 'base64') {
+        await ensureReferencedImagesDataUrls(state.manual);
+        updateOutputs();
+      }
       const html = $('htmlOutputText').value;
       try {
         await navigator.clipboard.writeText(html);
@@ -3597,6 +3792,7 @@
 
     const titleMap = {
       account: 'Account',
+      projects: 'My Projects',
       sessions: 'Sessions & Snapshots',
       data: 'Data Controls',
       about: 'About',
@@ -3612,6 +3808,8 @@
 
     if (tabId === 'account') {
       await renderOwuiAccountTab(body);
+    } else if (tabId === 'projects') {
+      await renderOwuiProjectsTab(body);
     } else if (tabId === 'sessions') {
       renderOwuiSessionsTab(body);
     } else if (tabId === 'data') {
@@ -3866,6 +4064,268 @@
     }
   }
 
+  async function renderOwuiProjectsTab(body) {
+    const activeName = state.activeProjectTitle || (state.manual && state.manual.name) || 'Untitled Manual';
+    const isLinked = Boolean(state.activeProjectId);
+
+    body.innerHTML =
+      '<div class="project-active-banner">' +
+      '  <div>' +
+      '    <div style="font-size:12.5px; font-weight:700;">' +
+      (isLinked
+        ? ('Active Project: <span style="color:var(--app-accent-hover);">' + VLP.escapeHtml(activeName) + '</span> <span class="project-badge-active" style="margin-left:6px;">Auto-Saving</span>')
+        : 'Current Workspace is Not Saved to a Project Yet') +
+      '    </div>' +
+      '    <div class="muted-hint" style="margin-top:2px;">' +
+      (isLinked
+        ? 'All edits, screenshots, and the active page automatically sync to this project so you can switch manuals without losing progress.'
+        : 'Save your active manual as a Project below so you can work on multiple manuals and resume each right where you left off.') +
+      '    </div>' +
+      '  </div>' +
+      '  <div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+      (isLinked ? '<button type="button" id="btnSaveActiveProjectNow" class="btn btn-xs btn-blue">Save Now</button>' : '') +
+      '    <button type="button" id="btnNewBlankProject" class="btn btn-xs">+ New Blank Project</button>' +
+      '  </div>' +
+      '</div>' +
+      '<div class="card">' +
+      '  <div class="card-header"><span class="card-title">Save Current Manual as a New Project</span></div>' +
+      '  <div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+      '    <input id="newProjectTitleInput" class="input" type="text" style="flex:1; min-width:200px;" placeholder="e.g. OpenShift Lab 1 or Windows Server Annex B" />' +
+      '    <button type="button" id="btnCreateProjectFromCurrent" class="btn btn-sm btn-primary">Save as Project</button>' +
+      '  </div>' +
+      '</div>' +
+      '<div class="card">' +
+      '  <div class="card-header">' +
+      '    <span class="card-title">Your Saved Projects (Resume Where You Left Off)</span>' +
+      '    <div style="display:flex; gap:6px; align-items:center;">' +
+      '      <input id="projectsFilterInput" class="input" type="text" style="width:160px; padding:4px 8px; font-size:12px;" placeholder="Filter projects..." />' +
+      '      <button type="button" id="btnRefreshProjects" class="btn btn-xs">Refresh</button>' +
+      '    </div>' +
+      '  </div>' +
+      '  <div id="projectsList" class="muted-hint">Loading saved projects...</div>' +
+      '</div>';
+
+    const suggestedTitle = (state.manual && state.manual.name && state.manual.name !== 'new.vlp.manual')
+      ? state.manual.name
+      : (state.activeProjectTitle || 'New VLP Lab Manual');
+    $('newProjectTitleInput').value = suggestedTitle;
+
+    async function persistActiveBeforeSwitch() {
+      if (!state.manual) return;
+      await syncUnsyncedImagesToServer();
+      const payload = buildSerializableState({ compact: true });
+      if (state.activeProjectId) {
+        await fetch('/api/projects/' + encodeURIComponent(state.activeProjectId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: state.activeProjectTitle || state.manual.name || 'Untitled Project',
+            state: payload
+          })
+        }).catch(function () {});
+      }
+    }
+
+    async function saveCurrentAsNewProject(titleOverride) {
+      const title = (titleOverride !== undefined ? titleOverride : $('newProjectTitleInput').value).trim() ||
+        (state.manual && state.manual.name) || 'Untitled Project';
+      try {
+        await syncUnsyncedImagesToServer();
+        const payload = buildSerializableState({ compact: true });
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title, state: payload })
+        });
+        const data = await parseJsonResponse(res);
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save project');
+        state.activeProjectId = data.project.id;
+        state.activeProjectTitle = data.project.title;
+        await saveToServerNow();
+        showToast('Saved project: ' + data.project.title);
+        await renderOwuiProjectsTab(body);
+      } catch (err) {
+        showToast('Project save failed: ' + err.message, true);
+      }
+    }
+
+    let cachedProjects = [];
+    function renderFilteredProjects() {
+      const listEl = $('projectsList');
+      if (!listEl) return;
+      const q = ($('projectsFilterInput').value || '').trim().toLowerCase();
+      const filtered = cachedProjects.filter(function (p) {
+        if (!q) return true;
+        return String(p.title || '').toLowerCase().includes(q) || String(p.manualName || '').toLowerCase().includes(q);
+      });
+      if (filtered.length === 0) {
+        listEl.innerHTML = cachedProjects.length === 0
+          ? '<span class="muted-hint">No saved projects yet. Enter a name above and click "Save as Project" to keep multiple manuals side by side.</span>'
+          : '<span class="muted-hint">No projects match "' + VLP.escapeHtml(q) + '".</span>';
+        return;
+      }
+      listEl.innerHTML = '';
+      filtered.forEach(function (p) {
+        const isActive = state.activeProjectId === p.id;
+        const card = document.createElement('div');
+        card.className = 'project-card' + (isActive ? ' is-active' : '');
+
+        const meta = document.createElement('div');
+        meta.className = 'project-card-meta';
+        meta.innerHTML =
+          '<div class="project-card-title-row">' +
+          '  <strong>' + VLP.escapeHtml(p.title) + '</strong>' +
+          (isActive ? '<span class="project-badge-active">Active</span>' : '') +
+          '</div>' +
+          '<div class="muted-hint">' +
+          VLP.escapeHtml(p.manualName || 'manual') + ' &bull; ' +
+          p.nodeCount + ' pages &bull; ' +
+          p.stepCount + ' steps &bull; ' +
+          p.imageCount + ' images &bull; Saved ' +
+          VLP.escapeHtml((p.updatedAt || '').replace('T', ' ').slice(0, 19)) +
+          '</div>';
+
+        const actions = document.createElement('div');
+        actions.className = 'project-card-actions';
+
+        const resumeBtn = makeTinyBtn(isActive ? 'Reopen' : 'Resume', async function () {
+          try {
+            if (state.activeProjectId && state.activeProjectId !== p.id) {
+              await persistActiveBeforeSwitch();
+            }
+            const res = await fetch('/api/projects/' + encodeURIComponent(p.id));
+            const data = await parseJsonResponse(res);
+            if (!res.ok || !data.ok || !data.project || !data.project.state) {
+              throw new Error(data.error || 'Failed to load project');
+            }
+            pushUndo();
+            const loadedState = Object.assign({}, data.project.state, {
+              activeProjectId: data.project.id,
+              activeProjectTitle: data.project.title
+            });
+            restoreSerializedState(loadedState);
+            closeModal('accountAdminModal');
+            scheduleAutosave();
+            showToast('Resumed project: ' + data.project.title);
+          } catch (err) {
+            showToast('Could not open project: ' + err.message, true);
+          }
+        });
+        resumeBtn.className = 'btn btn-xs btn-primary';
+        actions.appendChild(resumeBtn);
+
+        const renameBtn = makeTinyBtn('Rename', async function () {
+          const nextTitle = window.prompt('Rename project:', p.title || '');
+          if (!nextTitle || !nextTitle.trim() || nextTitle.trim() === p.title) return;
+          try {
+            const res = await fetch('/api/projects/' + encodeURIComponent(p.id), {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: nextTitle.trim() })
+            });
+            const data = await parseJsonResponse(res);
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Rename failed');
+            if (state.activeProjectId === p.id) {
+              state.activeProjectTitle = data.project.title;
+            }
+            showToast('Renamed project to ' + data.project.title);
+            await renderOwuiProjectsTab(body);
+          } catch (err) {
+            showToast('Rename failed: ' + err.message, true);
+          }
+        });
+        actions.appendChild(renameBtn);
+
+        const dupBtn = makeTinyBtn('Duplicate', async function () {
+          try {
+            const res = await fetch('/api/projects/' + encodeURIComponent(p.id) + '/duplicate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({})
+            });
+            const data = await parseJsonResponse(res);
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Duplicate failed');
+            showToast('Duplicated project: ' + data.project.title);
+            await loadProjectsList();
+          } catch (err) {
+            showToast('Duplicate failed: ' + err.message, true);
+          }
+        });
+        actions.appendChild(dupBtn);
+
+        const delBtn = makeTinyBtn('Delete', async function () {
+          try {
+            const res = await fetch('/api/projects/' + encodeURIComponent(p.id), { method: 'DELETE' });
+            const data = await parseJsonResponse(res);
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Delete failed');
+            if (state.activeProjectId === p.id) {
+              state.activeProjectId = null;
+              state.activeProjectTitle = '';
+            }
+            showToast('Deleted project: ' + p.title);
+            await renderOwuiProjectsTab(body);
+          } catch (err) {
+            showToast('Delete failed: ' + err.message, true);
+          }
+        });
+        actions.appendChild(delBtn);
+
+        card.appendChild(meta);
+        card.appendChild(actions);
+        listEl.appendChild(card);
+      });
+    }
+
+    async function loadProjectsList() {
+      const listEl = $('projectsList');
+      if (listEl) listEl.innerHTML = 'Loading saved projects...';
+      try {
+        const res = await fetch('/api/projects');
+        const data = await parseJsonResponse(res);
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not list projects');
+        cachedProjects = data.projects || [];
+        renderFilteredProjects();
+      } catch (err) {
+        if (listEl) listEl.innerHTML = '<span class="muted-hint">' + VLP.escapeHtml(err.message) + '</span>';
+      }
+    }
+
+    if ($('btnSaveActiveProjectNow')) {
+      $('btnSaveActiveProjectNow').addEventListener('click', async function () {
+        const ok = await saveToServerNow();
+        if (ok) {
+          showToast('Saved project: ' + activeName);
+          await loadProjectsList();
+        } else {
+          showToast('Failed to save project to server', true);
+        }
+      });
+    }
+
+    $('btnNewBlankProject').addEventListener('click', async function () {
+      await persistActiveBeforeSwitch();
+      pushUndo();
+      state.manual = createBlankManual();
+      state.activeProjectId = null;
+      state.activeProjectTitle = '';
+      state.sampleSource = '';
+      state.activeNodeId = state.manual.contentNodes[0].id;
+      applyColorTheme(state.manual.colorTheme);
+      closeModal('accountAdminModal');
+      renderAll();
+      scheduleAutosave();
+      showToast('Started new blank manual workspace');
+    });
+
+    $('btnCreateProjectFromCurrent').addEventListener('click', function () {
+      saveCurrentAsNewProject();
+    });
+    $('projectsFilterInput').addEventListener('input', renderFilteredProjects);
+    $('btnRefreshProjects').addEventListener('click', loadProjectsList);
+
+    await loadProjectsList();
+  }
+
   function renderOwuiSessionsTab(body) {
     const defaultSnapName = (state.manual && state.manual.name ? state.manual.name : 'Manual') + ' Snapshot';
 
@@ -3910,14 +4370,15 @@
 
     $('btnShareCurrent').addEventListener('click', async function () {
       const name = $('snapshotNameInput').value.trim() || (state.manual && state.manual.name) || 'Shared Manual';
-      const payload = buildSerializableState();
       try {
+        await syncUnsyncedImagesToServer();
+        const payload = buildSerializableState({ compact: true });
         const res = await fetch('/api/sessions-shared', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: name, state: payload })
         });
-        const data = await res.json();
+        const data = await parseJsonResponse(res);
         if (!res.ok || !data.ok) throw new Error(data.error || 'Share failed');
         refreshSharedSnapshotsList();
         showToast('Shared manual to Team Manuals: ' + name);
@@ -3928,14 +4389,15 @@
 
     $('btnSaveSnapshot').addEventListener('click', async function () {
       const name = $('snapshotNameInput').value.trim() || 'Manual Snapshot';
-      const payload = buildSerializableState();
       try {
+        await syncUnsyncedImagesToServer();
+        const payload = buildSerializableState({ compact: true });
         const res = await fetch('/api/sessions/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: name, state: payload })
         });
-        const data = await res.json();
+        const data = await parseJsonResponse(res);
         if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
         refreshSnapshotsList();
         showToast('Saved snapshot: ' + name);
@@ -3944,8 +4406,9 @@
       }
     });
 
-    $('btnExportJsonBackup').addEventListener('click', function () {
-      const payload = buildSerializableState();
+    $('btnExportJsonBackup').addEventListener('click', async function () {
+      await ensureReferencedImagesDataUrls(state.manual);
+      const payload = buildSerializableState({ portable: true });
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const safeName = ((state.manual && state.manual.name) || 'vlp-project').replace(/[^a-zA-Z0-9._-]/g, '_');
       downloadBlob(blob, safeName + '-backup.json');
@@ -3991,9 +4454,17 @@
     row.style.flexWrap = 'wrap';
     row.style.marginTop = '12px';
 
+    const bProj = document.createElement('button');
+    bProj.type = 'button';
+    bProj.className = 'btn btn-sm btn-blue';
+    bProj.textContent = 'Manage My Projects';
+    bProj.addEventListener('click', function () {
+      renderOwuiTab('projects');
+    });
+
     const bSess = document.createElement('button');
     bSess.type = 'button';
-    bSess.className = 'btn btn-sm btn-blue';
+    bSess.className = 'btn btn-sm';
     bSess.textContent = 'Manage Private & Shared Snapshots';
     bSess.addEventListener('click', function () {
       renderOwuiTab('sessions');
@@ -4014,6 +4485,7 @@
     bZip.textContent = 'Export VLP ZIP Archive';
     bZip.addEventListener('click', exportVlpZip);
 
+    row.appendChild(bProj);
     row.appendChild(bSess);
     row.appendChild(bPdf);
     row.appendChild(bZip);
@@ -4035,9 +4507,9 @@
       return;
     }
 
-    const title = '[v0.3.4-beta] Bug Report: ';
+    const title = '[v0.3.5-beta] Bug Report: ';
     const envLines = [
-      '**Version:** v0.3.4-beta',
+      '**Version:** v0.3.5-beta',
       '**Browser Viewport:** ' + window.innerWidth + 'x' + window.innerHeight,
       '**UI Theme:** ' + state.uiTheme + ' | **Preview Theme:** ' + state.previewTheme,
       '',
@@ -4059,7 +4531,7 @@
 
   function renderOwuiAboutTab(body) {
     body.innerHTML =
-      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.4-beta)</div>' +
+      '<div class="owui-section-title">VLP Manual HTML Formatter &amp; XML Builder (v0.3.5-beta)</div>' +
       '<p class="owui-row-desc" style="font-size:12.5px; line-height:1.55;">100% air-gapped, deterministic authoring studio supporting VLP HTML5/XML packages, Student Exports (.pdf, .html, .mdx, .rtf), and multi-user local accounts.</p>' +
       '<div style="margin:10px 0 6px;"><button type="button" id="btnAboutReportBug" class="btn btn-sm btn-blue">Report Bug on GitHub</button></div>' +
       '<div class="owui-section-title">PII &amp; Credential Security Architecture</div>' +
@@ -4614,6 +5086,8 @@
       state.currentUser = null;
       state.authLocked = true;
       state.manual = null;
+      state.activeProjectId = null;
+      state.activeProjectTitle = '';
       updateTopbarUserUi(null);
       await checkAuthAndLoadWorkspace();
       showToast('Signed out');

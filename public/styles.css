@@ -2173,3 +2173,71 @@ html[data-ui-theme="light"] .quick-paste-status.is-ok {
   border-color: #10b981;
   color: #065f46;
 }
+
+/* =========================================================================
+ * v0.3.5-beta: Multi-Manual My Projects Workspace Cards
+ * ========================================================================= */
+.project-active-banner {
+  background: var(--app-accent-soft);
+  border: 1px solid var(--app-accent);
+  border-left: 4px solid var(--app-accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.project-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface-2);
+  margin-bottom: 8px;
+}
+
+.project-card.is-active {
+  border-color: var(--app-accent);
+  background: var(--app-accent-soft);
+}
+
+.project-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.project-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.project-badge-active {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: var(--app-accent);
+  color: #ffffff;
+}
+
+.project-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}

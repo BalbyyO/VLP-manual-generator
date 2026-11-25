@@ -13,6 +13,7 @@ const DATA_DIR = process.env.DATA_DIR
   : path.join(__dirname, 'data');
 
 const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
+const PROJECTS_DIR = path.join(DATA_DIR, 'projects');
 const USERS_DATA_DIR = path.join(DATA_DIR, 'users');
 const SHARED_SESSIONS_DIR = path.join(DATA_DIR, 'shared-sessions');
 const IMAGES_DIR = path.join(DATA_DIR, 'images');
@@ -25,6 +26,7 @@ const AUTH_CONFIG_FILE = path.join(DATA_DIR, 'auth-config.json');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit-log.json');
 
 fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+fs.mkdirSync(PROJECTS_DIR, { recursive: true });
 fs.mkdirSync(USERS_DATA_DIR, { recursive: true });
 fs.mkdirSync(SHARED_SESSIONS_DIR, { recursive: true });
 fs.mkdirSync(IMAGES_DIR, { recursive: true });
@@ -538,7 +540,7 @@ app.use(function (req, res, next) {
   next();
 });
 
-app.use(express.json({ limit: '64mb' }));
+app.use(express.json({ limit: '100mb' }));
 app.use(express.raw({ type: ['application/zip', 'application/octet-stream'], limit: '100mb' }));
 
 // Attach req.user & req.authState on every request
@@ -613,6 +615,13 @@ function getUserSessionsDir(req) {
   return userDir;
 }
 
+function getUserProjectsDir(req) {
+  if (!req.user) return PROJECTS_DIR;
+  const userDir = path.join(USERS_DATA_DIR, sanitizeId(req.user.id), 'projects');
+  fs.mkdirSync(userDir, { recursive: true });
+  return userDir;
+}
+
 // Static application & bundled offline assets (zero CDNs)
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/samples/annexb/images', express.static(path.join(__dirname, 'dsac.annexb.lab01-en', 'images')));
@@ -624,6 +633,100 @@ function countContentNodes(nodes) {
     count += 1 + countContentNodes(n.children || []);
   });
   return count;
+}
+
+function countManualStats(manual) {
+  let nodeCount = 0;
+  let stepCount = 0;
+  const imageNames = new Set();
+  function walk(nodes) {
+    (nodes || []).forEach(function (n) {
+      nodeCount += 1;
+      if (n.overview && n.overview.bannerSrc) {
+        const bfn = VLPFormatter.extractFilenameFromSrc(n.overview.bannerSrc);
+        if (bfn) imageNames.add(bfn);
+      }
+      if (n.stepsData && Array.isArray(n.stepsData.steps)) {
+        stepCount += n.stepsData.steps.length;
+        n.stepsData.steps.forEach(function (s) {
+          (s.images || []).forEach(function (im) {
+            if (im && im.src) {
+              const fn = im.filename || VLPFormatter.extractFilenameFromSrc(im.src);
+              if (fn) imageNames.add(fn);
+            }
+          });
+        });
+      }
+      (n.images || []).forEach(function (im) {
+        const fn = im.filename || VLPFormatter.extractFilenameFromSrc(im.src);
+        if (fn) imageNames.add(fn);
+      });
+      walk(n.children || []);
+    });
+  }
+  walk((manual && manual.contentNodes) || []);
+  return { nodeCount: nodeCount, stepCount: stepCount, imageCount: imageNames.size };
+}
+
+function extFromMimeType(mimeType) {
+  const m = String(mimeType || '').toLowerCase();
+  if (m.includes('jpeg') || m.includes('jpg')) return '.jpg';
+  if (m.includes('gif')) return '.gif';
+  if (m.includes('webp')) return '.webp';
+  if (m.includes('svg')) return '.svg';
+  return '.png';
+}
+
+function persistDataUrlToImagesDir(dataUrl, preferredFilename) {
+  const decoded = decodeDataUrl(dataUrl);
+  if (!decoded || !decoded.buffer || decoded.buffer.length === 0) return null;
+  const fallbackName = crypto.randomUUID() + extFromMimeType(decoded.mimeType);
+  const fn = sanitizeFilename(preferredFilename || fallbackName);
+  const outPath = path.join(IMAGES_DIR, fn);
+  if (!fs.existsSync(outPath)) {
+    fs.writeFileSync(outPath, decoded.buffer);
+  }
+  return {
+    filename: fn,
+    src: './images/' + fn,
+    previewUrl: '/api/images/' + encodeURIComponent(fn)
+  };
+}
+
+/**
+ * Strips heavy base64 dataUrl payloads from serialized state before saving JSON
+ * to disk, persisting any unsaved inline images to IMAGES_DIR first.
+ */
+function compactStateForDisk(rawState) {
+  if (!rawState || typeof rawState !== 'object') return {};
+  const cloned = Object.assign({}, rawState);
+  const compactMap = {};
+  const srcMap = rawState.imageMap || {};
+  Object.keys(srcMap).forEach(function (key) {
+    const entry = srcMap[key];
+    if (!entry || typeof entry !== 'object') return;
+    const rawFn = entry.filename || VLPFormatter.extractFilenameFromSrc(entry.src || key);
+    if (!rawFn) return;
+    const fn = sanitizeFilename(rawFn);
+    let previewUrl = entry.previewUrl || '';
+    if (entry.dataUrl && String(entry.dataUrl).startsWith('data:')) {
+      const saved = persistDataUrlToImagesDir(entry.dataUrl, fn);
+      if (saved && !previewUrl) previewUrl = saved.previewUrl;
+    } else if (!previewUrl && fs.existsSync(path.join(IMAGES_DIR, fn))) {
+      previewUrl = '/api/images/' + encodeURIComponent(fn);
+    }
+    if (!compactMap[fn]) {
+      compactMap[fn] = {
+        filename: fn,
+        src: entry.src && !String(entry.src).startsWith('data:') ? entry.src : ('./images/' + fn),
+        previewUrl: previewUrl || ('/api/images/' + encodeURIComponent(fn)),
+        width: entry.width || '',
+        height: entry.height || ''
+      };
+    }
+  });
+  cloned.imageMap = compactMap;
+  return cloned;
 }
 
 function guessMimeType(filename) {
@@ -656,7 +759,7 @@ app.get('/api/health', function (_req, res) {
   const bugsUrl = (pkg.bugs && pkg.bugs.url) ? String(pkg.bugs.url).replace(/\/+$/, '') : '';
   res.json({
     ok: true,
-    version: '0.3.4-beta',
+    version: '0.3.5-beta',
     port: PORT,
     dataDir: DATA_DIR,
     airGapped: true,
@@ -1240,7 +1343,7 @@ app.post('/api/sessions/autosave', requireActiveUser, function (req, res) {
   try {
     const dir = getUserSessionsDir(req);
     const autoFile = path.join(dir, 'autosave.json');
-    const payload = req.body || {};
+    const payload = compactStateForDisk(req.body || {});
     const record = {
       id: 'autosave',
       ownerId: req.user ? req.user.id : 'legacy',
@@ -1289,7 +1392,7 @@ app.post('/api/sessions/save', requireActiveUser, function (req, res) {
     const dir = getUserSessionsDir(req);
     const body = req.body || {};
     const id = sanitizeId(body.id || ('snap-' + Date.now()));
-    const state = body.state || {};
+    const state = compactStateForDisk(body.state || {});
     const name = String(body.name || (state.manual && state.manual.name) || 'Snapshot').trim();
     const record = {
       id: id,
@@ -1364,7 +1467,7 @@ app.post('/api/sessions-shared', requireActiveUser, function (req, res) {
   try {
     const body = req.body || {};
     const id = sanitizeId(body.id || ('shared-' + Date.now()));
-    const state = body.state || {};
+    const state = compactStateForDisk(body.state || {});
     const name = String(body.name || (state.manual && state.manual.name) || 'Shared Manual').trim();
     const record = {
       id: id,
@@ -1396,6 +1499,185 @@ app.delete('/api/sessions-shared/:id', requireActiveUser, function (req, res) {
     return res.status(403).json({ ok: false, error: 'Only the author or an administrator can delete this shared manual' });
   }
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  res.json({ ok: true });
+});
+
+/* =========================================================================
+ * Per-User Saved Multi-Manual Projects (/data/users/<id>/projects)
+ * ========================================================================= */
+function buildProjectSummary(doc) {
+  const st = (doc && doc.state) || {};
+  const manual = st.manual || {};
+  const stats = countManualStats(manual);
+  return {
+    id: doc.id,
+    title: doc.title || manual.name || 'Untitled Project',
+    manualName: manual.name || '',
+    languageCode: manual.defaultLanguageCode || 'en',
+    colorTheme: manual.colorTheme || 'crimson-slate',
+    nodeCount: stats.nodeCount,
+    stepCount: stats.stepCount,
+    imageCount: stats.imageCount,
+    createdAt: doc.createdAt || doc.updatedAt || '',
+    updatedAt: doc.updatedAt || ''
+  };
+}
+
+app.get('/api/projects', requireActiveUser, function (req, res) {
+  try {
+    const dir = getUserProjectsDir(req);
+    const files = listDirFilesSafe(dir).filter(function (f) {
+      return f.endsWith('.json') && !f.endsWith('.tmp');
+    });
+    const list = files
+      .map(function (f) {
+        const doc = readJsonSafe(path.join(dir, f));
+        if (!doc) return null;
+        if (!doc.id) doc.id = f.replace(/\.json$/, '');
+        return buildProjectSummary(doc);
+      })
+      .filter(Boolean)
+      .sort(function (a, b) {
+        return String(b.updatedAt).localeCompare(String(a.updatedAt));
+      });
+    res.json({ ok: true, projects: list });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/projects', requireActiveUser, function (req, res) {
+  try {
+    const dir = getUserProjectsDir(req);
+    const body = req.body || {};
+    const id = sanitizeId(body.id || ('proj-' + crypto.randomUUID().slice(0, 12)));
+    const compactState = compactStateForDisk(body.state || {});
+    compactState.activeProjectId = id;
+    const title = String(body.title || (compactState.manual && compactState.manual.name) || 'Untitled Project').trim();
+    compactState.activeProjectTitle = title;
+    const now = new Date().toISOString();
+    const record = {
+      id: id,
+      ownerId: req.user ? req.user.id : 'legacy',
+      title: title,
+      createdAt: now,
+      updatedAt: now,
+      state: compactState
+    };
+    atomicWriteJson(path.join(dir, id + '.json'), record);
+    res.status(201).json({ ok: true, project: buildProjectSummary(record) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get('/api/projects/:id', requireActiveUser, function (req, res) {
+  const dir = getUserProjectsDir(req);
+  const id = sanitizeId(req.params.id);
+  const doc = readJsonSafe(path.join(dir, id + '.json'));
+  if (!doc) {
+    return res.status(404).json({ ok: false, error: 'Project not found' });
+  }
+  res.json({ ok: true, project: doc });
+});
+
+app.put('/api/projects/:id', requireActiveUser, function (req, res) {
+  try {
+    const dir = getUserProjectsDir(req);
+    const id = sanitizeId(req.params.id);
+    const filePath = path.join(dir, id + '.json');
+    const existing = readJsonSafe(filePath);
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: 'Project not found' });
+    }
+    const body = req.body || {};
+    const nextState = body.state ? compactStateForDisk(body.state) : (existing.state || {});
+    const title = String(body.title !== undefined ? body.title : (existing.title || (nextState.manual && nextState.manual.name) || 'Untitled Project')).trim();
+    nextState.activeProjectId = id;
+    nextState.activeProjectTitle = title;
+    const updated = {
+      id: id,
+      ownerId: existing.ownerId || (req.user ? req.user.id : 'legacy'),
+      title: title,
+      createdAt: existing.createdAt || existing.updatedAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      state: nextState
+    };
+    atomicWriteJson(filePath, updated);
+    res.json({ ok: true, project: buildProjectSummary(updated) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/autosave', requireActiveUser, function (req, res) {
+  try {
+    const dir = getUserProjectsDir(req);
+    const id = sanitizeId(req.params.id);
+    const filePath = path.join(dir, id + '.json');
+    const existing = readJsonSafe(filePath);
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: 'Project not found' });
+    }
+    const payload = compactStateForDisk(req.body || {});
+    payload.activeProjectId = id;
+    const title = String(payload.activeProjectTitle || existing.title || (payload.manual && payload.manual.name) || 'Untitled Project').trim();
+    payload.activeProjectTitle = title;
+    const updated = {
+      id: id,
+      ownerId: existing.ownerId || (req.user ? req.user.id : 'legacy'),
+      title: title,
+      createdAt: existing.createdAt || existing.updatedAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      state: payload
+    };
+    atomicWriteJson(filePath, updated);
+    res.json({ ok: true, updatedAt: updated.updatedAt });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/duplicate', requireActiveUser, function (req, res) {
+  try {
+    const dir = getUserProjectsDir(req);
+    const srcId = sanitizeId(req.params.id);
+    const existing = readJsonSafe(path.join(dir, srcId + '.json'));
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: 'Project not found' });
+    }
+    const newId = sanitizeId('proj-' + crypto.randomUUID().slice(0, 12));
+    const title = String((req.body && req.body.title) || ((existing.title || 'Project') + ' (Copy)')).trim();
+    const clonedState = compactStateForDisk(existing.state || {});
+    if (clonedState.manual) {
+      clonedState.manual = Object.assign({}, clonedState.manual, { id: crypto.randomUUID() });
+    }
+    clonedState.activeProjectId = newId;
+    clonedState.activeProjectTitle = title;
+    const now = new Date().toISOString();
+    const record = {
+      id: newId,
+      ownerId: req.user ? req.user.id : 'legacy',
+      title: title,
+      createdAt: now,
+      updatedAt: now,
+      state: clonedState
+    };
+    atomicWriteJson(path.join(dir, newId + '.json'), record);
+    res.status(201).json({ ok: true, project: buildProjectSummary(record) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.delete('/api/projects/:id', requireActiveUser, function (req, res) {
+  const dir = getUserProjectsDir(req);
+  const id = sanitizeId(req.params.id);
+  const filePath = path.join(dir, id + '.json');
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ ok: false, error: 'Project not found' });
+  }
+  fs.unlinkSync(filePath);
   res.json({ ok: true });
 });
 
@@ -1569,11 +1851,11 @@ app.post('/api/import-zip', requireActiveUser, async function (req, res) {
       const buf = await zip.files[k].async('nodebuffer');
       fs.writeFileSync(path.join(IMAGES_DIR, fn), buf);
       const mime = guessMimeType(fn);
+      void mime;
       imageMap[fn] = {
         filename: fn,
         src: './images/' + fn,
-        previewUrl: '/api/images/' + encodeURIComponent(fn),
-        dataUrl: 'data:' + mime + ';base64,' + buf.toString('base64')
+        previewUrl: '/api/images/' + encodeURIComponent(fn)
       };
     }
 
@@ -1668,6 +1950,21 @@ app.post('/api/export-document', requireActiveUser, function (req, res) {
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// Return clean JSON error responses on /api/* instead of Express HTML error pages
+app.use(function (err, _req, res, next) {
+  if (!err) return next();
+  if (err.type === 'entity.too.large' || err.status === 413) {
+    return res.status(413).json({
+      ok: false,
+      error: 'Request payload too large. Try saving again or removing unused embedded images.'
+    });
+  }
+  if (err.type === 'entity.parse.failed' || err.status === 400) {
+    return res.status(400).json({ ok: false, error: 'Malformed JSON request payload.' });
+  }
+  return res.status(err.status || 500).json({ ok: false, error: err.message || 'Internal server error' });
 });
 
 app.listen(PORT, '0.0.0.0', function () {
