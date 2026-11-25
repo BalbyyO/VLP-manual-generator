@@ -42,7 +42,8 @@ This application converts raw text, draft notes, and legacy `content.xml` chapte
 
 ## Visual Interface Tour
 
-![VLP Manual HTML Formatter 3-Pane Interface](./public/assets/interface-demo.svg)
+![VLP Manual HTML Formatter 3-Pane Dark Workspace](./docs-site/static/img/screenshots/03-workspace-dark-overview.png)
+*Main 3-pane studio in Dark Mode: Manual Structure tree (left), Course Overview editor & semantic toolbar (center), and Live VLP Preview (right).*
 
 ```mermaid
 flowchart LR
@@ -67,9 +68,13 @@ flowchart LR
 | **Templates & Button Guide** | Opens the 3-tab modal (**Pre-Made Templates**, **What Every Button Does**, and **Reference Manuals** with **Load Annex B** / **Load Annex C**). Shows the **Button Demo Guide** automatically on startup unless **Do not show this guide automatically on startup** is checked. |
 | **Import XML / ZIP** | Imports an existing VLP `content.xml` or `.zip` manual package (including `./images/*`). |
 | **Export ▾** submenu | Unified dropdown containing **Scope** (`Full Manual` / `Current Page`), **Export VLP `content.xml`**, **Export VLP Package (`.zip`)**, and student exports (`.pdf`, `.html`, `.mdx`, `.rtf`, **Print / Save PDF...**). |
-| **Report Bug** | Opens a pre-filled GitHub New Issue page (`v0.3.2-beta`, viewport, and theme info) directly from the top bar or **Account & Admin → About**. |
+| **Report Bug** | Opens a pre-filled GitHub New Issue page (`v0.3.5-beta`, viewport, and theme info) directly from the top bar or **Account & Admin → About**. |
 | **Account / Admin Pill** | Opens the Open WebUI-style Settings & Admin panel (`Account`, **`My Projects`** for multi-manual workspaces, **`Sessions`** for private snapshots / Shared Team Manuals / `.json` backups, `Data Controls`, `Users`, `Groups`, `Authentication`, `Security Audit`). |
 | **Mobile / Zoom Pane Tabs** (`Structure \| Editor \| Preview`) | Appears automatically on narrow screens (`<= 1024px`) or high browser zoom so each pane remains full-width and usable without horizontal clipping. |
+
+| Color Theme Swatches (8 Light/Dark Palettes) | Unified `Export ▾` Submenu (VLP XML/ZIP & Student Docs) |
+| --- | --- |
+| ![Color Theme Swatches Dropdown](./docs-site/static/img/screenshots/04-color-theme-swatches.png) | ![Unified Export Submenu](./docs-site/static/img/screenshots/08-export-menu.png) |
 
 ---
 
@@ -95,6 +100,9 @@ Use the segmented control next to the node title:
 - **Procedural Steps**: Visual step-row builder (`.lab-table` with themed `.step-badge` counters), optional single merged indented **Step Context** (`.step-context`), **Data Tables** (`.vlp-data-table`), **Multi-System VM Credentials** (`.lab-note`), **Terminal Verification Output** (`.term-box`), and inline screenshots.
 - **Raw / Imported**: Preserves imported/custom HTML verbatim until you click **Convert Page to Procedural Steps** or **Convert Page to Course Overview**.
 
+![Procedural Steps Editor and Live Preview](./docs-site/static/img/screenshots/05-procedural-steps-editor.png)
+*Procedural Steps editor showcasing inline semantic pills, indented shaded `.step-context` blocks, multi-system VM credentials, and real-time VLP Dark Mode preview.*
+
 #### Apply Rich Text & Semantic Formatting (Toolbar, Shortcuts, or Markup)
 Highlight text inside any editor box (including table cells) and click a toolbar button or press a keyboard shortcut. Clicking **`?`** next to any button opens a live Light/Dark demonstration:
 
@@ -108,6 +116,9 @@ Highlight text inside any editor box (including table cells) and click a toolbar
 | **• List / 1. List** | `<ul><li>...</li></ul>`, `<ol>...</ol>` | Toolbar button | Bullet and numbered lists with dark-mode transparency |
 
 > **Note:** Formatting is strictly deterministic—plain text is never auto-tagged unless you apply a toolbar button, keyboard shortcut, or explicit markup.
+
+![Interactive Button Demo Guide Modal](./docs-site/static/img/screenshots/02-button-demo-guide.png)
+*Built-in **What Every Button Does** guide with live Light/Dark previews, HTML tag signatures, and keyboard shortcuts.*
 
 #### Convert Raw Text into Steps
 In **Procedural Steps** mode, the **Raw Text → Procedural Steps Converter (Native, No AI)** starts **hidden by default**—click **Show Converter** when needed (or click **`?`** beside its title to open the explanation and live preview inside the **Button Demo Guide**):
@@ -128,6 +139,9 @@ Context: Opening the Local Group Policy Editor for baseline firewall setup.
 3. Click **Consolidate Chapter Steps into VLP Table** in the amber banner.
 4. All child micro-steps are cleaned of Word/Office inline styles and zero-width characters, screenshots are mapped 1-to-1 inline inside step cells, and the chapter is standardized into a single `.lab-wrapper` table page.
 
+![Legacy Annex C Chapter Consolidation](./docs-site/static/img/screenshots/09-chapter-consolidation.png)
+*One-click chapter consolidation banner converting legacy Word/CKEditor micro-steps into a clean `.lab-wrapper` VLP step table.*
+
 #### Attach Screenshots Inline
 - Focus a step's dropzone (or instruction textarea) and press **`Ctrl+V`** to paste from the clipboard, drag-and-drop an image file, or click to browse.
 - Uploaded/pasted screenshots automatically receive a UUID filename (`./images/<uuid>.<ext>`), measure dimensions for `<images>` XML metadata, and persist on disk.
@@ -143,6 +157,22 @@ Context: Opening the Local Group Policy Editor for baseline firewall setup.
    - `./images/<uuid>.png (VLP Standard)` — for VLP XML/ZIP manual packages
    - `Inline Base64 Data URI (Standalone)` — for standalone copy/paste directly into VLP CKEditor
 5. Click **Copy VLP HTML** to copy the self-contained `<style>...</style>` + HTML container snippet.
+
+![VLP 1/3 Taskbar Split-Screen Preview in Light Mode](./docs-site/static/img/screenshots/07-vlp-split-screen-preview.png)
+*Simulating VLP's 1/3 right-hand split-screen taskbar (`360px`) in isolated Light Mode to confirm zero horizontal clipping.*
+
+---
+
+### 5. Multi-Manual Workspaces (`My Projects`), Local Accounts & Offline MFA
+
+Open the **Account / Admin** pill in the top-right corner to switch between multiple manuals in **My Projects** (each active project auto-saves every edit and screenshot so you can pick up right where you left off), manage private snapshots and **Shared Team Manuals** in **Sessions**, or configure local users, groups, and **Offline TOTP MFA** in the Admin Panel.
+
+![My Projects Multi-Manual Workspace](./docs-site/static/img/screenshots/11-my-projects.png)
+*Per-user **My Projects** tab: save multiple manuals, switch freely, and resume any project from its last auto-saved state.*
+
+| First-Run Administrator Bootstrap | Account Settings, Offline TOTP MFA & Admin Sidebar |
+| --- | --- |
+| ![First-Run Administrator Setup](./docs-site/static/img/screenshots/01-first-run-admin-setup.png) | ![Account Settings and Offline MFA](./docs-site/static/img/screenshots/10-account-mfa-admin.png) |
 
 ---
 
@@ -179,20 +209,20 @@ docker compose up -d
 
 Open **`http://localhost:8080`** in your browser. On first launch, create the Administrator account (or configure `ADMIN_EMAIL` / `ADMIN_PASSWORD`). User accounts, encrypted PII, sessions, and uploaded screenshots persist across container restarts in `./data` (mapped to `/data` inside the container).
 
-### Option 2: Air-Gapped Transfer (`beta 0.3.3` Tarball)
+### Option 2: Air-Gapped Transfer (`beta 0.3.5` Tarball)
 
-Download `vlp-manual-generator-0.3.3-beta.tar` from the [**beta 0.3.3** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.3-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
+Download `vlp-manual-generator-0.3.5-beta.tar` from the [**beta 0.3.5** GitHub Release](https://github.com/BalbyyO/VLP-manual-generator/releases/tag/v0.3.5-beta) (or export locally with `docker save`), transfer it to your offline host, and run:
 
 ```bash
-docker load -i vlp-manual-generator-0.3.3-beta.tar
-docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data vlp-manual-generator:0.3.3-beta
+docker load -i vlp-manual-generator-0.3.5-beta.tar
+docker run -d --name vlp-manual-generator -p 8080:8080 -v vlp_data:/data ghcr.io/balbyyo/vlp-manual-generator:0.3.5-beta
 ```
 
 To build and export the tarball yourself from source:
 
 ```bash
-docker build -t vlp-manual-generator:0.3.3-beta .
-docker save -o vlp-manual-generator-0.3.3-beta.tar vlp-manual-generator:0.3.3-beta
+docker build -t ghcr.io/balbyyo/vlp-manual-generator:0.3.5-beta .
+docker save -o vlp-manual-generator-0.3.5-beta.tar ghcr.io/balbyyo/vlp-manual-generator:0.3.5-beta
 ```
 
 ### Option 3: Local Node.js & Automated Tests
